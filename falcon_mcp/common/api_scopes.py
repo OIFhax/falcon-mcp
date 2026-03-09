@@ -49,6 +49,16 @@ API_SCOPE_REQUIREMENTS = {
     "RTR_CheckCommandStatus": ["Real Time Response:read"],
     "RTR_DeleteSession": ["Real Time Response:read"],
     "RTR_DeleteQueuedSession": ["Real Time Response:read"],
+    # Real Time Response Admin operations
+    "RTR_ListScripts": ["Real Time Response Admin:write"],
+    "RTR_GetScripts": ["Real Time Response Admin:write"],
+    "RTR_ListPut_Files": ["Real Time Response Admin:write"],
+    "RTR_GetPut_Files": ["Real Time Response Admin:write"],
+    "RTR_ExecuteAdminCommand": ["Real Time Response Admin:write"],
+    "RTR_CheckAdminCommandStatus": ["Real Time Response Admin:write"],
+    "BatchAdminCmd": ["Real Time Response Admin:write"],
+    # Real Time Response Audit operations
+    "RTRAuditSessions": ["Real Time Response Audit:read"],
     # Spotlight operations
     "combinedQueryVulnerabilities": ["Vulnerabilities:read"],
     # Discover operations

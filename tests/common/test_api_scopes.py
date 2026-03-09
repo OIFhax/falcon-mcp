@@ -65,6 +65,14 @@ class TestApiScopes(unittest.TestCase):
         self.assertEqual(get_required_scopes("PostEntitiesAlertsV2"), ["Alerts:read"])
         self.assertEqual(get_required_scopes("QueryIncidents"), ["Incidents:read"])
         self.assertEqual(get_required_scopes("RTR_ListAllSessions"), ["Real Time Response:read"])
+        self.assertEqual(
+            get_required_scopes("RTR_ExecuteAdminCommand"),
+            ["Real Time Response Admin:write"],
+        )
+        self.assertEqual(
+            get_required_scopes("RTRAuditSessions"),
+            ["Real Time Response Audit:read"],
+        )
 
         # Test with unknown operation
         self.assertEqual(get_required_scopes("UnknownOperation"), [])
@@ -151,6 +159,8 @@ class TestApiScopes(unittest.TestCase):
             ("QueryIncidents", ["Incidents:read"]),
             ("QueryIntelActorEntities", ["Actors (Falcon Intelligence):read"]),
             ("RTR_ExecuteCommand", ["Real Time Response:read"]),
+            ("RTR_ExecuteAdminCommand", ["Real Time Response Admin:write"]),
+            ("RTRAuditSessions", ["Real Time Response Audit:read"]),
             ("api_preempt_proxy_post_graphql", [
                 "Identity Protection Entities:read",
                 "Identity Protection Timeline:read",
@@ -201,7 +211,8 @@ class TestApiScopes(unittest.TestCase):
         # Validate that most resources use consistent permission patterns
         read_only_resources = [
             "Alerts", "Hosts", "Incidents", "Vulnerabilities",
-            "Assets", "Sensor Usage", "Scheduled Reports", "Real Time Response"
+            "Assets", "Sensor Usage", "Scheduled Reports",
+            "Real Time Response", "Real Time Response Audit"
         ]
 
         for resource in read_only_resources:
@@ -237,6 +248,14 @@ class TestApiScopes(unittest.TestCase):
                 "RTR_CheckCommandStatus",
                 "RTR_DeleteSession",
                 "RTR_DeleteQueuedSession",
+                "RTR_ListScripts",
+                "RTR_GetScripts",
+                "RTR_ListPut_Files",
+                "RTR_GetPut_Files",
+                "RTR_ExecuteAdminCommand",
+                "RTR_CheckAdminCommandStatus",
+                "BatchAdminCmd",
+                "RTRAuditSessions",
             ],
             "serverless": ["GetCombinedVulnerabilitiesSARIF"]
         }

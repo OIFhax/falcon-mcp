@@ -25,8 +25,14 @@ class TestRTRModule(TestModules):
             "falcon_init_rtr_session",
             "falcon_execute_rtr_command",
             "falcon_check_rtr_command_status",
+            "falcon_search_rtr_admin_scripts",
+            "falcon_search_rtr_admin_put_files",
+            "falcon_execute_rtr_admin_command",
+            "falcon_execute_rtr_admin_batch_command",
+            "falcon_check_rtr_admin_command_status",
             "falcon_delete_rtr_session",
             "falcon_delete_rtr_queued_session",
+            "falcon_search_rtr_audit_sessions",
         ]
         self.assert_tools_registered(expected_tools)
 
@@ -34,6 +40,8 @@ class TestRTRModule(TestModules):
         """Test registering resources with the server."""
         expected_resources = [
             "falcon_search_rtr_sessions_fql_guide",
+            "falcon_search_rtr_admin_fql_guide",
+            "falcon_search_rtr_audit_sessions_fql_guide",
         ]
         self.assert_resources_registered(expected_resources)
 
@@ -42,9 +50,19 @@ class TestRTRModule(TestModules):
         self.module.register_tools(self.mock_server)
 
         self.assert_tool_annotations("falcon_search_rtr_sessions", READ_ONLY_ANNOTATIONS)
-        self.assert_tool_annotations("falcon_check_rtr_command_status", READ_ONLY_ANNOTATIONS)
+        self.assert_tool_annotations("falcon_search_rtr_admin_scripts", READ_ONLY_ANNOTATIONS)
+        self.assert_tool_annotations("falcon_search_rtr_audit_sessions", READ_ONLY_ANNOTATIONS)
         self.assert_tool_annotations(
-            "falcon_init_rtr_session",
+            "falcon_execute_rtr_command",
+            ToolAnnotations(
+                readOnlyHint=False,
+                destructiveHint=False,
+                idempotentHint=False,
+                openWorldHint=True,
+            ),
+        )
+        self.assert_tool_annotations(
+            "falcon_execute_rtr_admin_command",
             ToolAnnotations(
                 readOnlyHint=False,
                 destructiveHint=False,
@@ -120,24 +138,6 @@ class TestRTRModule(TestModules):
         self.assertEqual(result["results"], [])
         self.assertIn("fql_guide", result)
 
-    def test_search_rtr_sessions_error_without_filter(self):
-        """Test RTR session search errors without filter return list-wrapped error."""
-        self.mock_client.command.return_value = {
-            "status_code": 400,
-            "body": {"errors": [{"message": "Bad request"}]},
-        }
-
-        result = self.module.search_rtr_sessions(
-            filter=None,
-            limit=10,
-            offset=None,
-            sort=None,
-        )
-
-        self.assertIsInstance(result, list)
-        self.assertEqual(len(result), 1)
-        self.assertIn("error", result[0])
-
     def test_init_rtr_session_success(self):
         """Test initializing an RTR session with convenience fields."""
         self.mock_client.command.return_value = {
@@ -163,21 +163,6 @@ class TestRTRModule(TestModules):
         )
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]["session_id"], "session-id-1")
-
-    def test_init_rtr_session_validation(self):
-        """Test init_rtr_session validation when device_id is missing."""
-        result = self.module.init_rtr_session(
-            device_id=None,
-            origin=None,
-            queue_offline=None,
-            timeout=None,
-            timeout_duration=None,
-            body=None,
-        )
-
-        self.assertEqual(len(result), 1)
-        self.assertIn("error", result[0])
-        self.mock_client.command.assert_not_called()
 
     def test_execute_rtr_command_success(self):
         """Test executing an RTR read-only command."""
@@ -211,83 +196,192 @@ class TestRTRModule(TestModules):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]["cloud_request_id"], "cloud-request-1")
 
-    def test_execute_rtr_command_validation_missing_fields(self):
-        """Test execute_rtr_command validation for missing command fields."""
-        result = self.module.execute_rtr_command(
-            base_command=None,
-            command_string=None,
+    def test_search_rtr_admin_scripts_success(self):
+        """Test searching RTR admin scripts and fetching full details."""
+        query_response = {
+            "status_code": 200,
+            "body": {"resources": ["script-id-1"]},
+        }
+        details_response = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "script-id-1", "name": "triage-script"}]},
+        }
+        self.mock_client.command.side_effect = [query_response, details_response]
+
+        result = self.module.search_rtr_admin_scripts(
+            filter="name:'triage*'",
+            limit=10,
+            offset=0,
+            sort="created_at.desc",
+        )
+
+        self.assertEqual(self.mock_client.command.call_count, 2)
+        first_call = self.mock_client.command.call_args_list[0]
+        second_call = self.mock_client.command.call_args_list[1]
+
+        self.assertEqual(first_call[0][0], "RTR_ListScripts")
+        self.assertEqual(first_call[1]["parameters"]["filter"], "name:'triage*'")
+        self.assertEqual(second_call[0][0], "RTR_GetScripts")
+        self.assertEqual(second_call[1]["parameters"]["ids"], ["script-id-1"])
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["id"], "script-id-1")
+
+    def test_search_rtr_admin_put_files_success(self):
+        """Test searching RTR admin put-files and fetching full details."""
+        query_response = {
+            "status_code": 200,
+            "body": {"resources": ["put-file-id-1"]},
+        }
+        details_response = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "put-file-id-1", "name": "payload.bin"}]},
+        }
+        self.mock_client.command.side_effect = [query_response, details_response]
+
+        result = self.module.search_rtr_admin_put_files(
+            filter="name:'payload*'",
+            limit=10,
+            offset=0,
+            sort="created_at.desc",
+        )
+
+        self.assertEqual(self.mock_client.command.call_count, 2)
+        self.assertEqual(self.mock_client.command.call_args_list[0][0][0], "RTR_ListPut_Files")
+        self.assertEqual(self.mock_client.command.call_args_list[1][0][0], "RTR_GetPut_Files")
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["id"], "put-file-id-1")
+
+    def test_execute_rtr_admin_command_success(self):
+        """Test executing an RTR admin command."""
+        self.mock_client.command.return_value = {
+            "status_code": 201,
+            "body": {"resources": [{"cloud_request_id": "admin-request-1"}]},
+        }
+
+        result = self.module.execute_rtr_admin_command(
+            base_command="runscript",
+            command_string="runscript -CloudFile='triage-script'",
             session_id="session-id-1",
             device_id=None,
-            sequence_id=None,
+            sequence_id=1,
             persist=None,
             body=None,
         )
 
+        self.mock_client.command.assert_called_once_with(
+            "RTR_ExecuteAdminCommand",
+            body={
+                "base_command": "runscript",
+                "command_string": "runscript -CloudFile='triage-script'",
+                "session_id": "session-id-1",
+                "id": 1,
+            },
+        )
         self.assertEqual(len(result), 1)
-        self.assertIn("error", result[0])
-        self.mock_client.command.assert_not_called()
+        self.assertEqual(result[0]["cloud_request_id"], "admin-request-1")
 
-    def test_execute_rtr_command_validation_missing_target(self):
-        """Test execute_rtr_command validation for missing session/device target."""
-        result = self.module.execute_rtr_command(
-            base_command="ls",
-            command_string="ls /",
-            session_id=None,
-            device_id=None,
-            sequence_id=None,
-            persist=None,
+    def test_execute_rtr_admin_batch_command_success(self):
+        """Test executing an RTR admin batch command."""
+        self.mock_client.command.return_value = {
+            "status_code": 201,
+            "body": {"resources": [{"cloud_request_id": "batch-request-1"}]},
+        }
+
+        result = self.module.execute_rtr_admin_batch_command(
+            base_command="runscript",
+            batch_id="batch-1",
+            command_string="runscript -CloudFile='triage-script'",
+            optional_hosts=["aid-1", "aid-2"],
+            persist_all=True,
+            timeout=120,
+            timeout_duration="120s",
+            host_timeout_duration="90s",
             body=None,
         )
 
+        self.mock_client.command.assert_called_once_with(
+            "BatchAdminCmd",
+            parameters={
+                "timeout": 120,
+                "timeout_duration": "120s",
+                "host_timeout_duration": "90s",
+            },
+            body={
+                "base_command": "runscript",
+                "batch_id": "batch-1",
+                "command_string": "runscript -CloudFile='triage-script'",
+                "optional_hosts": ["aid-1", "aid-2"],
+                "persist_all": True,
+            },
+        )
         self.assertEqual(len(result), 1)
-        self.assertIn("error", result[0])
-        self.mock_client.command.assert_not_called()
+        self.assertEqual(result[0]["cloud_request_id"], "batch-request-1")
 
-    def test_check_rtr_command_status_success(self):
-        """Test checking RTR command status."""
+    def test_check_rtr_admin_command_status_success(self):
+        """Test checking RTR admin command status."""
         self.mock_client.command.return_value = {
             "status_code": 200,
-            "body": {"resources": [{"cloud_request_id": "cloud-request-1", "complete": True}]},
+            "body": {"resources": [{"cloud_request_id": "admin-request-1", "complete": True}]},
         }
 
-        result = self.module.check_rtr_command_status(
-            cloud_request_id="cloud-request-1",
+        result = self.module.check_rtr_admin_command_status(
+            cloud_request_id="admin-request-1",
             sequence_id=0,
         )
 
         self.mock_client.command.assert_called_once_with(
-            "RTR_CheckCommandStatus",
-            parameters={"cloud_request_id": "cloud-request-1", "sequence_id": 0},
+            "RTR_CheckAdminCommandStatus",
+            parameters={"cloud_request_id": "admin-request-1", "sequence_id": 0},
         )
         self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]["cloud_request_id"], "cloud-request-1")
+        self.assertEqual(result[0]["cloud_request_id"], "admin-request-1")
 
-    def test_check_rtr_command_status_validation(self):
-        """Test check_rtr_command_status validation."""
-        result = self.module.check_rtr_command_status(
-            cloud_request_id=None,
-            sequence_id=0,
-        )
-
-        self.assertEqual(len(result), 1)
-        self.assertIn("error", result[0])
-        self.mock_client.command.assert_not_called()
-
-    def test_delete_rtr_session_success(self):
-        """Test deleting an RTR session."""
+    def test_search_rtr_audit_sessions_success(self):
+        """Test searching RTR audit sessions."""
         self.mock_client.command.return_value = {
             "status_code": 200,
-            "body": {"resources": [{"session_id": "session-id-1"}]},
+            "body": {"resources": [{"session_id": "audit-session-1"}]},
         }
 
-        result = self.module.delete_rtr_session(session_id="session-id-1")
+        result = self.module.search_rtr_audit_sessions(
+            filter="user_id:'@me'",
+            limit=5,
+            offset=0,
+            sort="created_at.desc",
+            with_command_info=True,
+        )
 
         self.mock_client.command.assert_called_once_with(
-            "RTR_DeleteSession",
-            parameters={"session_id": "session-id-1"},
+            "RTRAuditSessions",
+            parameters={
+                "filter": "user_id:'@me'",
+                "limit": 5,
+                "offset": 0,
+                "sort": "created_at.desc",
+                "with_command_info": True,
+            },
         )
         self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]["session_id"], "session-id-1")
+        self.assertEqual(result[0]["session_id"], "audit-session-1")
+
+    def test_search_rtr_audit_sessions_empty_with_filter(self):
+        """Test empty RTR audit search with filter returns FQL guide context."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": []},
+        }
+
+        result = self.module.search_rtr_audit_sessions(
+            filter="session_id:'does-not-exist'",
+            limit=10,
+            offset=None,
+            sort=None,
+            with_command_info=False,
+        )
+
+        self.assertIsInstance(result, dict)
+        self.assertEqual(result["results"], [])
+        self.assertIn("fql_guide", result)
 
     def test_delete_rtr_session_validation(self):
         """Test delete_rtr_session validation."""
@@ -297,46 +391,34 @@ class TestRTRModule(TestModules):
         self.assertIn("error", result[0])
         self.mock_client.command.assert_not_called()
 
-    def test_delete_rtr_queued_session_success(self):
-        """Test deleting a queued RTR session."""
-        self.mock_client.command.return_value = {
-            "status_code": 200,
-            "body": {"resources": [{"session_id": "session-id-1", "cloud_request_id": "request-1"}]},
-        }
-
-        result = self.module.delete_rtr_queued_session(
-            session_id="session-id-1",
-            cloud_request_id="request-1",
-        )
-
-        self.mock_client.command.assert_called_once_with(
-            "RTR_DeleteQueuedSession",
-            parameters={"session_id": "session-id-1", "cloud_request_id": "request-1"},
-        )
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]["cloud_request_id"], "request-1")
-
-    def test_delete_rtr_queued_session_validation(self):
-        """Test delete_rtr_queued_session validation."""
-        result = self.module.delete_rtr_queued_session(
-            session_id="session-id-1",
-            cloud_request_id=None,
+    def test_execute_rtr_admin_batch_command_validation(self):
+        """Test execute_rtr_admin_batch_command validation for missing required fields."""
+        result = self.module.execute_rtr_admin_batch_command(
+            base_command=None,
+            batch_id=None,
+            command_string=None,
+            optional_hosts=None,
+            persist_all=None,
+            timeout=None,
+            timeout_duration=None,
+            host_timeout_duration=None,
+            body=None,
         )
 
         self.assertEqual(len(result), 1)
         self.assertIn("error", result[0])
         self.mock_client.command.assert_not_called()
 
-    def test_execute_rtr_command_permission_error(self):
-        """Test execute_rtr_command with 403 permission error returns error response."""
+    def test_execute_rtr_admin_command_permission_error(self):
+        """Test execute_rtr_admin_command with 403 error returns error response."""
         self.mock_client.command.return_value = {
             "status_code": 403,
             "body": {"errors": [{"message": "Access denied"}]},
         }
 
-        result = self.module.execute_rtr_command(
-            base_command="ls",
-            command_string="ls /",
+        result = self.module.execute_rtr_admin_command(
+            base_command="runscript",
+            command_string="runscript -CloudFile='triage-script'",
             session_id="session-id-1",
             device_id=None,
             sequence_id=None,

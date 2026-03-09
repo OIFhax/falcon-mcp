@@ -95,7 +95,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Intel** | `Actors (Falcon Intelligence):read`<br>`Indicators (Falcon Intelligence):read`<br>`Reports (Falcon Intelligence):read` | Research threat actors, IOCs, and intelligence reports |
 | **IOC** | `IOC Management:read`<br>`IOC Management:write` | Search, create, and remove custom IOCs using IOC Service Collection endpoints |
 | **Firewall Management** | `Firewall Management:read`<br>`Firewall Management:write` | Search and manage firewall rules and rule groups |
-| **Real Time Response** | `Real Time Response:read` | Search RTR sessions, initialize sessions, run read-only RTR commands, and delete sessions |
+| **Real Time Response** | `Real Time Response:read`<br>`Real Time Response Admin:write`<br>`Real Time Response Audit:read` | Unified RTR module covering session workflows, admin command/script operations, and audit session search |
 | **Scheduled Reports** | `Scheduled Reports:read` | Get details about scheduled reports and searches, run reports on demand, and download report files |
 | **Sensor Usage** | `Sensor Usage:read` | Access and analyze sensor usage data |
 | **Serverless** | `Falcon Container Image:read` | Search for vulnerabilities in serverless functions across cloud service providers |
@@ -295,21 +295,31 @@ Provides tools for searching and managing Falcon firewall rule entities:
 **API Scopes Required**:
 
 - `Real Time Response:read`
+- `Real Time Response Admin:write`
+- `Real Time Response Audit:read`
 
-Provides tools for searching and managing single-host RTR workflows:
+Provides unified tools for RTR core, RTR admin, and RTR audit workflows:
 
 - `falcon_search_rtr_sessions`: Search RTR sessions using FQL and return full session details
 - `falcon_init_rtr_session`: Initialize a single-host RTR session
 - `falcon_execute_rtr_command`: Execute an RTR read-only command on a host session
 - `falcon_check_rtr_command_status`: Check status for an RTR command request
+- `falcon_search_rtr_admin_scripts`: Search RTR admin scripts and return full script details
+- `falcon_search_rtr_admin_put_files`: Search RTR admin put-files and return full put-file details
+- `falcon_execute_rtr_admin_command`: Execute an RTR admin command on a host session
+- `falcon_execute_rtr_admin_batch_command`: Execute an RTR admin command across a batch session
+- `falcon_check_rtr_admin_command_status`: Check status for an RTR admin command request
 - `falcon_delete_rtr_session`: Delete an RTR session by session ID
 - `falcon_delete_rtr_queued_session`: Delete a queued RTR session by session and request ID
+- `falcon_search_rtr_audit_sessions`: Search RTR audit sessions with optional command metadata
 
 **Resources**:
 
 - `falcon://rtr/sessions/fql-guide`: FQL documentation and examples for RTR session searches
+- `falcon://rtr/admin/fql-guide`: FQL documentation and examples for RTR admin script / put-file searches
+- `falcon://rtr/audit/sessions/fql-guide`: FQL documentation and examples for RTR audit session searches
 
-**Use Cases**: Host-level triage, remote session management, command execution tracking, RTR workflow cleanup
+**Use Cases**: Host-level triage, remote session management, admin command and script operations, audit-driven RTR investigations, RTR workflow cleanup
 
 ### Sensor Usage Module
 

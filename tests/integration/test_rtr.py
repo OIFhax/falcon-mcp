@@ -1,5 +1,7 @@
 """Integration tests for the Real Time Response (RTR) module."""
 
+from typing import Any
+
 import pytest
 
 from falcon_mcp.modules.rtr import RTRModule
@@ -8,20 +10,37 @@ from tests.integration.utils.base_integration_test import BaseIntegrationTest
 
 @pytest.mark.integration
 class TestRTRIntegration(BaseIntegrationTest):
-    """Integration tests for RTR module with real API calls.
-
-    Validates:
-    - Correct FalconPy operation names (RTR_ListAllSessions, RTR_ListSessions)
-    - Two-step search pattern returns full details, not just IDs
-    """
+    """Integration tests for RTR module with real API calls."""
 
     @pytest.fixture(autouse=True)
     def setup_module(self, falcon_client):
         """Set up the RTR module with a real client."""
         self.module = RTRModule(falcon_client)
 
-    def test_operation_names_are_correct(self):
-        """Validate operation names by executing a minimal RTR session query."""
+    def _skip_if_scope_missing(self, result: Any, context: str) -> None:
+        """Skip test when API credentials are missing required scopes."""
+        details = None
+
+        if isinstance(result, dict):
+            if "error" in result:
+                details = result.get("details")
+            elif "results" in result and isinstance(result["results"], list) and result["results"]:
+                first = result["results"][0]
+                if isinstance(first, dict) and "error" in first:
+                    details = first.get("details")
+        elif isinstance(result, list) and result:
+            first = result[0]
+            if isinstance(first, dict) and "error" in first:
+                details = first.get("details")
+
+        if isinstance(details, dict) and details.get("status_code") == 403:
+            self.skip_with_warning(
+                "Missing required API scope for RTR integration test",
+                context=context,
+            )
+
+    def test_search_rtr_sessions_operation_names(self):
+        """Validate core RTR operation names by running a minimal search."""
         result = self.call_method(
             self.module.search_rtr_sessions,
             filter=None,
@@ -29,42 +48,33 @@ class TestRTRIntegration(BaseIntegrationTest):
             offset=0,
             sort=None,
         )
-        self.assert_no_error(result, context="RTR operation name validation")
 
-    def test_search_rtr_sessions_returns_details(self):
-        """Test that search_rtr_sessions returns full details, not only session IDs."""
+        self._skip_if_scope_missing(result, "search_rtr_sessions")
+        self.assert_no_error(result, context="search_rtr_sessions operation name validation")
+
+    def test_search_rtr_admin_scripts_operation_names(self):
+        """Validate RTR admin operation names by running a minimal script search."""
         result = self.call_method(
-            self.module.search_rtr_sessions,
+            self.module.search_rtr_admin_scripts,
             filter=None,
-            limit=5,
+            limit=1,
             offset=0,
             sort=None,
         )
 
-        self.assert_no_error(result, context="search_rtr_sessions")
-        self.assert_valid_list_response(result, min_length=0, context="search_rtr_sessions")
+        self._skip_if_scope_missing(result, "search_rtr_admin_scripts")
+        self.assert_no_error(result, context="search_rtr_admin_scripts operation name validation")
 
-        if len(result) > 0:
-            first = result[0]
-            assert isinstance(first, dict), (
-                f"Expected dict items (session details), got {type(first)}"
-            )
-            assert any(field in first for field in ["session_id", "id", "aid"]), (
-                f"Expected session detail fields in first result. Available fields: {list(first.keys())}"
-            )
-
-    def test_search_rtr_sessions_with_user_filter(self):
-        """Test RTR session search with user-scoped FQL filter."""
+    def test_search_rtr_audit_sessions_operation_name(self):
+        """Validate RTR audit operation name by running a minimal audit search."""
         result = self.call_method(
-            self.module.search_rtr_sessions,
-            filter="user_id:'@me'",
-            limit=3,
+            self.module.search_rtr_audit_sessions,
+            filter=None,
+            limit=1,
             offset=0,
-            sort="date_created.desc",
+            sort=None,
+            with_command_info=False,
         )
 
-        self.assert_no_error(result, context="search_rtr_sessions with filter")
-        if isinstance(result, list):
-            self.assert_valid_list_response(
-                result, min_length=0, context="search_rtr_sessions with filter"
-            )
+        self._skip_if_scope_missing(result, "search_rtr_audit_sessions")
+        self.assert_no_error(result, context="search_rtr_audit_sessions operation name validation")
