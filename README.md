@@ -28,6 +28,7 @@
   - [NGSIEM Module](#ngsiem-module)
   - [Intel Module](#intel-module)
   - [IOC Module](#ioc-module)
+  - [IOA Exclusions Module](#ioa-exclusions-module)
   - [Firewall Management Module](#firewall-management-module)
   - [Real Time Response Module](#real-time-response-module)
   - [Scheduled Reports Module](#scheduled-reports-module)
@@ -88,12 +89,13 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Core** | _No additional scopes_ | Basic connectivity and system information |
 | **Detections** | `Alerts:read` | Find and analyze detections to understand malicious activity |
 | **Discover** | `Assets:read` | Search and analyze application inventory across your environment |
-| **Hosts** | `Hosts:read` | Manage and query host/device information |
+| **Hosts** | `Hosts:read`<br>`Host Groups:read`<br>`Host Groups:write`<br>`Host Migration:read`<br>`Host Migration:write` | Search hosts, manage host groups, and orchestrate migration workflows |
 | **Identity Protection** | `Identity Protection Entities:read`<br>`Identity Protection Timeline:read`<br>`Identity Protection Detections:read`<br>`Identity Protection Assessment:read`<br>`Identity Protection GraphQL:write` | Comprehensive entity investigation and identity protection analysis |
 | **Incidents** | `Incidents:read` | Analyze security incidents and coordinated activities |
 | **NGSIEM** | `NGSIEM:read`<br>`NGSIEM:write` | Execute CQL queries against Next-Gen SIEM |
 | **Intel** | `Actors (Falcon Intelligence):read`<br>`Indicators (Falcon Intelligence):read`<br>`Reports (Falcon Intelligence):read` | Research threat actors, IOCs, and intelligence reports |
 | **IOC** | `IOC Management:read`<br>`IOC Management:write` | Search, create, and remove custom IOCs using IOC Service Collection endpoints |
+| **IOA Exclusions** | `IOA Exclusions:read`<br>`IOA Exclusions:write` | Search, create, update, and delete IOA exclusions |
 | **Firewall Management** | `Firewall Management:read`<br>`Firewall Management:write` | Search and manage firewall rules and rule groups |
 | **Real Time Response** | `Real Time Response:read`<br>`Real Time Response Admin:write`<br>`Real Time Response Audit:read` | Unified RTR module covering session workflows, admin command/script operations, and audit session search |
 | **Scheduled Reports** | `Scheduled Reports:read` | Get details about scheduled reports and searches, run reports on demand, and download report files |
@@ -171,18 +173,39 @@ Provides tools for accessing and managing CrowdStrike Falcon Discover applicatio
 
 ### Hosts Module
 
-**API Scopes Required**: `Hosts:read`
+**API Scopes Required**:
 
-Provides tools for accessing and managing CrowdStrike Falcon hosts/devices:
+- `Hosts:read`
+- `Host Groups:read`
+- `Host Groups:write`
+- `Host Migration:read`
+- `Host Migration:write`
+
+Provides tools for hosts, host groups, and host migration workflows:
 
 - `falcon_search_hosts`: Search for hosts in your CrowdStrike environment
-- `falcon_get_host_details`: Retrieve detailed information for specified host device IDs
+- `falcon_get_host_details`: Retrieve detailed information for specific host device IDs
+- `falcon_search_host_groups`: Search host groups and return full group details
+- `falcon_search_host_group_members`: Search host group members and return full host records
+- `falcon_add_host_group`: Create a host group
+- `falcon_update_host_group`: Update an existing host group
+- `falcon_remove_host_groups`: Delete host groups by ID
+- `falcon_perform_host_group_action`: Add/remove hosts in host groups using filters or action parameters
+- `falcon_search_migrations`: Search migration jobs and return full migration details
+- `falcon_search_host_migrations`: Search host migration entities within a migration job
+- `falcon_create_migration`: Create a host migration job
+- `falcon_get_migration_destinations`: Resolve available migration destinations for selected hosts
+- `falcon_perform_migration_action`: Start, cancel, rename, or delete migration jobs
+- `falcon_perform_host_migration_action`: Update host migration entities inside a migration job
 
 **Resources**:
 
-- `falcon://hosts/search/fql-guide`: Comprehensive FQL documentation and examples for host searches
+- `falcon://hosts/search/fql-guide`: FQL documentation and examples for host searches
+- `falcon://hosts/groups/fql-guide`: FQL documentation and examples for host group searches
+- `falcon://hosts/migrations/fql-guide`: FQL documentation and examples for migration job searches
+- `falcon://hosts/host-migrations/fql-guide`: FQL documentation and examples for host migration entity searches
 
-**Use Cases**: Asset management, device inventory, host monitoring, compliance reporting
+**Use Cases**: Host inventory, host group lifecycle management, migration planning, and migration execution workflows
 
 ### Identity Protection Module
 
@@ -268,6 +291,26 @@ Provides tools for managing custom indicators of compromise (IOCs) with Falcon I
 - `falcon://ioc/search/fql-guide`: FQL documentation and examples for IOC searches
 
 **Use Cases**: IOC lifecycle management, automated IOC onboarding, IOC cleanup and hygiene workflows
+
+### IOA Exclusions Module
+
+**API Scopes Required**:
+
+- `IOA Exclusions:read`
+- `IOA Exclusions:write`
+
+Provides tools for managing IOA exclusions:
+
+- `falcon_search_ioa_exclusions`: Search IOA exclusions with FQL (plus optional regex constraints) and return full details
+- `falcon_add_ioa_exclusion`: Create an IOA exclusion using convenience fields or a full body payload
+- `falcon_update_ioa_exclusion`: Update an IOA exclusion by ID using convenience fields or a full body payload
+- `falcon_remove_ioa_exclusions`: Delete IOA exclusions by IDs with optional audit comment
+
+**Resources**:
+
+- `falcon://ioa-exclusions/search/fql-guide`: FQL documentation and examples for IOA exclusion searches
+
+**Use Cases**: Exclusion lifecycle management, false-positive suppression workflows, and policy hygiene automation
 
 ### Firewall Management Module
 

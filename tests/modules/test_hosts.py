@@ -4,6 +4,9 @@ Tests for the Hosts module.
 
 import unittest
 
+from mcp.types import ToolAnnotations
+
+from falcon_mcp.modules.base import READ_ONLY_ANNOTATIONS
 from falcon_mcp.modules.hosts import HostsModule
 from tests.modules.utils.test_modules import TestModules
 
@@ -20,6 +23,18 @@ class TestHostsModule(TestModules):
         expected_tools = [
             "falcon_search_hosts",
             "falcon_get_host_details",
+            "falcon_search_host_groups",
+            "falcon_search_host_group_members",
+            "falcon_add_host_group",
+            "falcon_update_host_group",
+            "falcon_remove_host_groups",
+            "falcon_perform_host_group_action",
+            "falcon_search_migrations",
+            "falcon_search_host_migrations",
+            "falcon_create_migration",
+            "falcon_get_migration_destinations",
+            "falcon_perform_migration_action",
+            "falcon_perform_host_migration_action",
         ]
         self.assert_tools_registered(expected_tools)
 
@@ -27,361 +42,551 @@ class TestHostsModule(TestModules):
         """Test registering resources with the server."""
         expected_resources = [
             "falcon_search_hosts_fql_guide",
+            "falcon_search_host_groups_fql_guide",
+            "falcon_search_migrations_fql_guide",
+            "falcon_search_host_migrations_fql_guide",
         ]
         self.assert_resources_registered(expected_resources)
 
-    def test_search_hosts(self):
-        """Test searching for hosts."""
-        # Setup mock responses for both API calls
+    def test_tool_annotations(self):
+        """Test tools are registered with expected annotations."""
+        self.module.register_tools(self.mock_server)
+
+        self.assert_tool_annotations("falcon_search_hosts", READ_ONLY_ANNOTATIONS)
+        self.assert_tool_annotations("falcon_search_host_groups", READ_ONLY_ANNOTATIONS)
+        self.assert_tool_annotations("falcon_search_migrations", READ_ONLY_ANNOTATIONS)
+        self.assert_tool_annotations(
+            "falcon_add_host_group",
+            ToolAnnotations(
+                readOnlyHint=False,
+                destructiveHint=False,
+                idempotentHint=False,
+                openWorldHint=True,
+            ),
+        )
+        self.assert_tool_annotations(
+            "falcon_remove_host_groups",
+            ToolAnnotations(
+                readOnlyHint=False,
+                destructiveHint=True,
+                idempotentHint=True,
+                openWorldHint=True,
+            ),
+        )
+        self.assert_tool_annotations(
+            "falcon_perform_host_migration_action",
+            ToolAnnotations(
+                readOnlyHint=False,
+                destructiveHint=False,
+                idempotentHint=False,
+                openWorldHint=True,
+            ),
+        )
+
+    def test_search_hosts_success(self):
+        """Test searching hosts returns full details."""
         query_response = {
             "status_code": 200,
-            "body": {"resources": ["device1", "device2"]},
-        }
-        details_response = {
-            "status_code": 200,
-            "body": {"resources": [
-                {"device_id": "device1", "hostname": "host1", "platform_name": "Windows"},
-                {"device_id": "device2", "hostname": "host2", "platform_name": "Windows"},
-            ]},
-        }
-        self.mock_client.command.side_effect = [query_response, details_response]
-
-        # Call search_hosts
-        result = self.module.search_hosts(filter="platform_name:'Windows'", limit=50)
-
-        # Verify first call uses the new base method with correct parameters
-        first_call = self.mock_client.command.call_args_list[0]
-        self.assertEqual(first_call[0][0], "QueryDevicesByFilter")  # operation name
-        self.assertEqual(first_call[1]["parameters"]["filter"], "platform_name:'Windows'")
-        self.assertEqual(first_call[1]["parameters"]["limit"], 50)
-
-        # Verify second call for device details
-        second_call = self.mock_client.command.call_args_list[1]
-        self.assertEqual(second_call[0][0], "PostDeviceDetailsV2")
-        self.assertEqual(second_call[1]["body"]["ids"], ["device1", "device2"])
-
-        # Verify result structure
-        self.assertIsInstance(result, list)
-        self.assertEqual(len(result), 2)
-        self.assertEqual(result[0]["device_id"], "device1")
-        self.assertEqual(result[1]["device_id"], "device2")
-
-    def test_search_hosts_with_details(self):
-        """Test searching for hosts with details."""
-        # Setup mock responses
-        query_response = {
-            "status_code": 200,
-            "body": {"resources": ["device1", "device2"]},
+            "body": {"resources": ["device-1", "device-2"]},
         }
         details_response = {
             "status_code": 200,
             "body": {
                 "resources": [
-                    {
-                        "device_id": "device1",
-                        "hostname": "TEST-HOST-1",
-                        "platform_name": "Windows",
-                    },
-                    {
-                        "device_id": "device2",
-                        "hostname": "TEST-HOST-2",
-                        "platform_name": "Linux",
-                    },
+                    {"device_id": "device-1", "hostname": "host-1"},
+                    {"device_id": "device-2", "hostname": "host-2"},
                 ]
             },
         }
         self.mock_client.command.side_effect = [query_response, details_response]
 
-        # Call search_hosts
-        result = self.module.search_hosts(filter="platform_name:'Windows'", limit=50)
-
-        # Verify client commands were called correctly
-        self.assertEqual(self.mock_client.command.call_count, 2)
-
-        # Check that the first call was to QueryDevicesByFilter with the right filter and limit
-        first_call = self.mock_client.command.call_args_list[0]
-        self.assertEqual(first_call[0][0], "QueryDevicesByFilter")
-        self.assertEqual(
-            first_call[1]["parameters"]["filter"], "platform_name:'Windows'"
-        )
-        self.assertEqual(first_call[1]["parameters"]["limit"], 50)
-        self.mock_client.command.assert_any_call(
-            "PostDeviceDetailsV2", body={"ids": ["device1", "device2"]}
-        )
-
-        # Verify result
-        expected_result = [
-            {
-                "device_id": "device1",
-                "hostname": "TEST-HOST-1",
-                "platform_name": "Windows",
-            },
-            {
-                "device_id": "device2",
-                "hostname": "TEST-HOST-2",
-                "platform_name": "Linux",
-            },
-        ]
-        self.assertEqual(result, expected_result)
-
-    def test_search_hosts_error(self):
-        """Test searching for hosts with API error."""
-        # Setup mock response with error
-        mock_response = {
-            "status_code": 400,
-            "body": {"errors": [{"message": "Invalid filter"}]},
-        }
-        self.mock_client.command.return_value = mock_response
-
-        # Call search_hosts
-        result = self.module.search_hosts(filter="invalid_filter")
-
-        # Verify result contains error
-        self.assertEqual(len(result), 1)
-        self.assertIn("error", result[0])
-        self.assertIn("details", result[0])
-
-    def test_search_hosts_no_results(self):
-        """Test searching for hosts with no results."""
-        # Setup mock response with empty resources
-        mock_response = {"status_code": 200, "body": {"resources": []}}
-        self.mock_client.command.return_value = mock_response
-
-        # Call search_hosts
-        result = self.module.search_hosts(filter="hostname:'NONEXISTENT'")
-
-        # Verify result is empty list
-        self.assertEqual(result, [])
-        # Only one API call should be made (QueryDevicesByFilter)
-        self.assertEqual(self.mock_client.command.call_count, 1)
-
-    def test_search_hosts_with_all_parameters(self):
-        """Test searching for hosts with all parameters."""
-        # Setup mock response with empty resources
-        mock_response = {"status_code": 200, "body": {"resources": []}}
-        self.mock_client.command.return_value = mock_response
-
-        # Call search_hosts with all parameters
         result = self.module.search_hosts(
-            filter="platform_name:'Linux'", limit=25, offset=10, sort="hostname.desc"
+            filter="platform_name:'Windows'",
+            limit=25,
+            offset=10,
+            sort="hostname.asc",
         )
 
-        # Verify API call with all parameters
-        self.mock_client.command.assert_called_once_with(
-            "QueryDevicesByFilter",
-            parameters={
-                "filter": "platform_name:'Linux'",
-                "limit": 25,
-                "offset": 10,
-                "sort": "hostname.desc",
-            },
+        self.assertEqual(self.mock_client.command.call_count, 2)
+        self.assertEqual(self.mock_client.command.call_args_list[0][0][0], "QueryDevicesByFilter")
+        self.assertEqual(
+            self.mock_client.command.call_args_list[0][1]["parameters"]["filter"],
+            "platform_name:'Windows'",
         )
-
-        # Verify result
-        self.assertEqual(result, [])
-
-    def test_get_host_details(self):
-        """Test getting host details."""
-        # Setup mock response
-        mock_response = {
-            "status_code": 200,
-            "body": {
-                "resources": [
-                    {
-                        "device_id": "device1",
-                        "hostname": "TEST-HOST-1",
-                        "platform_name": "Windows",
-                    }
-                ]
-            },
-        }
-        self.mock_client.command.return_value = mock_response
-
-        # Call get_host_details
-        result = self.module.get_host_details(["device1"])
-
-        # Verify client command was called correctly
-        self.mock_client.command.assert_called_once_with(
-            "PostDeviceDetailsV2", body={"ids": ["device1"]}
+        self.assertEqual(
+            self.mock_client.command.call_args_list[1][0][0],
+            "PostDeviceDetailsV2",
         )
+        self.assertEqual(len(result), 2)
 
-        # Verify result
-        expected_result = [
-            {
-                "device_id": "device1",
-                "hostname": "TEST-HOST-1",
-                "platform_name": "Windows",
-            }
-        ]
-        self.assertEqual(result, expected_result)
-
-    def test_get_host_details_multiple_ids(self):
-        """Test getting host details for multiple IDs."""
-        # Setup mock response
-        mock_response = {
-            "status_code": 200,
-            "body": {
-                "resources": [
-                    {
-                        "device_id": "device1",
-                        "hostname": "TEST-HOST-1",
-                        "platform_name": "Windows",
-                    },
-                    {
-                        "device_id": "device2",
-                        "hostname": "TEST-HOST-2",
-                        "platform_name": "Linux",
-                    },
-                ]
-            },
-        }
-        self.mock_client.command.return_value = mock_response
-
-        # Call get_host_details
-        result = self.module.get_host_details(["device1", "device2"])
-
-        # Verify client command was called correctly
-        self.mock_client.command.assert_called_once_with(
-            "PostDeviceDetailsV2", body={"ids": ["device1", "device2"]}
-        )
-
-        # Verify result
-        expected_result = [
-            {
-                "device_id": "device1",
-                "hostname": "TEST-HOST-1",
-                "platform_name": "Windows",
-            },
-            {
-                "device_id": "device2",
-                "hostname": "TEST-HOST-2",
-                "platform_name": "Linux",
-            },
-        ]
-        self.assertEqual(result, expected_result)
-
-    def test_get_host_details_not_found(self):
-        """Test getting host details for non-existent host."""
-        # Setup mock response with empty resources
-        mock_response = {"status_code": 200, "body": {"resources": []}}
-        self.mock_client.command.return_value = mock_response
-
-        # Call get_host_details
-        result = self.module.get_host_details(["nonexistent"])
-
-        # For empty resources, handle_api_response returns the default_result (empty list)
-        self.assertEqual(result, [])
-
-    def test_get_host_details_error(self):
-        """Test getting host details with API error."""
-        # Setup mock response with error
-        mock_response = {
-            "status_code": 404,
-            "body": {"errors": [{"message": "Device not found"}]},
-        }
-        self.mock_client.command.return_value = mock_response
-
-        # Call get_host_details
-        result = self.module.get_host_details(["invalid-id"])
-
-        # Verify result contains error
-        self.assertIsInstance(result, dict)
-        self.assertIn("error", result)
-        self.assertIn("details", result)
-
-    def test_get_host_details_empty_list(self):
-        """Test getting host details with empty ID list."""
-        # Call get_host_details with empty list
+    def test_get_host_details_empty_ids(self):
+        """Test get_host_details with empty IDs returns empty list."""
         result = self.module.get_host_details([])
-
-        # Should return empty list without making API call
         self.assertEqual(result, [])
         self.mock_client.command.assert_not_called()
 
-    def test_search_hosts_windows_platform(self):
-        """Test searching for Windows hosts."""
-        # Setup mock responses
+    def test_search_host_groups_success(self):
+        """Test searching host groups and resolving full details."""
         query_response = {
             "status_code": 200,
-            "body": {"resources": ["win-host-1", "win-host-2"]},
+            "body": {"resources": ["group-1", "group-2"]},
         }
         details_response = {
             "status_code": 200,
             "body": {
                 "resources": [
-                    {
-                        "device_id": "win-host-1",
-                        "platform_name": "Windows",
-                        "hostname": "WIN-01",
-                    },
-                    {
-                        "device_id": "win-host-2",
-                        "platform_name": "Windows",
-                        "hostname": "WIN-02",
-                    },
+                    {"id": "group-1", "name": "Servers"},
+                    {"id": "group-2", "name": "Workstations"},
                 ]
             },
         }
         self.mock_client.command.side_effect = [query_response, details_response]
 
-        # Call search_hosts
-        result = self.module.search_hosts(filter="platform_name:'Windows'")
-
-        # Verify result
-        self.assertEqual(len(result), 2)
-        self.assertEqual(result[0]["platform_name"], "Windows")
-        self.assertEqual(result[1]["platform_name"], "Windows")
-
-        # Verify filter was applied correctly
-        first_call = self.mock_client.command.call_args_list[0]
-        self.assertEqual(
-            first_call[1]["parameters"]["filter"], "platform_name:'Windows'"
+        result = self.module.search_host_groups(
+            filter="group_type:'static'",
+            limit=50,
+            offset=0,
+            sort="name.asc",
         )
 
-    def test_search_hosts_linux_platform(self):
-        """Test searching for Linux hosts."""
-        # Setup mock responses
-        query_response = {"status_code": 200, "body": {"resources": ["linux-host-1"]}}
-        details_response = {
+        self.assertEqual(self.mock_client.command.call_count, 2)
+        self.assertEqual(self.mock_client.command.call_args_list[0][0][0], "queryHostGroups")
+        self.assertEqual(
+            self.mock_client.command.call_args_list[1][0][0],
+            "getHostGroups",
+        )
+        self.assertEqual(
+            self.mock_client.command.call_args_list[1][1]["parameters"]["ids"],
+            ["group-1", "group-2"],
+        )
+        self.assertEqual(len(result), 2)
+
+    def test_search_host_groups_empty_results_with_filter(self):
+        """Test host group search empty results with filter return FQL guide context."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": []},
+        }
+
+        result = self.module.search_host_groups(
+            filter="name:'DoesNotExist*'",
+            limit=10,
+            offset=0,
+            sort=None,
+        )
+
+        self.assertIsInstance(result, dict)
+        self.assertEqual(result["results"], [])
+        self.assertIn("fql_guide", result)
+
+    def test_search_host_group_members_success(self):
+        """Test searching host group members."""
+        self.mock_client.command.return_value = {
             "status_code": 200,
             "body": {
                 "resources": [
+                    {"device_id": "device-1", "hostname": "host-1"},
+                    {"device_id": "device-2", "hostname": "host-2"},
+                ]
+            },
+        }
+
+        result = self.module.search_host_group_members(
+            group_id="group-1",
+            filter="hostname:'HOST*'",
+            limit=10,
+            offset=0,
+            sort="hostname.asc",
+        )
+
+        self.mock_client.command.assert_called_once_with(
+            "queryCombinedGroupMembers",
+            parameters={
+                "id": "group-1",
+                "filter": "hostname:'HOST*'",
+                "limit": 10,
+                "offset": 0,
+                "sort": "hostname.asc",
+            },
+        )
+        self.assertEqual(len(result), 2)
+
+    def test_add_host_group_success(self):
+        """Test creating a host group with convenience fields."""
+        self.mock_client.command.return_value = {
+            "status_code": 201,
+            "body": {"resources": [{"id": "group-1", "name": "Servers"}]},
+        }
+
+        result = self.module.add_host_group(
+            name="Servers",
+            group_type="static",
+            description="Production servers",
+            assignment_rule=None,
+            body=None,
+        )
+
+        self.mock_client.command.assert_called_once_with(
+            "createHostGroups",
+            body={
+                "resources": [
                     {
-                        "device_id": "linux-host-1",
-                        "platform_name": "Linux",
-                        "hostname": "LINUX-01",
+                        "name": "Servers",
+                        "group_type": "static",
+                        "description": "Production servers",
                     }
                 ]
             },
+        )
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["id"], "group-1")
+
+    def test_add_host_group_validation_error(self):
+        """Test add_host_group validation when name and body are missing."""
+        result = self.module.add_host_group(
+            name=None,
+            group_type="static",
+            description=None,
+            assignment_rule=None,
+            body=None,
+        )
+
+        self.assertEqual(len(result), 1)
+        self.assertIn("error", result[0])
+        self.mock_client.command.assert_not_called()
+
+    def test_update_host_group_success(self):
+        """Test updating a host group with convenience fields."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "group-1", "name": "Servers Updated"}]},
+        }
+
+        result = self.module.update_host_group(
+            id="group-1",
+            name="Servers Updated",
+            group_type=None,
+            description="Updated description",
+            assignment_rule=None,
+            body=None,
+        )
+
+        self.mock_client.command.assert_called_once_with(
+            "updateHostGroups",
+            body={
+                "resources": [
+                    {
+                        "id": "group-1",
+                        "name": "Servers Updated",
+                        "description": "Updated description",
+                    }
+                ]
+            },
+        )
+        self.assertEqual(len(result), 1)
+
+    def test_update_host_group_validation_errors(self):
+        """Test update_host_group validation errors."""
+        missing_id_result = self.module.update_host_group(
+            id=None,
+            name="Servers Updated",
+            group_type=None,
+            description=None,
+            assignment_rule=None,
+            body=None,
+        )
+        self.assertIn("error", missing_id_result[0])
+
+        no_fields_result = self.module.update_host_group(
+            id="group-1",
+            name=None,
+            group_type=None,
+            description=None,
+            assignment_rule=None,
+            body=None,
+        )
+        self.assertIn("error", no_fields_result[0])
+
+    def test_remove_host_groups_success(self):
+        """Test deleting host groups by IDs."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "group-1"}]},
+        }
+
+        result = self.module.remove_host_groups(ids=["group-1"])
+
+        self.mock_client.command.assert_called_once_with(
+            "deleteHostGroups",
+            parameters={"ids": ["group-1"]},
+        )
+        self.assertEqual(len(result), 1)
+
+    def test_perform_host_group_action_success(self):
+        """Test performing host group action with filter-based target selection."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "group-1"}]},
+        }
+
+        result = self.module.perform_host_group_action(
+            action_name="add-hosts",
+            group_ids=["group-1"],
+            filter="platform_name:'Windows'",
+            action_parameters=None,
+            disable_hostname_check=True,
+            body=None,
+        )
+
+        self.mock_client.command.assert_called_once_with(
+            "performGroupAction",
+            parameters={"action_name": "add-hosts", "disable_hostname_check": True},
+            body={
+                "ids": ["group-1"],
+                "action_parameters": [
+                    {"name": "filter", "value": "platform_name:'Windows'"}
+                ],
+            },
+        )
+        self.assertEqual(len(result), 1)
+
+    def test_perform_host_group_action_validation(self):
+        """Test perform_host_group_action validation requirements."""
+        missing_action_result = self.module.perform_host_group_action(
+            action_name=None,
+            group_ids=["group-1"],
+            filter="platform_name:'Windows'",
+            action_parameters=None,
+            disable_hostname_check=None,
+            body=None,
+        )
+        self.assertIn("error", missing_action_result[0])
+
+        missing_selector_result = self.module.perform_host_group_action(
+            action_name="add-hosts",
+            group_ids=["group-1"],
+            filter=None,
+            action_parameters=None,
+            disable_hostname_check=None,
+            body=None,
+        )
+        self.assertIn("error", missing_selector_result[0])
+
+    def test_search_migrations_success(self):
+        """Test searching migrations and resolving full migration details."""
+        query_response = {
+            "status_code": 200,
+            "body": {"resources": ["migration-1"]},
+        }
+        details_response = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "migration-1", "name": "Tenant Migration"}]},
         }
         self.mock_client.command.side_effect = [query_response, details_response]
 
-        # Call search_hosts
-        result = self.module.search_hosts(filter="platform_name:'Linux'")
+        result = self.module.search_migrations(
+            filter="status:'pending'",
+            limit=10,
+            offset=0,
+            sort="created_time.desc",
+        )
 
-        # Verify result
+        self.assertEqual(self.mock_client.command.call_count, 2)
+        self.assertEqual(self.mock_client.command.call_args_list[0][0][0], "GetMigrationIDsV1")
+        self.assertEqual(self.mock_client.command.call_args_list[1][0][0], "GetMigrationsV1")
+        self.assertEqual(
+            self.mock_client.command.call_args_list[1][1]["parameters"]["ids"],
+            ["migration-1"],
+        )
         self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]["platform_name"], "Linux")
 
-        # Verify filter was applied correctly
-        first_call = self.mock_client.command.call_args_list[0]
-        self.assertEqual(first_call[1]["parameters"]["filter"], "platform_name:'Linux'")
+    def test_search_host_migrations_success(self):
+        """Test searching host migrations and resolving full host migration details."""
+        query_response = {
+            "status_code": 200,
+            "body": {"resources": ["host-migration-1"]},
+        }
+        details_response = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "host-migration-1", "hostname": "host-1"}]},
+        }
+        self.mock_client.command.side_effect = [query_response, details_response]
 
-    def test_search_hosts_mac_platform_no_results(self):
-        """Test searching for Mac hosts with no results."""
-        # Setup mock response with empty resources
-        mock_response = {"status_code": 200, "body": {"resources": []}}
-        self.mock_client.command.return_value = mock_response
+        result = self.module.search_host_migrations(
+            migration_id="migration-1",
+            filter="status:'pending'",
+            limit=10,
+            offset=0,
+            sort="hostname|asc",
+        )
 
-        # Call search_hosts
-        result = self.module.search_hosts(filter="platform_name:'Mac'")
+        self.assertEqual(self.mock_client.command.call_count, 2)
+        self.assertEqual(self.mock_client.command.call_args_list[0][0][0], "GetHostMigrationIDsV1")
+        self.assertEqual(self.mock_client.command.call_args_list[1][0][0], "GetHostMigrationsV1")
+        self.assertEqual(
+            self.mock_client.command.call_args_list[1][1]["body"]["ids"],
+            ["host-migration-1"],
+        )
+        self.assertEqual(len(result), 1)
 
-        # Verify result
-        self.assertEqual(len(result), 0)
+    def test_create_migration_success(self):
+        """Test creating a migration with convenience fields."""
+        self.mock_client.command.return_value = {
+            "status_code": 201,
+            "body": {"resources": [{"id": "migration-1", "name": "Tenant Migration"}]},
+        }
 
-        # Verify filter was applied correctly
-        first_call = self.mock_client.command.call_args_list[0]
-        self.assertEqual(first_call[1]["parameters"]["filter"], "platform_name:'Mac'")
+        result = self.module.create_migration(
+            target_cid="ABCDEF0123456789ABCDEF0123456789",
+            name="Tenant Migration",
+            device_ids=["device-1", "device-2"],
+            filter=None,
+            body=None,
+        )
+
+        self.mock_client.command.assert_called_once_with(
+            "CreateMigrationV1",
+            body={
+                "target_cid": "ABCDEF0123456789ABCDEF0123456789",
+                "name": "Tenant Migration",
+                "device_ids": ["device-1", "device-2"],
+            },
+        )
+        self.assertEqual(len(result), 1)
+
+    def test_create_migration_validation(self):
+        """Test create_migration validation requirements."""
+        missing_target_result = self.module.create_migration(
+            target_cid=None,
+            name="Tenant Migration",
+            device_ids=["device-1"],
+            filter=None,
+            body=None,
+        )
+        self.assertIn("error", missing_target_result[0])
+
+        missing_selector_result = self.module.create_migration(
+            target_cid="ABCDEF0123456789ABCDEF0123456789",
+            name="Tenant Migration",
+            device_ids=None,
+            filter=None,
+            body=None,
+        )
+        self.assertIn("error", missing_selector_result[0])
+
+    def test_get_migration_destinations_success(self):
+        """Test getting migration destinations by device IDs."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"target_cid": "ABCDEF0123456789ABCDEF0123456789"}]},
+        }
+
+        result = self.module.get_migration_destinations(
+            device_ids=["device-1"],
+            filter=None,
+            body=None,
+        )
+
+        self.mock_client.command.assert_called_once_with(
+            "GetMigrationDestinationsV1",
+            body={"device_ids": ["device-1"]},
+        )
+        self.assertEqual(len(result), 1)
+
+    def test_get_migration_destinations_validation(self):
+        """Test get_migration_destinations validation requirements."""
+        result = self.module.get_migration_destinations(
+            device_ids=None,
+            filter=None,
+            body=None,
+        )
+        self.assertIn("error", result[0])
+        self.mock_client.command.assert_not_called()
+
+    def test_perform_migration_action_success(self):
+        """Test performing a migration action."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "migration-1"}]},
+        }
+
+        result = self.module.perform_migration_action(
+            action_name="start_migration",
+            ids=["migration-1"],
+            filter=None,
+            action_parameters=None,
+            body=None,
+        )
+
+        self.mock_client.command.assert_called_once_with(
+            "MigrationsActionsV1",
+            parameters={"action_name": "start_migration"},
+            body={"ids": ["migration-1"]},
+        )
+        self.assertEqual(len(result), 1)
+
+    def test_perform_host_migration_action_success(self):
+        """Test performing a host migration action."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "host-migration-1"}]},
+        }
+
+        result = self.module.perform_host_migration_action(
+            migration_id="migration-1",
+            action_name="remove_hosts",
+            ids=["host-migration-1"],
+            filter=None,
+            action_parameters=None,
+            body=None,
+        )
+
+        self.mock_client.command.assert_called_once_with(
+            "HostMigrationsActionsV1",
+            parameters={"id": "migration-1", "action_name": "remove_hosts"},
+            body={"ids": ["host-migration-1"]},
+        )
+        self.assertEqual(len(result), 1)
+
+    def test_perform_host_migration_action_validation(self):
+        """Test perform_host_migration_action validation requirements."""
+        missing_migration_result = self.module.perform_host_migration_action(
+            migration_id=None,
+            action_name="remove_hosts",
+            ids=["host-migration-1"],
+            filter=None,
+            action_parameters=None,
+            body=None,
+        )
+        self.assertIn("error", missing_migration_result[0])
+
+        missing_selector_result = self.module.perform_host_migration_action(
+            migration_id="migration-1",
+            action_name="remove_hosts",
+            ids=None,
+            filter=None,
+            action_parameters=None,
+            body=None,
+        )
+        self.assertIn("error", missing_selector_result[0])
+
+    def test_create_migration_permission_error(self):
+        """Test create_migration with 403 returns error response."""
+        self.mock_client.command.return_value = {
+            "status_code": 403,
+            "body": {"errors": [{"message": "Access denied"}]},
+        }
+
+        result = self.module.create_migration(
+            target_cid="ABCDEF0123456789ABCDEF0123456789",
+            name="Tenant Migration",
+            device_ids=["device-1"],
+            filter=None,
+            body=None,
+        )
+
+        self.assertEqual(len(result), 1)
+        self.assertIn("error", result[0])
 
 
 if __name__ == "__main__":

@@ -499,3 +499,284 @@ property_name:[operator]'value'
 • Combine conditions with + (AND) or , (OR)
 • Use parentheses for grouping: (condition1,condition2)+condition3
 """
+
+SEARCH_HOST_GROUPS_FQL_FILTERS = [
+    (
+        "Field",
+        "Type",
+        "Description",
+    ),
+    (
+        "created_by",
+        "String",
+        "User that created the host group.",
+    ),
+    (
+        "created_timestamp",
+        "Timestamp",
+        "Host group creation timestamp.",
+    ),
+    (
+        "group_type",
+        "String",
+        "Host group type, typically static or dynamic.",
+    ),
+    (
+        "modified_by",
+        "String",
+        "User that last modified the host group.",
+    ),
+    (
+        "modified_timestamp",
+        "Timestamp",
+        "Last modification timestamp.",
+    ),
+    (
+        "name",
+        "String",
+        "Host group name.",
+    ),
+]
+
+SEARCH_HOST_GROUPS_FQL_SORT_FIELDS = [
+    (
+        "Field",
+        "Description",
+    ),
+    ("created_by", "Sort by creator"),
+    ("created_timestamp", "Sort by creation timestamp"),
+    ("group_type", "Sort by group type"),
+    ("modified_by", "Sort by modifier"),
+    ("modified_timestamp", "Sort by modification timestamp"),
+    ("name", "Sort by host group name"),
+]
+
+SEARCH_HOST_GROUPS_FQL_DOCUMENTATION = f"""
+# Host Groups Search FQL Guide
+
+Use this guide to build the `filter` parameter for:
+
+- `falcon_search_host_groups`
+- `falcon_search_host_group_members`
+
+## Filter Fields
+
+{generate_md_table(SEARCH_HOST_GROUPS_FQL_FILTERS)}
+
+## Sort Fields
+
+Use either `field.asc` / `field.desc` or `field|asc` / `field|desc`.
+
+{generate_md_table(SEARCH_HOST_GROUPS_FQL_SORT_FIELDS)}
+
+## Examples
+
+- Static groups:
+  - `filter="group_type:'static'"`
+- Name prefix search:
+  - `filter="name:'Server*'"`
+- Most recently modified groups first:
+  - `sort="modified_timestamp.desc"`
+
+## Notes
+
+- For member searches, provide `group_id` in addition to any filter.
+- Validate filters in a test environment before production use.
+"""
+
+SEARCH_MIGRATIONS_FQL_FILTERS = [
+    (
+        "Field",
+        "Type",
+        "Description",
+    ),
+    (
+        "name",
+        "String",
+        "Migration job name.",
+    ),
+    (
+        "id",
+        "String",
+        "Migration job ID.",
+    ),
+    (
+        "migration_id",
+        "String",
+        "Alias of `id`.",
+    ),
+    (
+        "target_cid",
+        "String",
+        "Target customer CID for migration.",
+    ),
+    (
+        "status",
+        "String",
+        "Migration job state.",
+    ),
+    (
+        "migration_status",
+        "String",
+        "Alias of `status`.",
+    ),
+    (
+        "created_by",
+        "String",
+        "User that created the migration job.",
+    ),
+    (
+        "created_time",
+        "Timestamp",
+        "Migration job creation timestamp.",
+    ),
+]
+
+SEARCH_MIGRATIONS_FQL_SORT_FIELDS = [
+    (
+        "Field",
+        "Description",
+    ),
+    ("status", "Sort by migration status"),
+    ("created_by", "Sort by creator"),
+    ("created_time", "Sort by creation timestamp"),
+    ("name", "Sort by migration name"),
+    ("id", "Sort by migration ID"),
+    ("target_cid", "Sort by target CID"),
+]
+
+SEARCH_MIGRATIONS_FQL_DOCUMENTATION = f"""
+# Migration Jobs Search FQL Guide
+
+Use this guide to build the `filter` parameter for `falcon_search_migrations`.
+
+## Filter Fields
+
+{generate_md_table(SEARCH_MIGRATIONS_FQL_FILTERS)}
+
+## Sort Fields
+
+Use either `field.asc` / `field.desc` or `field|asc` / `field|desc`.
+
+{generate_md_table(SEARCH_MIGRATIONS_FQL_SORT_FIELDS)}
+
+## Examples
+
+- Pending migrations:
+  - `filter="status:'pending'"`
+- Jobs created by an integration user:
+  - `filter="created_by:'falcon-mcp'"`
+- Most recent jobs first:
+  - `sort="created_time.desc"`
+
+## Notes
+
+- Use migration job IDs from this tool with `falcon_search_host_migrations`.
+- Validate filters in a test environment before production use.
+"""
+
+SEARCH_HOST_MIGRATIONS_FQL_FILTERS = [
+    (
+        "Field",
+        "Type",
+        "Description",
+    ),
+    (
+        "groups",
+        "String",
+        "Alias of `static_host_groups`.",
+    ),
+    (
+        "hostgroups",
+        "String",
+        "Alias of `static_host_groups`.",
+    ),
+    (
+        "static_host_groups",
+        "String",
+        "Static host group IDs associated with the host migration entity.",
+    ),
+    (
+        "hostname",
+        "String",
+        "Hostname of the migrating host.",
+    ),
+    (
+        "status",
+        "String",
+        "Host migration status.",
+    ),
+    (
+        "target_cid",
+        "String",
+        "Target customer CID.",
+    ),
+    (
+        "source_cid",
+        "String",
+        "Source customer CID.",
+    ),
+    (
+        "migration_id",
+        "String",
+        "Migration job ID.",
+    ),
+    (
+        "id",
+        "String",
+        "Host migration entity ID.",
+    ),
+    (
+        "host_migration_id",
+        "String",
+        "Alias of `id`.",
+    ),
+    (
+        "created_time",
+        "Timestamp",
+        "Host migration creation timestamp.",
+    ),
+]
+
+SEARCH_HOST_MIGRATIONS_FQL_SORT_FIELDS = [
+    (
+        "Field",
+        "Description",
+    ),
+    ("hostname", "Sort by hostname"),
+    ("status", "Sort by host migration status"),
+    ("created_time", "Sort by creation timestamp"),
+    ("host_migration_id", "Sort by host migration ID"),
+    ("source_cid", "Sort by source CID"),
+    ("target_cid", "Sort by target CID"),
+]
+
+SEARCH_HOST_MIGRATIONS_FQL_DOCUMENTATION = f"""
+# Host Migrations Search FQL Guide
+
+Use this guide to build the `filter` parameter for `falcon_search_host_migrations`.
+
+## Filter Fields
+
+{generate_md_table(SEARCH_HOST_MIGRATIONS_FQL_FILTERS)}
+
+## Sort Fields
+
+Use either `field.asc` / `field.desc` or `field|asc` / `field|desc`.
+
+{generate_md_table(SEARCH_HOST_MIGRATIONS_FQL_SORT_FIELDS)}
+
+## Examples
+
+- Pending host migrations:
+  - `filter="status:'pending'"`
+- Hosts in a specific static host group:
+  - `filter="static_host_groups:'<group_id>'"`
+- Most recent entities first:
+  - `sort="created_time.desc"`
+
+## Notes
+
+- `migration_id` tool input is required and scopes the search to one migration job.
+- Validate filters in a test environment before production use.
+"""

@@ -65,6 +65,12 @@ class TestApiScopes(unittest.TestCase):
         self.assertEqual(get_required_scopes("PostEntitiesAlertsV2"), ["Alerts:read"])
         self.assertEqual(get_required_scopes("QueryIncidents"), ["Incidents:read"])
         self.assertEqual(get_required_scopes("RTR_ListAllSessions"), ["Real Time Response:read"])
+        self.assertEqual(get_required_scopes("queryHostGroups"), ["Host Groups:read"])
+        self.assertEqual(get_required_scopes("createHostGroups"), ["Host Groups:write"])
+        self.assertEqual(get_required_scopes("GetMigrationIDsV1"), ["Host Migration:read"])
+        self.assertEqual(get_required_scopes("CreateMigrationV1"), ["Host Migration:write"])
+        self.assertEqual(get_required_scopes("queryIOAExclusionsV1"), ["IOA Exclusions:read"])
+        self.assertEqual(get_required_scopes("createIOAExclusionsV1"), ["IOA Exclusions:write"])
         self.assertEqual(
             get_required_scopes("RTR_ExecuteAdminCommand"),
             ["Real Time Response Admin:write"],
@@ -158,6 +164,12 @@ class TestApiScopes(unittest.TestCase):
             ("GetQueriesAlertsV2", ["Alerts:read"]),
             ("QueryIncidents", ["Incidents:read"]),
             ("QueryIntelActorEntities", ["Actors (Falcon Intelligence):read"]),
+            ("queryHostGroups", ["Host Groups:read"]),
+            ("createHostGroups", ["Host Groups:write"]),
+            ("GetMigrationIDsV1", ["Host Migration:read"]),
+            ("CreateMigrationV1", ["Host Migration:write"]),
+            ("queryIOAExclusionsV1", ["IOA Exclusions:read"]),
+            ("createIOAExclusionsV1", ["IOA Exclusions:write"]),
             ("RTR_ExecuteCommand", ["Real Time Response:read"]),
             ("RTR_ExecuteAdminCommand", ["Real Time Response Admin:write"]),
             ("RTRAuditSessions", ["Real Time Response Audit:read"]),
@@ -223,12 +235,48 @@ class TestApiScopes(unittest.TestCase):
                     f"Resource '{resource}' should only use 'read' permission"
                 )
 
+        read_write_resources = [
+            "Host Groups",
+            "Host Migration",
+            "IOC Management",
+            "IOA Exclusions",
+            "Firewall Management",
+            "NGSIEM",
+        ]
+
+        for resource in read_write_resources:
+            if resource in scope_patterns:
+                self.assertEqual(
+                    scope_patterns[resource],
+                    {"read", "write"},
+                    f"Resource '{resource}' should use both 'read' and 'write' permissions"
+                )
+
     def test_comprehensive_module_coverage(self):
         """Test that we have reasonable coverage across expected modules."""
         # Count operations by likely module based on operation patterns
         module_patterns = {
             "alerts": ["GetQueriesAlertsV2", "PostEntitiesAlertsV2"],
             "hosts": ["QueryDevicesByFilter", "PostDeviceDetailsV2"],
+            "host_groups": [
+                "queryHostGroups",
+                "getHostGroups",
+                "queryCombinedGroupMembers",
+                "createHostGroups",
+                "updateHostGroups",
+                "deleteHostGroups",
+                "performGroupAction",
+            ],
+            "host_migration": [
+                "GetMigrationIDsV1",
+                "GetMigrationsV1",
+                "GetHostMigrationIDsV1",
+                "GetHostMigrationsV1",
+                "GetMigrationDestinationsV1",
+                "CreateMigrationV1",
+                "MigrationsActionsV1",
+                "HostMigrationsActionsV1",
+            ],
             "incidents": ["QueryIncidents", "GetIncidents", "QueryBehaviors", "GetBehaviors", "CrowdScore"],
             "intel": ["QueryIntelActorEntities", "QueryIntelIndicatorEntities", "QueryIntelReportEntities", "GetMitreReport"],
             "spotlight": ["combinedQueryVulnerabilities"],
@@ -239,6 +287,13 @@ class TestApiScopes(unittest.TestCase):
             "scheduled_reports": [
                 "scheduled_reports_query", "scheduled_reports_get", "scheduled_reports_launch",
                 "report_executions_query", "report_executions_get", "report_executions_download_get"
+            ],
+            "ioa_exclusions": [
+                "queryIOAExclusionsV1",
+                "getIOAExclusionsV1",
+                "createIOAExclusionsV1",
+                "updateIOAExclusionsV1",
+                "deleteIOAExclusionsV1",
             ],
             "rtr": [
                 "RTR_ListAllSessions",

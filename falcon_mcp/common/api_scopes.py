@@ -17,6 +17,23 @@ API_SCOPE_REQUIREMENTS = {
     # Hosts operations
     "QueryDevicesByFilter": ["Hosts:read"],
     "PostDeviceDetailsV2": ["Hosts:read"],
+    # Host Groups operations
+    "queryHostGroups": ["Host Groups:read"],
+    "getHostGroups": ["Host Groups:read"],
+    "queryCombinedGroupMembers": ["Host Groups:read"],
+    "createHostGroups": ["Host Groups:write"],
+    "updateHostGroups": ["Host Groups:write"],
+    "deleteHostGroups": ["Host Groups:write"],
+    "performGroupAction": ["Host Groups:write"],
+    # Host Migration operations
+    "GetMigrationIDsV1": ["Host Migration:read"],
+    "GetMigrationsV1": ["Host Migration:read"],
+    "GetHostMigrationIDsV1": ["Host Migration:read"],
+    "GetHostMigrationsV1": ["Host Migration:read"],
+    "GetMigrationDestinationsV1": ["Host Migration:read"],
+    "CreateMigrationV1": ["Host Migration:write"],
+    "MigrationsActionsV1": ["Host Migration:write"],
+    "HostMigrationsActionsV1": ["Host Migration:write"],
     # Incidents operations
     "QueryIncidents": ["Incidents:read"],
     "CrowdScore": ["Incidents:read"],
@@ -33,6 +50,12 @@ API_SCOPE_REQUIREMENTS = {
     "indicator_get_v1": ["IOC Management:read"],
     "indicator_create_v1": ["IOC Management:write"],
     "indicator_delete_v1": ["IOC Management:write"],
+    # IOA Exclusions operations
+    "queryIOAExclusionsV1": ["IOA Exclusions:read"],
+    "getIOAExclusionsV1": ["IOA Exclusions:read"],
+    "createIOAExclusionsV1": ["IOA Exclusions:write"],
+    "updateIOAExclusionsV1": ["IOA Exclusions:write"],
+    "deleteIOAExclusionsV1": ["IOA Exclusions:write"],
     # Firewall Management operations
     "query_rules": ["Firewall Management:read"],
     "get_rules": ["Firewall Management:read"],
