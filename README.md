@@ -25,6 +25,7 @@
   - [Discover Module](#discover-module)
   - [Hosts Module](#hosts-module)
   - [Identity Protection Module](#identity-protection-module)
+  - [User Management Module](#user-management-module)
   - [Incidents Module](#incidents-module)
   - [IT Automation Module](#it-automation-module)
   - [NGSIEM Module](#ngsiem-module)
@@ -94,6 +95,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Discover** | `Assets:read` | Search and analyze application inventory across your environment |
 | **Hosts** | `Hosts:read`<br>`Host Groups:read`<br>`Host Groups:write`<br>`Host Migration:read`<br>`Host Migration:write` | Search hosts, manage host groups, and orchestrate migration workflows |
 | **Identity Protection** | `Identity Protection Entities:read`<br>`Identity Protection Timeline:read`<br>`Identity Protection Detections:read`<br>`Identity Protection Assessment:read`<br>`Identity Protection GraphQL:write` | Comprehensive entity investigation and identity protection analysis |
+| **User Management** | `User Management:read`<br>`User Management:write` | Search users and roles, review grants, and perform controlled user/role assignment changes |
 | **Incidents** | `Incidents:read` | Analyze security incidents and coordinated activities |
 | **IT Automation** | `IT Automation:read`<br>`IT Automation:write` | Execute high-impact task runs and live queries with execution status/result controls |
 | **NGSIEM** | `NGSIEM:read`<br>`NGSIEM:write` | Execute CQL queries against Next-Gen SIEM |
@@ -245,6 +247,32 @@ Provides tools for accessing and managing CrowdStrike Falcon Identity Protection
 - `idp_investigate_entity`: Entity investigation tool for analyzing users, endpoints, and other entities with support for timeline analysis, relationship mapping, and risk assessment
 
 **Use Cases**: Entity investigation, identity protection analysis, user behavior analysis, endpoint security assessment, relationship mapping, risk assessment
+
+### User Management Module
+
+**API Scopes Required**:
+
+- `User Management:read`
+- `User Management:write`
+
+Provides tools for Falcon User Management workflows:
+
+- `falcon_search_users`: Search users and return full user details (two-step query + entity retrieval)
+- `falcon_get_user_details`: Retrieve full user records by UUID
+- `falcon_search_user_roles`: Search available roles and return full role details
+- `falcon_get_user_role_grants`: Review role grants for a specific user
+- `falcon_create_user`: Create users (`confirm_execution=true` required)
+- `falcon_delete_user`: Delete users (`confirm_execution=true` required)
+- `falcon_grant_user_roles`: Grant roles to a user (`confirm_execution=true` required)
+- `falcon_revoke_user_roles`: Revoke roles from a user (`confirm_execution=true` required)
+
+**Resources**:
+
+- `falcon://user-management/users/fql-guide`: FQL documentation and examples for user searches
+- `falcon://user-management/user-role-grants/fql-guide`: FQL documentation and examples for grant queries
+- `falcon://user-management/safety-guide`: Safety and operational guidance for IAM write actions
+
+**Use Cases**: IAM automation with guardrails, user access review, role assignment governance, least-privilege enforcement
 
 ### Incidents Module
 

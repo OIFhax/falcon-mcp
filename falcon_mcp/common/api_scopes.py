@@ -110,6 +110,15 @@ API_SCOPE_REQUIREMENTS = {
         "Identity Protection Assessment:read",
         "Identity Protection GraphQL:write",
     ],
+    # User Management operations
+    "queryUserV1": ["User Management:read"],
+    "retrieveUsersGETV1": ["User Management:read"],
+    "queriesRolesV1": ["User Management:read"],
+    "entitiesRolesGETV2": ["User Management:read"],
+    "CombinedUserRolesV2": ["User Management:read"],
+    "createUserV1": ["User Management:write"],
+    "deleteUserV1": ["User Management:write"],
+    "userRolesActionV1": ["User Management:write"],
     # Sensor Usage operations
     "GetSensorUsageWeekly": ["Sensor Usage:read"],
     # Serverless operations

@@ -1,5 +1,7 @@
 """Integration tests for the Incidents module."""
 
+from typing import Any
+
 import pytest
 
 from falcon_mcp.modules.incidents import IncidentsModule
@@ -21,9 +23,48 @@ class TestIncidentsIntegration(BaseIntegrationTest):
         """Set up the incidents module with a real client."""
         self.module = IncidentsModule(falcon_client)
 
+    @staticmethod
+    def _extract_status_code(result: Any) -> int | None:
+        """Extract status code from standardized error responses."""
+        if isinstance(result, dict):
+            details = result.get("details", {})
+            if isinstance(details, dict):
+                return details.get("status_code")
+            nested_results = result.get("results")
+            if isinstance(nested_results, list) and nested_results:
+                first = nested_results[0]
+                if isinstance(first, dict):
+                    nested_details = first.get("details", {})
+                    if isinstance(nested_details, dict):
+                        return nested_details.get("status_code")
+
+        if isinstance(result, list) and result:
+            first = result[0]
+            if isinstance(first, dict):
+                details = first.get("details", {})
+                if isinstance(details, dict):
+                    return details.get("status_code")
+
+        return None
+
+    def _skip_if_scope_or_service_missing(self, result: Any, context: str) -> None:
+        """Skip test when Incidents scope/service is unavailable in tenant/region."""
+        status_code = self._extract_status_code(result)
+        if status_code == 403:
+            self.skip_with_warning(
+                "Missing required API scope for Incidents integration test",
+                context=context,
+            )
+        if status_code == 404:
+            self.skip_with_warning(
+                "Incidents service unavailable for this tenant/region",
+                context=context,
+            )
+
     def test_show_crowd_score_returns_scores(self):
         """Test that show_crowd_score returns CrowdScore data."""
         result = self.call_method(self.module.show_crowd_score, limit=5)
+        self._skip_if_scope_or_service_missing(result, "show_crowd_score")
 
         self.assert_no_error(result, context="show_crowd_score")
         assert isinstance(result, dict), "Expected dict response from show_crowd_score"
@@ -40,6 +81,7 @@ class TestIncidentsIntegration(BaseIntegrationTest):
         2. GetIncidents returns full details
         """
         result = self.call_method(self.module.search_incidents, limit=5)
+        self._skip_if_scope_or_service_missing(result, "search_incidents")
 
         self.assert_no_error(result, context="search_incidents")
         self.assert_valid_list_response(result, min_length=0, context="search_incidents")
@@ -59,6 +101,7 @@ class TestIncidentsIntegration(BaseIntegrationTest):
             filter="state:'open'",
             limit=3,
         )
+        self._skip_if_scope_or_service_missing(result, "search_incidents with filter")
 
         self.assert_no_error(result, context="search_incidents with filter")
         self.assert_valid_list_response(result, min_length=0, context="search_incidents with filter")
@@ -67,6 +110,7 @@ class TestIncidentsIntegration(BaseIntegrationTest):
         """Test get_incident_details with a valid incident ID."""
         # First, search for an incident to get a valid ID
         search_result = self.call_method(self.module.search_incidents, limit=1)
+        self._skip_if_scope_or_service_missing(search_result, "get_incident_details setup")
 
         if not search_result or len(search_result) == 0:
             self.skip_with_warning(
@@ -83,6 +127,7 @@ class TestIncidentsIntegration(BaseIntegrationTest):
 
         # Now get details for that incident
         result = self.call_method(self.module.get_incident_details, ids=[incident_id])
+        self._skip_if_scope_or_service_missing(result, "get_incident_details")
 
         self.assert_no_error(result, context="get_incident_details")
         self.assert_valid_list_response(result, min_length=1, context="get_incident_details")
@@ -100,6 +145,7 @@ class TestIncidentsIntegration(BaseIntegrationTest):
         2. GetBehaviors returns full details
         """
         result = self.call_method(self.module.search_behaviors, limit=5)
+        self._skip_if_scope_or_service_missing(result, "search_behaviors")
 
         self.assert_no_error(result, context="search_behaviors")
         self.assert_valid_list_response(result, min_length=0, context="search_behaviors")
@@ -116,6 +162,7 @@ class TestIncidentsIntegration(BaseIntegrationTest):
         """Test get_behavior_details with a valid behavior ID."""
         # First, search for a behavior to get a valid ID
         search_result = self.call_method(self.module.search_behaviors, limit=1)
+        self._skip_if_scope_or_service_missing(search_result, "get_behavior_details setup")
 
         if not search_result or len(search_result) == 0:
             self.skip_with_warning(
@@ -132,6 +179,7 @@ class TestIncidentsIntegration(BaseIntegrationTest):
 
         # Now get details for that behavior
         result = self.call_method(self.module.get_behavior_details, ids=[behavior_id])
+        self._skip_if_scope_or_service_missing(result, "get_behavior_details")
 
         self.assert_no_error(result, context="get_behavior_details")
         self.assert_valid_list_response(result, min_length=1, context="get_behavior_details")
@@ -148,7 +196,9 @@ class TestIncidentsIntegration(BaseIntegrationTest):
         """
         # Test multiple operations to validate names
         crowd_score = self.call_method(self.module.show_crowd_score, limit=1)
+        self._skip_if_scope_or_service_missing(crowd_score, "CrowdScore operation name")
         self.assert_no_error(crowd_score, context="CrowdScore operation name")
 
         incidents = self.call_method(self.module.search_incidents, limit=1)
+        self._skip_if_scope_or_service_missing(incidents, "QueryIncidents operation name")
         self.assert_no_error(incidents, context="QueryIncidents operation name")

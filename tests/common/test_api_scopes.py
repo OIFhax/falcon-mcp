@@ -87,6 +87,8 @@ class TestApiScopes(unittest.TestCase):
             get_required_scopes("RTRAuditSessions"),
             ["Real Time Response Audit:read"],
         )
+        self.assertEqual(get_required_scopes("queryUserV1"), ["User Management:read"])
+        self.assertEqual(get_required_scopes("userRolesActionV1"), ["User Management:write"])
 
         # Test with unknown operation
         self.assertEqual(get_required_scopes("UnknownOperation"), [])
@@ -183,6 +185,8 @@ class TestApiScopes(unittest.TestCase):
             ("RTR_ExecuteCommand", ["Real Time Response:read"]),
             ("RTR_ExecuteAdminCommand", ["Real Time Response Admin:write"]),
             ("RTRAuditSessions", ["Real Time Response Audit:read"]),
+            ("queryUserV1", ["User Management:read"]),
+            ("userRolesActionV1", ["User Management:write"]),
             ("api_preempt_proxy_post_graphql", [
                 "Identity Protection Entities:read",
                 "Identity Protection Timeline:read",
@@ -253,6 +257,7 @@ class TestApiScopes(unittest.TestCase):
             "IOA Exclusions",
             "Firewall Management",
             "NGSIEM",
+            "User Management",
         ]
 
         for resource in read_write_resources:
@@ -306,6 +311,16 @@ class TestApiScopes(unittest.TestCase):
             "cloud": ["ReadContainerCombined", "ReadContainerCount", "ReadCombinedVulnerabilities"],
             "discover": ["combined_applications", "combined_hosts"],
             "idp": ["api_preempt_proxy_post_graphql"],
+            "user_management": [
+                "queryUserV1",
+                "retrieveUsersGETV1",
+                "queriesRolesV1",
+                "entitiesRolesGETV2",
+                "CombinedUserRolesV2",
+                "createUserV1",
+                "deleteUserV1",
+                "userRolesActionV1",
+            ],
             "sensor_usage": ["GetSensorUsageWeekly"],
             "scheduled_reports": [
                 "scheduled_reports_query", "scheduled_reports_get", "scheduled_reports_launch",
