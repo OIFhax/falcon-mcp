@@ -25,6 +25,7 @@
   - [Hosts Module](#hosts-module)
   - [Identity Protection Module](#identity-protection-module)
   - [Incidents Module](#incidents-module)
+  - [IT Automation Module](#it-automation-module)
   - [NGSIEM Module](#ngsiem-module)
   - [Intel Module](#intel-module)
   - [IOC Module](#ioc-module)
@@ -92,6 +93,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Hosts** | `Hosts:read`<br>`Host Groups:read`<br>`Host Groups:write`<br>`Host Migration:read`<br>`Host Migration:write` | Search hosts, manage host groups, and orchestrate migration workflows |
 | **Identity Protection** | `Identity Protection Entities:read`<br>`Identity Protection Timeline:read`<br>`Identity Protection Detections:read`<br>`Identity Protection Assessment:read`<br>`Identity Protection GraphQL:write` | Comprehensive entity investigation and identity protection analysis |
 | **Incidents** | `Incidents:read` | Analyze security incidents and coordinated activities |
+| **IT Automation** | `IT Automation:read`<br>`IT Automation:write` | Execute high-impact task runs and live queries with execution status/result controls |
 | **NGSIEM** | `NGSIEM:read`<br>`NGSIEM:write` | Execute CQL queries against Next-Gen SIEM |
 | **Intel** | `Actors (Falcon Intelligence):read`<br>`Indicators (Falcon Intelligence):read`<br>`Reports (Falcon Intelligence):read` | Research threat actors, IOCs, and intelligence reports |
 | **IOC** | `IOC Management:read`<br>`IOC Management:write` | Search, create, and remove custom IOCs using IOC Service Collection endpoints |
@@ -236,6 +238,33 @@ Provides tools for accessing and analyzing CrowdStrike Falcon incidents:
 - `falcon://incidents/behaviors/fql-guide`: Comprehensive FQL documentation and examples for behavior searches
 
 **Use Cases**: Incident management, threat assessment, attack pattern analysis, security posture monitoring
+
+### IT Automation Module
+
+**API Scopes Required**:
+
+- `IT Automation:read`
+- `IT Automation:write`
+
+Provides Phase 3 IT Automation execution tools:
+
+- `falcon_search_it_automation_task_executions`: Search task execution records
+- `falcon_get_it_automation_task_executions`: Retrieve task execution records by ID
+- `falcon_get_it_automation_task_execution_host_status`: Retrieve host-level execution status
+- `falcon_start_it_automation_task_execution`: Start execution of an existing IT Automation task (`confirm_execution=true` required)
+- `falcon_run_it_automation_live_query`: Run live query execution (`confirm_execution=true` required)
+- `falcon_cancel_it_automation_task_execution`: Cancel an active task execution (`confirm_execution=true` required)
+- `falcon_rerun_it_automation_task_execution`: Rerun a task execution (`confirm_execution=true` required)
+- `falcon_start_it_automation_execution_results_search`: Start async execution results search
+- `falcon_get_it_automation_execution_results_search_status`: Poll async search status
+- `falcon_get_it_automation_execution_results`: Retrieve execution results from search jobs
+
+**Resources**:
+
+- `falcon://it-automation/task-executions/fql-guide`: FQL documentation and examples for task execution searches
+- `falcon://it-automation/phase3/safety-guide`: Safety and execution guidance for high-impact tools
+
+**Use Cases**: Controlled remote response actions, live query operations, execution monitoring, and execution result retrieval
 
 ### NGSIEM Module
 

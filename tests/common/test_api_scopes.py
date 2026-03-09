@@ -69,6 +69,14 @@ class TestApiScopes(unittest.TestCase):
         self.assertEqual(get_required_scopes("createHostGroups"), ["Host Groups:write"])
         self.assertEqual(get_required_scopes("GetMigrationIDsV1"), ["Host Migration:read"])
         self.assertEqual(get_required_scopes("CreateMigrationV1"), ["Host Migration:write"])
+        self.assertEqual(
+            get_required_scopes("ITAutomationGetTaskExecution"),
+            ["IT Automation:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("ITAutomationRunLiveQuery"),
+            ["IT Automation:write"],
+        )
         self.assertEqual(get_required_scopes("queryIOAExclusionsV1"), ["IOA Exclusions:read"])
         self.assertEqual(get_required_scopes("createIOAExclusionsV1"), ["IOA Exclusions:write"])
         self.assertEqual(
@@ -168,6 +176,8 @@ class TestApiScopes(unittest.TestCase):
             ("createHostGroups", ["Host Groups:write"]),
             ("GetMigrationIDsV1", ["Host Migration:read"]),
             ("CreateMigrationV1", ["Host Migration:write"]),
+            ("ITAutomationGetTaskExecution", ["IT Automation:read"]),
+            ("ITAutomationRunLiveQuery", ["IT Automation:write"]),
             ("queryIOAExclusionsV1", ["IOA Exclusions:read"]),
             ("createIOAExclusionsV1", ["IOA Exclusions:write"]),
             ("RTR_ExecuteCommand", ["Real Time Response:read"]),
@@ -238,6 +248,7 @@ class TestApiScopes(unittest.TestCase):
         read_write_resources = [
             "Host Groups",
             "Host Migration",
+            "IT Automation",
             "IOC Management",
             "IOA Exclusions",
             "Firewall Management",
@@ -276,6 +287,18 @@ class TestApiScopes(unittest.TestCase):
                 "CreateMigrationV1",
                 "MigrationsActionsV1",
                 "HostMigrationsActionsV1",
+            ],
+            "it_automation": [
+                "ITAutomationGetTaskExecutionsByQuery",
+                "ITAutomationGetTaskExecution",
+                "ITAutomationGetTaskExecutionHostStatus",
+                "ITAutomationStartExecutionResultsSearch",
+                "ITAutomationGetExecutionResultsSearchStatus",
+                "ITAutomationGetExecutionResults",
+                "ITAutomationStartTaskExecution",
+                "ITAutomationRunLiveQuery",
+                "ITAutomationCancelTaskExecution",
+                "ITAutomationRerunTaskExecution",
             ],
             "incidents": ["QueryIncidents", "GetIncidents", "QueryBehaviors", "GetBehaviors", "CrowdScore"],
             "intel": ["QueryIntelActorEntities", "QueryIntelIndicatorEntities", "QueryIntelReportEntities", "GetMitreReport"],

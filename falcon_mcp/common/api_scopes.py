@@ -34,6 +34,17 @@ API_SCOPE_REQUIREMENTS = {
     "CreateMigrationV1": ["Host Migration:write"],
     "MigrationsActionsV1": ["Host Migration:write"],
     "HostMigrationsActionsV1": ["Host Migration:write"],
+    # IT Automation operations
+    "ITAutomationGetTaskExecutionsByQuery": ["IT Automation:read"],
+    "ITAutomationGetTaskExecution": ["IT Automation:read"],
+    "ITAutomationGetTaskExecutionHostStatus": ["IT Automation:read"],
+    "ITAutomationStartExecutionResultsSearch": ["IT Automation:read"],
+    "ITAutomationGetExecutionResultsSearchStatus": ["IT Automation:read"],
+    "ITAutomationGetExecutionResults": ["IT Automation:read"],
+    "ITAutomationStartTaskExecution": ["IT Automation:write"],
+    "ITAutomationRunLiveQuery": ["IT Automation:write"],
+    "ITAutomationCancelTaskExecution": ["IT Automation:write"],
+    "ITAutomationRerunTaskExecution": ["IT Automation:write"],
     # Incidents operations
     "QueryIncidents": ["Incidents:read"],
     "CrowdScore": ["Incidents:read"],
