@@ -18,7 +18,7 @@ class TestRTRIntegration(BaseIntegrationTest):
         self.module = RTRModule(falcon_client)
 
     def _skip_if_scope_missing(self, result: Any, context: str) -> None:
-        """Skip test when API credentials are missing required scopes."""
+        """Skip test when API credentials are missing required scopes or RTR service data."""
         details = None
 
         if isinstance(result, dict):
@@ -33,11 +33,27 @@ class TestRTRIntegration(BaseIntegrationTest):
             if isinstance(first, dict) and "error" in first:
                 details = first.get("details")
 
-        if isinstance(details, dict) and details.get("status_code") == 403:
+        if not isinstance(details, dict):
+            return
+
+        status_code = details.get("status_code")
+        if status_code == 403:
             self.skip_with_warning(
                 "Missing required API scope for RTR integration test",
                 context=context,
             )
+
+        if status_code == 400:
+            body = details.get("body", {})
+            if isinstance(body, dict):
+                errors = body.get("errors", [])
+                if isinstance(errors, list) and errors:
+                    message = errors[0].get("message", "")
+                    if isinstance(message, str) and "could not list active sessions" in message.lower():
+                        self.skip_with_warning(
+                            "RTR audit data unavailable in this tenant",
+                            context=context,
+                        )
 
     def test_search_rtr_sessions_operation_names(self):
         """Validate core RTR operation names by running a minimal search."""

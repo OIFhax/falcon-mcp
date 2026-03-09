@@ -40,8 +40,15 @@ class TestDiscoverIntegration(BaseIntegrationTest):
             # Verify we get full details
             self.assert_search_returns_details(
                 result,
-                expected_fields=["id", "name"],
+                expected_fields=["id"],
                 context="search_applications",
+            )
+            first = result[0]
+            assert any(
+                key in first for key in ["name", "name_vendor", "name_vendor_version"]
+            ), (
+                "Expected one of name/name_vendor/name_vendor_version fields in "
+                f"application result. Available fields: {list(first.keys())}"
             )
 
     def test_search_applications_with_filter(self):

@@ -90,7 +90,7 @@ class TestHostsIntegration(BaseIntegrationTest):
         if len(result) > 0:
             self.assert_search_returns_details(
                 result,
-                expected_fields=["id"],
+                expected_fields=["migration_id"],
                 context="search_migrations",
             )
 
@@ -112,7 +112,7 @@ class TestHostsIntegration(BaseIntegrationTest):
                 context="search_host_migrations",
             )
 
-        migration_id = self.get_first_id(migrations, id_field="id")
+        migration_id = self.get_first_id(migrations, id_field="migration_id")
         if not migration_id:
             self.skip_with_warning(
                 "Could not extract migration ID from search_migrations results",
@@ -135,7 +135,7 @@ class TestHostsIntegration(BaseIntegrationTest):
         if len(result) > 0:
             self.assert_search_returns_details(
                 result,
-                expected_fields=["id"],
+                expected_fields=["host_migration_id"],
                 context="search_host_migrations",
             )
 

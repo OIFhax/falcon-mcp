@@ -380,7 +380,7 @@ class TestHostsModule(TestModules):
         }
         details_response = {
             "status_code": 200,
-            "body": {"resources": [{"id": "migration-1", "name": "Tenant Migration"}]},
+            "body": {"resources": [{"migration_id": "migration-1", "name": "Tenant Migration"}]},
         }
         self.mock_client.command.side_effect = [query_response, details_response]
 
@@ -399,6 +399,7 @@ class TestHostsModule(TestModules):
             ["migration-1"],
         )
         self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["migration_id"], "migration-1")
 
     def test_search_host_migrations_success(self):
         """Test searching host migrations and resolving full host migration details."""
@@ -408,7 +409,7 @@ class TestHostsModule(TestModules):
         }
         details_response = {
             "status_code": 200,
-            "body": {"resources": [{"id": "host-migration-1", "hostname": "host-1"}]},
+            "body": {"resources": [{"host_migration_id": "host-migration-1", "hostname": "host-1"}]},
         }
         self.mock_client.command.side_effect = [query_response, details_response]
 
@@ -428,6 +429,7 @@ class TestHostsModule(TestModules):
             ["host-migration-1"],
         )
         self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["host_migration_id"], "host-migration-1")
 
     def test_create_migration_success(self):
         """Test creating a migration with convenience fields."""
