@@ -29,6 +29,7 @@
   - [Intel Module](#intel-module)
   - [IOC Module](#ioc-module)
   - [Firewall Management Module](#firewall-management-module)
+  - [Real Time Response Module](#real-time-response-module)
   - [Scheduled Reports Module](#scheduled-reports-module)
   - [Sensor Usage Module](#sensor-usage-module)
   - [Serverless Module](#serverless-module)
@@ -94,6 +95,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Intel** | `Actors (Falcon Intelligence):read`<br>`Indicators (Falcon Intelligence):read`<br>`Reports (Falcon Intelligence):read` | Research threat actors, IOCs, and intelligence reports |
 | **IOC** | `IOC Management:read`<br>`IOC Management:write` | Search, create, and remove custom IOCs using IOC Service Collection endpoints |
 | **Firewall Management** | `Firewall Management:read`<br>`Firewall Management:write` | Search and manage firewall rules and rule groups |
+| **Real Time Response** | `Real Time Response:read` | Search RTR sessions, initialize sessions, run read-only RTR commands, and delete sessions |
 | **Scheduled Reports** | `Scheduled Reports:read` | Get details about scheduled reports and searches, run reports on demand, and download report files |
 | **Sensor Usage** | `Sensor Usage:read` | Access and analyze sensor usage data |
 | **Serverless** | `Falcon Container Image:read` | Search for vulnerabilities in serverless functions across cloud service providers |
@@ -287,6 +289,27 @@ Provides tools for searching and managing Falcon firewall rule entities:
 - `falcon://firewall/rules/fql-guide`: FQL documentation and examples for firewall rule searches
 
 **Use Cases**: Firewall policy hygiene, rule group lifecycle management, rule auditing, policy-specific rule analysis
+
+### Real Time Response Module
+
+**API Scopes Required**:
+
+- `Real Time Response:read`
+
+Provides tools for searching and managing single-host RTR workflows:
+
+- `falcon_search_rtr_sessions`: Search RTR sessions using FQL and return full session details
+- `falcon_init_rtr_session`: Initialize a single-host RTR session
+- `falcon_execute_rtr_command`: Execute an RTR read-only command on a host session
+- `falcon_check_rtr_command_status`: Check status for an RTR command request
+- `falcon_delete_rtr_session`: Delete an RTR session by session ID
+- `falcon_delete_rtr_queued_session`: Delete a queued RTR session by session and request ID
+
+**Resources**:
+
+- `falcon://rtr/sessions/fql-guide`: FQL documentation and examples for RTR session searches
+
+**Use Cases**: Host-level triage, remote session management, command execution tracking, RTR workflow cleanup
 
 ### Sensor Usage Module
 

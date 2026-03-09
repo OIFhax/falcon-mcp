@@ -41,6 +41,14 @@ API_SCOPE_REQUIREMENTS = {
     "query_policy_rules": ["Firewall Management:read"],
     "create_rule_group": ["Firewall Management:write"],
     "delete_rule_groups": ["Firewall Management:write"],
+    # Real Time Response operations
+    "RTR_ListAllSessions": ["Real Time Response:read"],
+    "RTR_ListSessions": ["Real Time Response:read"],
+    "RTR_InitSession": ["Real Time Response:read"],
+    "RTR_ExecuteCommand": ["Real Time Response:read"],
+    "RTR_CheckCommandStatus": ["Real Time Response:read"],
+    "RTR_DeleteSession": ["Real Time Response:read"],
+    "RTR_DeleteQueuedSession": ["Real Time Response:read"],
     # Spotlight operations
     "combinedQueryVulnerabilities": ["Vulnerabilities:read"],
     # Discover operations

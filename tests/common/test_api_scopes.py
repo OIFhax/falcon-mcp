@@ -64,6 +64,7 @@ class TestApiScopes(unittest.TestCase):
         self.assertEqual(get_required_scopes("GetQueriesAlertsV2"), ["Alerts:read"])
         self.assertEqual(get_required_scopes("PostEntitiesAlertsV2"), ["Alerts:read"])
         self.assertEqual(get_required_scopes("QueryIncidents"), ["Incidents:read"])
+        self.assertEqual(get_required_scopes("RTR_ListAllSessions"), ["Real Time Response:read"])
 
         # Test with unknown operation
         self.assertEqual(get_required_scopes("UnknownOperation"), [])
@@ -149,6 +150,7 @@ class TestApiScopes(unittest.TestCase):
             ("GetQueriesAlertsV2", ["Alerts:read"]),
             ("QueryIncidents", ["Incidents:read"]),
             ("QueryIntelActorEntities", ["Actors (Falcon Intelligence):read"]),
+            ("RTR_ExecuteCommand", ["Real Time Response:read"]),
             ("api_preempt_proxy_post_graphql", [
                 "Identity Protection Entities:read",
                 "Identity Protection Timeline:read",
@@ -199,7 +201,7 @@ class TestApiScopes(unittest.TestCase):
         # Validate that most resources use consistent permission patterns
         read_only_resources = [
             "Alerts", "Hosts", "Incidents", "Vulnerabilities",
-            "Assets", "Sensor Usage", "Scheduled Reports"
+            "Assets", "Sensor Usage", "Scheduled Reports", "Real Time Response"
         ]
 
         for resource in read_only_resources:
@@ -226,6 +228,15 @@ class TestApiScopes(unittest.TestCase):
             "scheduled_reports": [
                 "scheduled_reports_query", "scheduled_reports_get", "scheduled_reports_launch",
                 "report_executions_query", "report_executions_get", "report_executions_download_get"
+            ],
+            "rtr": [
+                "RTR_ListAllSessions",
+                "RTR_ListSessions",
+                "RTR_InitSession",
+                "RTR_ExecuteCommand",
+                "RTR_CheckCommandStatus",
+                "RTR_DeleteSession",
+                "RTR_DeleteQueuedSession",
             ],
             "serverless": ["GetCombinedVulnerabilitiesSARIF"]
         }
