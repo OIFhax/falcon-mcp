@@ -19,6 +19,7 @@
   - [Required API Scopes by Module](#required-api-scopes-by-module)
 - [Available Modules, Tools \& Resources](#available-modules-tools--resources)
   - [Cloud Security Module](#cloud-security-module)
+  - [CAO Hunting Module](#cao-hunting-module)
   - [Core Functionality (Built into Server)](#core-functionality-built-into-server)
   - [Custom IOA Module](#custom-ioa-module)
   - [Detections Module](#detections-module)
@@ -89,6 +90,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 
 | Module | Required API Scopes | Purpose |
 | - | - | - |
+| **CAO Hunting** | `CAO Hunting:read` | Search hunting guides and intelligence queries, run aggregations, and request archive exports |
 | **Cloud Security** | `Falcon Container Image:read` | Find and analyze kubernetes containers inventory and container imges vulnerabilities |
 | **Core** | _No additional scopes_ | Basic connectivity and system information |
 | **Custom IOA** | `Custom IOA Rules:read`<br>`Custom IOA Rules:write` | Create and manage Custom IOA behavioral detection rules and rule groups |
@@ -136,6 +138,30 @@ Provides tools for accessing and analyzing CrowdStrike Cloud Security resources:
 - `falcon://cloud/images-vulnerabilities/fql-guide`: Comprehensive FQL documentation and examples for images vulnerabilities searches
 
 **Use Cases**: Manage kubernetes containers inventory, container images vulnerabilities analysis
+
+### CAO Hunting Module
+
+**API Scopes Required**:
+
+- `CAO Hunting:read`
+
+Provides read-only tools for CAO hunting workflows:
+
+- `falcon_search_hunting_guides`: Search hunting guides and return full guide details
+- `falcon_get_hunting_guide_details`: Retrieve hunting guide records by ID
+- `falcon_search_intelligence_queries`: Search intelligence queries and return full query details
+- `falcon_get_intelligence_query_details`: Retrieve intelligence query records by ID
+- `falcon_aggregate_hunting_guides`: Run aggregate queries for hunting guides
+- `falcon_aggregate_intelligence_queries`: Run aggregate queries for intelligence queries
+- `falcon_create_hunting_archive_export`: Request archive exports by language and filter
+
+**Resources**:
+
+- `falcon://cao-hunting/guides/fql-guide`: FQL documentation and examples for hunting guide searches
+- `falcon://cao-hunting/intelligence-queries/fql-guide`: FQL documentation and examples for intelligence query searches
+- `falcon://cao-hunting/archive-export/guide`: Archive export parameter guidance
+
+**Use Cases**: Threat-hunt content discovery, query analysis, language-specific export workflows, CAO content reporting
 
 ### Core Functionality (Built into Server)
 

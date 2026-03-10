@@ -88,6 +88,14 @@ class TestApiScopes(unittest.TestCase):
             ["Exposure Management:write"],
         )
         self.assertEqual(
+            get_required_scopes("SearchHuntingGuides"),
+            ["CAO Hunting:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("GetArchiveExport"),
+            ["CAO Hunting:read"],
+        )
+        self.assertEqual(
             get_required_scopes("RTR_ExecuteAdminCommand"),
             ["Real Time Response Admin:write"],
         )
@@ -192,6 +200,8 @@ class TestApiScopes(unittest.TestCase):
             ("createIOAExclusionsV1", ["IOA Exclusions:write"]),
             ("query_external_assets_v2", ["Exposure Management:read"]),
             ("delete_external_assets", ["Exposure Management:write"]),
+            ("SearchHuntingGuides", ["CAO Hunting:read"]),
+            ("GetArchiveExport", ["CAO Hunting:read"]),
             ("RTR_ExecuteCommand", ["Real Time Response:read"]),
             ("RTR_ExecuteAdminCommand", ["Real Time Response Admin:write"]),
             ("RTRAuditSessions", ["Real Time Response Audit:read"]),
@@ -248,7 +258,7 @@ class TestApiScopes(unittest.TestCase):
         read_only_resources = [
             "Alerts", "Hosts", "Incidents", "Vulnerabilities",
             "Assets", "Sensor Usage", "Scheduled Reports",
-            "Real Time Response", "Real Time Response Audit"
+            "Real Time Response", "Real Time Response Audit", "CAO Hunting"
         ]
 
         for resource in read_only_resources:
@@ -328,6 +338,15 @@ class TestApiScopes(unittest.TestCase):
                 "post_external_assets_inventory_v1",
                 "patch_external_assets",
                 "delete_external_assets",
+            ],
+            "cao_hunting": [
+                "AggregateHuntingGuides",
+                "AggregateIntelligenceQueries",
+                "GetArchiveExport",
+                "GetHuntingGuides",
+                "GetIntelligenceQueries",
+                "SearchHuntingGuides",
+                "SearchIntelligenceQueries",
             ],
             "idp": ["api_preempt_proxy_post_graphql"],
             "user_management": [

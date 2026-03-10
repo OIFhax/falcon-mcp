@@ -105,6 +105,14 @@ API_SCOPE_REQUIREMENTS = {
     "post_external_assets_inventory_v1": ["Exposure Management:write"],
     "patch_external_assets": ["Exposure Management:write"],
     "delete_external_assets": ["Exposure Management:write"],
+    # CAO Hunting operations
+    "AggregateHuntingGuides": ["CAO Hunting:read"],
+    "AggregateIntelligenceQueries": ["CAO Hunting:read"],
+    "GetArchiveExport": ["CAO Hunting:read"],
+    "GetHuntingGuides": ["CAO Hunting:read"],
+    "GetIntelligenceQueries": ["CAO Hunting:read"],
+    "SearchHuntingGuides": ["CAO Hunting:read"],
+    "SearchIntelligenceQueries": ["CAO Hunting:read"],
     # Cloud operations
     "ReadContainerCombined": ["Falcon Container Image:read"],
     "ReadContainerCount": ["Falcon Container Image:read"],
