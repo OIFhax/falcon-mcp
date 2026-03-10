@@ -1,25 +1,25 @@
 # Falcon MCP Module Summary (Presentation)
 
-**Snapshot Date:** March 9, 2026  
-**Branch / Commit:** `main` @ `cd1954f`  
+**Snapshot Date:** March 10, 2026  
+**Branch / Commit:** `main` @ `e3ff8f5`  
 **LOC Method:** `git ls-files` + `wc -l` (tracked files only)
 
 ## Repository Totals
 
 | Metric | Value |
 |---|---:|
-| Tracked files | 166 |
-| Python files | 126 |
-| Python LOC (all tracked `.py`) | 33,517 |
+| Tracked files | 175 |
+| Python files | 134 |
+| Python LOC (all tracked `.py`) | 35,849 |
 
 ## Framework Totals by Area
 
 | Area | Files | LOC |
 |---|---:|---:|
-| `falcon_mcp/modules` | 20 | 8,018 |
-| `falcon_mcp/resources` | 17 | 6,408 |
-| `tests/modules` | 21 | 7,474 |
-| `tests/integration` | 22 | 2,994 |
+| `falcon_mcp/modules` | 22 | 9,064 |
+| `falcon_mcp/resources` | 19 | 6,617 |
+| `tests/modules` | 23 | 8,192 |
+| `tests/integration` | 24 | 3,303 |
 
 ## Module Coverage Summary (Implemented Sets)
 
@@ -32,7 +32,9 @@
 | Hosts (Host Group / Migration / Hosts) | 952 | 782 | 595 | 173 | 2,502 |
 | IT Automation (Phase 3) | 681 | 128 | 409 | 125 | 1,343 |
 | Custom IOA | 618 | 129 | 768 | 220 | 1,735 |
-| **Implemented Set Total** | 4,257 | 1,606 | 3,346 | 1,047 | **10,256** |
+| User Management | 585 | 127 | 415 | 127 | 1,254 |
+| Exposure Management | 461 | 82 | 303 | 132 | 978 |
+| **Implemented Set Total** | 5,303 | 1,815 | 4,064 | 1,306 | **12,488** |
 
 ## Presentation Charts
 
@@ -40,7 +42,7 @@
 
 ```mermaid
 pie showData
-    title LOC by Implemented Module Set (Total = 10,256)
+    title LOC by Implemented Module Set (Total = 12,488)
     "IOC" : 1189
     "IOA Exclusions" : 831
     "Firewall" : 1034
@@ -48,6 +50,8 @@ pie showData
     "Hosts" : 2502
     "IT Automation" : 1343
     "Custom IOA" : 1735
+    "User Management" : 1254
+    "Exposure Management" : 978
 ```
 
 ### Implemented Set Composition (Code vs Tests)
@@ -55,10 +59,10 @@ pie showData
 ```mermaid
 pie showData
     title LOC Composition Across Implemented Sets
-    "Modules" : 4257
-    "Resources" : 1606
-    "Unit Tests" : 3346
-    "Integration Tests" : 1047
+    "Modules" : 5303
+    "Resources" : 1815
+    "Unit Tests" : 4064
+    "Integration Tests" : 1306
 ```
 
 ### Framework Area LOC Distribution
@@ -66,10 +70,10 @@ pie showData
 ```mermaid
 pie showData
     title LOC by Repository Framework Area
-    "falcon_mcp/modules" : 8018
-    "falcon_mcp/resources" : 6408
-    "tests/modules" : 7474
-    "tests/integration" : 2994
+    "falcon_mcp/modules" : 9064
+    "falcon_mcp/resources" : 6617
+    "tests/modules" : 8192
+    "tests/integration" : 3303
 ```
 
 ## File-Level LOC for Implemented Sets
@@ -136,3 +140,21 @@ pie showData
 | `falcon_mcp/resources/custom_ioa.py` | 129 |
 | `tests/modules/test_custom_ioa.py` | 768 |
 | `tests/integration/test_custom_ioa.py` | 220 |
+
+### User Management
+
+| File | LOC |
+|---|---:|
+| `falcon_mcp/modules/user_management.py` | 585 |
+| `falcon_mcp/resources/user_management.py` | 127 |
+| `tests/modules/test_user_management.py` | 415 |
+| `tests/integration/test_user_management.py` | 127 |
+
+### Exposure Management
+
+| File | LOC |
+|---|---:|
+| `falcon_mcp/modules/exposure_management.py` | 461 |
+| `falcon_mcp/resources/exposure_management.py` | 82 |
+| `tests/modules/test_exposure_management.py` | 303 |
+| `tests/integration/test_exposure_management.py` | 132 |
