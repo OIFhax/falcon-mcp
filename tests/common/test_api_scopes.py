@@ -80,6 +80,14 @@ class TestApiScopes(unittest.TestCase):
         self.assertEqual(get_required_scopes("queryIOAExclusionsV1"), ["IOA Exclusions:read"])
         self.assertEqual(get_required_scopes("createIOAExclusionsV1"), ["IOA Exclusions:write"])
         self.assertEqual(
+            get_required_scopes("query_external_assets_v2"),
+            ["Exposure Management:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("delete_external_assets"),
+            ["Exposure Management:write"],
+        )
+        self.assertEqual(
             get_required_scopes("RTR_ExecuteAdminCommand"),
             ["Real Time Response Admin:write"],
         )
@@ -182,6 +190,8 @@ class TestApiScopes(unittest.TestCase):
             ("ITAutomationRunLiveQuery", ["IT Automation:write"]),
             ("queryIOAExclusionsV1", ["IOA Exclusions:read"]),
             ("createIOAExclusionsV1", ["IOA Exclusions:write"]),
+            ("query_external_assets_v2", ["Exposure Management:read"]),
+            ("delete_external_assets", ["Exposure Management:write"]),
             ("RTR_ExecuteCommand", ["Real Time Response:read"]),
             ("RTR_ExecuteAdminCommand", ["Real Time Response Admin:write"]),
             ("RTRAuditSessions", ["Real Time Response Audit:read"]),
@@ -256,6 +266,7 @@ class TestApiScopes(unittest.TestCase):
             "IOC Management",
             "IOA Exclusions",
             "Firewall Management",
+            "Exposure Management",
             "NGSIEM",
             "User Management",
         ]
@@ -310,6 +321,14 @@ class TestApiScopes(unittest.TestCase):
             "spotlight": ["combinedQueryVulnerabilities"],
             "cloud": ["ReadContainerCombined", "ReadContainerCount", "ReadCombinedVulnerabilities"],
             "discover": ["combined_applications", "combined_hosts"],
+            "exposure_management": [
+                "query_external_assets_v2",
+                "get_external_assets",
+                "aggregate_external_assets",
+                "post_external_assets_inventory_v1",
+                "patch_external_assets",
+                "delete_external_assets",
+            ],
             "idp": ["api_preempt_proxy_post_graphql"],
             "user_management": [
                 "queryUserV1",

@@ -23,6 +23,7 @@
   - [Custom IOA Module](#custom-ioa-module)
   - [Detections Module](#detections-module)
   - [Discover Module](#discover-module)
+  - [Exposure Management Module](#exposure-management-module)
   - [Hosts Module](#hosts-module)
   - [Identity Protection Module](#identity-protection-module)
   - [User Management Module](#user-management-module)
@@ -93,6 +94,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Custom IOA** | `Custom IOA Rules:read`<br>`Custom IOA Rules:write` | Create and manage Custom IOA behavioral detection rules and rule groups |
 | **Detections** | `Alerts:read` | Find and analyze detections to understand malicious activity |
 | **Discover** | `Assets:read` | Search and analyze application inventory across your environment |
+| **Exposure Management** | `Exposure Management:read`<br>`Exposure Management:write` | Search external assets and perform controlled asset inventory/triage updates |
 | **Hosts** | `Hosts:read`<br>`Host Groups:read`<br>`Host Groups:write`<br>`Host Migration:read`<br>`Host Migration:write` | Search hosts, manage host groups, and orchestrate migration workflows |
 | **Identity Protection** | `Identity Protection Entities:read`<br>`Identity Protection Timeline:read`<br>`Identity Protection Detections:read`<br>`Identity Protection Assessment:read`<br>`Identity Protection GraphQL:write` | Comprehensive entity investigation and identity protection analysis |
 | **User Management** | `User Management:read`<br>`User Management:write` | Search users and roles, review grants, and perform controlled user/role assignment changes |
@@ -201,6 +203,29 @@ Provides tools for accessing and managing CrowdStrike Falcon Discover applicatio
 - `falcon://discover/hosts/fql-guide`: Comprehensive FQL documentation and examples for unmanaged assets searches
 
 **Use Cases**: Application inventory management, software asset management, license compliance, vulnerability assessment, unmanaged asset discovery, security gap analysis
+
+### Exposure Management Module
+
+**API Scopes Required**:
+
+- `Exposure Management:read`
+- `Exposure Management:write`
+
+Provides tools for external asset exposure management:
+
+- `falcon_search_exposure_assets`: Search external assets and return full asset details
+- `falcon_get_exposure_asset_details`: Retrieve full external asset records by ID
+- `falcon_aggregate_exposure_assets`: Run aggregate queries over external assets
+- `falcon_add_exposure_assets`: Add assets to external asset inventory (`confirm_execution=true` required)
+- `falcon_update_exposure_assets`: Patch asset criticality / triage metadata (`confirm_execution=true` required)
+- `falcon_remove_exposure_assets`: Delete external assets (`confirm_execution=true` required)
+
+**Resources**:
+
+- `falcon://exposure-management/assets/fql-guide`: FQL documentation and examples for exposure asset searches
+- `falcon://exposure-management/safety-guide`: Safety and operational guidance for write operations
+
+**Use Cases**: External attack-surface inventory, triage workflow automation, asset criticality governance
 
 ### Hosts Module
 

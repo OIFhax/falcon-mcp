@@ -98,6 +98,13 @@ API_SCOPE_REQUIREMENTS = {
     # Discover operations
     "combined_applications": ["Assets:read"],
     "combined_hosts": ["Assets:read"],
+    # Exposure Management operations
+    "query_external_assets_v2": ["Exposure Management:read"],
+    "get_external_assets": ["Exposure Management:read"],
+    "aggregate_external_assets": ["Exposure Management:read"],
+    "post_external_assets_inventory_v1": ["Exposure Management:write"],
+    "patch_external_assets": ["Exposure Management:write"],
+    "delete_external_assets": ["Exposure Management:write"],
     # Cloud operations
     "ReadContainerCombined": ["Falcon Container Image:read"],
     "ReadContainerCount": ["Falcon Container Image:read"],
