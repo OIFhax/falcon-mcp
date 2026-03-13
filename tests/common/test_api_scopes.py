@@ -116,6 +116,14 @@ class TestApiScopes(unittest.TestCase):
             ["Installation Tokens:read"],
         )
         self.assertEqual(
+            get_required_scopes("queryCombinedPreventionPolicies"),
+            ["Prevention Policies:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("performPreventionPoliciesAction"),
+            ["Prevention Policies:write"],
+        )
+        self.assertEqual(
             get_required_scopes("WorkflowDefinitionsCombined"),
             ["Workflow:read"],
         )
@@ -235,6 +243,8 @@ class TestApiScopes(unittest.TestCase):
             ("GetSensorInstallersByQueryV2", ["Sensor Download:read"]),
             ("QueryQuarantineFiles", ["Quarantined Files:read"]),
             ("tokens_query", ["Installation Tokens:read"]),
+            ("queryCombinedPreventionPolicies", ["Prevention Policies:read"]),
+            ("performPreventionPoliciesAction", ["Prevention Policies:write"]),
             ("WorkflowDefinitionsCombined", ["Workflow:read"]),
             ("WorkflowExecute", ["Workflow:write"]),
             ("RTR_ExecuteCommand", ["Real Time Response:read"]),
@@ -317,6 +327,7 @@ class TestApiScopes(unittest.TestCase):
             "User Management",
             "Quarantined Files",
             "Installation Tokens",
+            "Prevention Policies",
             "Workflow",
         ]
 
@@ -432,6 +443,18 @@ class TestApiScopes(unittest.TestCase):
                 "audit_events_query",
                 "tokens_query",
                 "customer_settings_update",
+            ],
+            "prevention_policies": [
+                "queryCombinedPreventionPolicyMembers",
+                "queryCombinedPreventionPolicies",
+                "performPreventionPoliciesAction",
+                "setPreventionPoliciesPrecedence",
+                "getPreventionPolicies",
+                "createPreventionPolicies",
+                "updatePreventionPolicies",
+                "deletePreventionPolicies",
+                "queryPreventionPolicyMembers",
+                "queryPreventionPolicies",
             ],
             "workflows": [
                 "WorkflowActivitiesCombined",

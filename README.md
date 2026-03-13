@@ -30,6 +30,7 @@
   - [User Management Module](#user-management-module)
   - [Incidents Module](#incidents-module)
   - [Installation Tokens Module](#installation-tokens-module)
+  - [Prevention Policies Module](#prevention-policies-module)
   - [Workflows Module](#workflows-module)
   - [IT Automation Module](#it-automation-module)
   - [NGSIEM Module](#ngsiem-module)
@@ -107,6 +108,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **User Management** | `User Management:read`<br>`User Management:write` | Search users and roles, review grants, and perform controlled user/role assignment changes |
 | **Incidents** | `Incidents:read` | Analyze security incidents and coordinated activities |
 | **Installation Tokens** | `Installation Tokens:read`<br>`Installation Tokens:write`<br>`Installation Tokens Settings:write` | Search and manage installation tokens, inspect audit events, and control tenant token settings |
+| **Prevention Policies** | `Prevention Policies:read`<br>`Prevention Policies:write` | Search and manage prevention policies, policy members, policy actions, and precedence ordering |
 | **Workflows** | `Workflow:read`<br>`Workflow:write` | Search and manage workflow definitions, executions, human inputs, and system-definition lifecycle actions |
 | **IT Automation** | `IT Automation:read`<br>`IT Automation:write` | Execute high-impact task runs and live queries with execution status/result controls |
 | **NGSIEM** | `NGSIEM:read`<br>`NGSIEM:write` | Execute CQL queries against Next-Gen SIEM |
@@ -382,6 +384,34 @@ Provides full Installation Tokens service collection coverage:
 - `falcon://installation-tokens/safety-guide`: Operational guardrails for write operations
 
 **Use Cases**: Sensor installation token lifecycle management, token audit investigations, revocation workflows, tenant token policy governance
+
+### Prevention Policies Module
+
+**API Scopes Required**:
+
+- `Prevention Policies:read`
+- `Prevention Policies:write`
+
+Provides full Prevention Policies service collection coverage:
+
+- `falcon_search_prevention_policies`: Search prevention policies with combined detail responses
+- `falcon_search_prevention_policy_members`: Search members assigned to a specific prevention policy
+- `falcon_query_prevention_policy_ids`: Query prevention policy IDs
+- `falcon_query_prevention_policy_member_ids`: Query prevention policy member IDs for a specific policy
+- `falcon_get_prevention_policy_details`: Retrieve prevention policy records by ID
+- `falcon_create_prevention_policies`: Create prevention policies (`confirm_execution=true` required)
+- `falcon_update_prevention_policies`: Update prevention policies (`confirm_execution=true` required)
+- `falcon_delete_prevention_policies`: Delete prevention policies (`confirm_execution=true` required)
+- `falcon_perform_prevention_policies_action`: Apply prevention policy actions (`confirm_execution=true` required)
+- `falcon_set_prevention_policies_precedence`: Set prevention policy precedence ordering (`confirm_execution=true` required)
+
+**Resources**:
+
+- `falcon://prevention-policies/policies/fql-guide`: FQL documentation and examples for prevention policy search/query tools
+- `falcon://prevention-policies/members/fql-guide`: FQL documentation and examples for prevention policy member search/query tools
+- `falcon://prevention-policies/safety-guide`: Operational guardrails for prevention policy write operations
+
+**Use Cases**: Prevention policy inventory, policy-member assignment analysis, controlled policy lifecycle actions, and precedence governance
 
 ### Workflows Module
 

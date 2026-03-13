@@ -161,6 +161,17 @@ API_SCOPE_REQUIREMENTS = {
     "tokens_delete": ["Installation Tokens:write"],
     "tokens_update": ["Installation Tokens:write"],
     "customer_settings_update": ["Installation Tokens Settings:write"],
+    # Prevention Policies operations
+    "queryCombinedPreventionPolicyMembers": ["Prevention Policies:read"],
+    "queryCombinedPreventionPolicies": ["Prevention Policies:read"],
+    "getPreventionPolicies": ["Prevention Policies:read"],
+    "queryPreventionPolicyMembers": ["Prevention Policies:read"],
+    "queryPreventionPolicies": ["Prevention Policies:read"],
+    "performPreventionPoliciesAction": ["Prevention Policies:write"],
+    "setPreventionPoliciesPrecedence": ["Prevention Policies:write"],
+    "createPreventionPolicies": ["Prevention Policies:write"],
+    "updatePreventionPolicies": ["Prevention Policies:write"],
+    "deletePreventionPolicies": ["Prevention Policies:write"],
     # Workflows operations
     "WorkflowActivitiesCombined": ["Workflow:read"],
     "WorkflowActivitiesContentCombined": ["Workflow:read"],
