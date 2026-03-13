@@ -96,6 +96,14 @@ class TestApiScopes(unittest.TestCase):
             ["CAO Hunting:read"],
         )
         self.assertEqual(
+            get_required_scopes("getAssessmentV1"),
+            ["Zero Trust Assessment:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("getCombinedAssessmentsQuery"),
+            ["Zero Trust Assessment:read"],
+        )
+        self.assertEqual(
             get_required_scopes("RTR_ExecuteAdminCommand"),
             ["Real Time Response Admin:write"],
         )
@@ -202,6 +210,8 @@ class TestApiScopes(unittest.TestCase):
             ("delete_external_assets", ["Exposure Management:write"]),
             ("SearchHuntingGuides", ["CAO Hunting:read"]),
             ("GetArchiveExport", ["CAO Hunting:read"]),
+            ("getAssessmentV1", ["Zero Trust Assessment:read"]),
+            ("getCombinedAssessmentsQuery", ["Zero Trust Assessment:read"]),
             ("RTR_ExecuteCommand", ["Real Time Response:read"]),
             ("RTR_ExecuteAdminCommand", ["Real Time Response Admin:write"]),
             ("RTRAuditSessions", ["Real Time Response Audit:read"]),
@@ -258,7 +268,8 @@ class TestApiScopes(unittest.TestCase):
         read_only_resources = [
             "Alerts", "Hosts", "Incidents", "Vulnerabilities",
             "Assets", "Sensor Usage", "Scheduled Reports",
-            "Real Time Response", "Real Time Response Audit", "CAO Hunting"
+            "Real Time Response", "Real Time Response Audit", "CAO Hunting",
+            "Zero Trust Assessment",
         ]
 
         for resource in read_only_resources:
@@ -388,7 +399,13 @@ class TestApiScopes(unittest.TestCase):
                 "BatchAdminCmd",
                 "RTRAuditSessions",
             ],
-            "serverless": ["GetCombinedVulnerabilitiesSARIF"]
+            "serverless": ["GetCombinedVulnerabilitiesSARIF"],
+            "zero_trust_assessment": [
+                "getAssessmentV1",
+                "getAuditV1",
+                "getAssessmentsByScoreV1",
+                "getCombinedAssessmentsQuery",
+            ],
         }
 
         # Verify that all expected operations are mapped

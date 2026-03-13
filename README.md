@@ -40,6 +40,7 @@
   - [Sensor Usage Module](#sensor-usage-module)
   - [Serverless Module](#serverless-module)
   - [Spotlight Module](#spotlight-module)
+  - [Zero Trust Assessment Module](#zero-trust-assessment-module)
 - [Installation \& Setup](#installation--setup)
   - [Prerequisites](#prerequisites)
   - [Environment Configuration](#environment-configuration)
@@ -112,6 +113,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Sensor Usage** | `Sensor Usage:read` | Access and analyze sensor usage data |
 | **Serverless** | `Falcon Container Image:read` | Search for vulnerabilities in serverless functions across cloud service providers |
 | **Spotlight** | `Vulnerabilities:read` | Manage and analyze vulnerability data and security assessments |
+| **Zero Trust Assessment** | `Zero Trust Assessment:read` | Search host Zero Trust scores and retrieve tenant-wide audit metrics |
 
 ## Available Modules, Tools & Resources
 
@@ -558,6 +560,24 @@ Provides tools for accessing and managing CrowdStrike Spotlight vulnerabilities:
 - `falcon://spotlight/vulnerabilities/fql-guide`: Comprehensive FQL documentation and examples for vulnerability searches
 
 **Use Cases**: Vulnerability management, security assessments, compliance reporting, risk analysis, patch prioritization
+
+### Zero Trust Assessment Module
+
+**API Scopes Required**: `Zero Trust Assessment:read`
+
+Provides read-only tools for Zero Trust posture review:
+
+- `falcon_search_zta_assessments_by_score`: Query host Zero Trust assessments using score-based FQL filters
+- `falcon_search_zta_combined_assessments`: Search combined Zero Trust assessments with optional host/finding facets
+- `falcon_get_zta_assessment_details`: Retrieve detailed Zero Trust assessment records by host AID
+- `falcon_get_zta_audit_report`: Retrieve tenant-wide Zero Trust audit metrics
+
+**Resources**:
+
+- `falcon://zero-trust-assessment/assessments/fql-guide`: Score filter and sort guidance for Zero Trust Assessment searches
+- `falcon://zero-trust-assessment/combined-assessments/fql-guide`: Combined assessment filter, facet, and sort guidance
+
+**Use Cases**: Zero Trust posture monitoring, low-score host triage, tenant-level audit and reporting
 
 ## Installation & Setup
 

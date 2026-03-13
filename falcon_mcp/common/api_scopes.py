@@ -113,6 +113,11 @@ API_SCOPE_REQUIREMENTS = {
     "GetIntelligenceQueries": ["CAO Hunting:read"],
     "SearchHuntingGuides": ["CAO Hunting:read"],
     "SearchIntelligenceQueries": ["CAO Hunting:read"],
+    # Zero Trust Assessment operations
+    "getAssessmentV1": ["Zero Trust Assessment:read"],
+    "getAuditV1": ["Zero Trust Assessment:read"],
+    "getAssessmentsByScoreV1": ["Zero Trust Assessment:read"],
+    "getCombinedAssessmentsQuery": ["Zero Trust Assessment:read"],
     # Cloud operations
     "ReadContainerCombined": ["Falcon Container Image:read"],
     "ReadContainerCount": ["Falcon Container Image:read"],
