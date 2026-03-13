@@ -123,7 +123,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Intel** | `Actors (Falcon Intelligence):read`<br>`Indicators (Falcon Intelligence):read`<br>`Reports (Falcon Intelligence):read` | Research threat actors, IOCs, and intelligence reports |
 | **IOC** | `IOC Management:read`<br>`IOC Management:write` | Search, create, and remove custom IOCs using IOC Service Collection endpoints |
 | **IOA Exclusions** | `IOA Exclusions:read`<br>`IOA Exclusions:write` | Search, create, update, and delete IOA exclusions |
-| **Firewall Management** | `Firewall Management:read`<br>`Firewall Management:write` | Search and manage firewall rules and rule groups |
+| **Firewall Management** | `Firewall Management:read`<br>`Firewall Management:write` | Full firewall management coverage for rules, rule groups, policy containers, events, fields, platforms, and network locations |
 | **Quarantine** | `Quarantined Files:read`<br>`Quarantined Files:write` | Search and aggregate quarantined files, estimate update impact, and apply quarantine actions |
 | **Real Time Response** | `Real Time Response:read`<br>`Real Time Response Admin:write`<br>`Real Time Response Audit:read` | Unified RTR module covering session workflows, admin command/script operations, and audit session search |
 | **Scheduled Reports** | `Scheduled Reports:read` | Get details about scheduled reports and searches, run reports on demand, and download report files |
@@ -701,19 +701,39 @@ Provides tools for managing IOA exclusions:
 - `Firewall Management:read`
 - `Firewall Management:write`
 
-Provides tools for searching and managing Falcon firewall rule entities:
+Provides full Firewall Management service collection coverage:
 
-- `falcon_search_firewall_rules`: Search firewall rules and return full rule details
-- `falcon_search_firewall_rule_groups`: Search firewall rule groups and return full group details
-- `falcon_search_firewall_policy_rules`: Search rules within a specific policy container
-- `falcon_create_firewall_rule_group`: Create a firewall rule group using convenience fields or a full body payload
-- `falcon_delete_firewall_rule_groups`: Delete firewall rule groups by ID
+- Rules and rule groups:
+  - `falcon_search_firewall_rules`, `falcon_search_firewall_rule_groups`, `falcon_search_firewall_policy_rules`
+  - `falcon_query_firewall_rule_ids`, `falcon_query_firewall_rule_group_ids`, `falcon_query_firewall_policy_rule_ids`
+  - `falcon_get_firewall_rules`, `falcon_get_firewall_rule_groups`
+  - `falcon_aggregate_firewall_rules`, `falcon_aggregate_firewall_rule_groups`, `falcon_aggregate_firewall_policy_rules`
+- Events and fields:
+  - `falcon_query_firewall_event_ids`, `falcon_get_firewall_events`, `falcon_aggregate_firewall_events`
+  - `falcon_query_firewall_field_ids`, `falcon_get_firewall_fields`
+- Platforms and containers:
+  - `falcon_query_firewall_platform_ids`, `falcon_get_firewall_platforms`, `falcon_get_firewall_policy_containers`
+  - `falcon_update_firewall_policy_container`, `falcon_update_firewall_policy_container_v1` (`confirm_execution=true` required)
+- Rule-group lifecycle:
+  - `falcon_create_firewall_rule_group`, `falcon_update_firewall_rule_group`, `falcon_delete_firewall_rule_groups`
+  - `falcon_validate_firewall_rule_group_create`, `falcon_validate_firewall_rule_group_update`
+  - All write tools above require `confirm_execution=true`
+- Network locations:
+  - `falcon_query_firewall_network_location_ids`, `falcon_get_firewall_network_locations`, `falcon_get_firewall_network_location_details`
+  - `falcon_create_firewall_network_locations`, `falcon_upsert_firewall_network_locations`, `falcon_update_firewall_network_locations`
+  - `falcon_update_firewall_network_locations_metadata`, `falcon_update_firewall_network_locations_precedence`, `falcon_delete_firewall_network_locations`
+  - All write tools above require `confirm_execution=true`
+- Validation:
+  - `falcon_validate_firewall_filepath_pattern`
 
 **Resources**:
 
-- `falcon://firewall/rules/fql-guide`: FQL documentation and examples for firewall rule searches
+- `falcon://firewall/rules/fql-guide`: FQL documentation for rules, rule groups, and policy-rule query/search tools
+- `falcon://firewall/events/fql-guide`: FQL documentation for firewall events ID query tools
+- `falcon://firewall/network-locations/fql-guide`: FQL documentation for network location ID query tools
+- `falcon://firewall/safety-guide`: Operational guardrails for firewall management write operations
 
-**Use Cases**: Firewall policy hygiene, rule group lifecycle management, rule auditing, policy-specific rule analysis
+**Use Cases**: Firewall rule governance, policy container changes, network location lifecycle automation, event analytics, and safe change orchestration
 
 ### Quarantine Module
 

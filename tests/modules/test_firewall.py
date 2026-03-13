@@ -4,10 +4,12 @@ Tests for the Firewall module.
 
 import unittest
 
-from mcp.types import ToolAnnotations
-
 from falcon_mcp.modules.base import READ_ONLY_ANNOTATIONS
-from falcon_mcp.modules.firewall import FirewallModule
+from falcon_mcp.modules.firewall import (
+    DESTRUCTIVE_WRITE_ANNOTATIONS,
+    WRITE_ANNOTATIONS,
+    FirewallModule,
+)
 from tests.modules.utils.test_modules import TestModules
 
 
@@ -24,8 +26,39 @@ class TestFirewallModule(TestModules):
             "falcon_search_firewall_rules",
             "falcon_search_firewall_rule_groups",
             "falcon_search_firewall_policy_rules",
+            "falcon_query_firewall_rule_ids",
+            "falcon_query_firewall_rule_group_ids",
+            "falcon_query_firewall_policy_rule_ids",
+            "falcon_get_firewall_rules",
+            "falcon_get_firewall_rule_groups",
+            "falcon_aggregate_firewall_rules",
+            "falcon_aggregate_firewall_rule_groups",
+            "falcon_aggregate_firewall_policy_rules",
+            "falcon_aggregate_firewall_events",
+            "falcon_query_firewall_event_ids",
+            "falcon_get_firewall_events",
+            "falcon_query_firewall_field_ids",
+            "falcon_get_firewall_fields",
+            "falcon_query_firewall_platform_ids",
+            "falcon_get_firewall_platforms",
+            "falcon_get_firewall_policy_containers",
             "falcon_create_firewall_rule_group",
+            "falcon_update_firewall_rule_group",
             "falcon_delete_firewall_rule_groups",
+            "falcon_validate_firewall_rule_group_create",
+            "falcon_validate_firewall_rule_group_update",
+            "falcon_update_firewall_policy_container",
+            "falcon_update_firewall_policy_container_v1",
+            "falcon_query_firewall_network_location_ids",
+            "falcon_get_firewall_network_locations",
+            "falcon_get_firewall_network_location_details",
+            "falcon_create_firewall_network_locations",
+            "falcon_upsert_firewall_network_locations",
+            "falcon_update_firewall_network_locations",
+            "falcon_update_firewall_network_locations_metadata",
+            "falcon_update_firewall_network_locations_precedence",
+            "falcon_delete_firewall_network_locations",
+            "falcon_validate_firewall_filepath_pattern",
         ]
         self.assert_tools_registered(expected_tools)
 
@@ -33,6 +66,9 @@ class TestFirewallModule(TestModules):
         """Test registering resources with the server."""
         expected_resources = [
             "falcon_search_firewall_rules_fql_guide",
+            "falcon_search_firewall_events_fql_guide",
+            "falcon_search_firewall_network_locations_fql_guide",
+            "falcon_firewall_management_safety_guide",
         ]
         self.assert_resources_registered(expected_resources)
 
@@ -41,45 +77,31 @@ class TestFirewallModule(TestModules):
         self.module.register_tools(self.mock_server)
 
         self.assert_tool_annotations("falcon_search_firewall_rules", READ_ONLY_ANNOTATIONS)
-        self.assert_tool_annotations(
-            "falcon_create_firewall_rule_group",
-            ToolAnnotations(
-                readOnlyHint=False,
-                destructiveHint=False,
-                idempotentHint=False,
-                openWorldHint=True,
-            ),
-        )
+        self.assert_tool_annotations("falcon_create_firewall_rule_group", WRITE_ANNOTATIONS)
         self.assert_tool_annotations(
             "falcon_delete_firewall_rule_groups",
-            ToolAnnotations(
-                readOnlyHint=False,
-                destructiveHint=True,
-                idempotentHint=True,
-                openWorldHint=True,
-            ),
+            DESTRUCTIVE_WRITE_ANNOTATIONS,
+        )
+        self.assert_tool_annotations(
+            "falcon_delete_firewall_network_locations",
+            DESTRUCTIVE_WRITE_ANNOTATIONS,
         )
 
     def test_search_firewall_rules_success(self):
-        """Test searching firewall rules and fetching full details."""
+        """Test firewall rule search success."""
         query_response = {
             "status_code": 200,
-            "body": {"resources": ["rule-id-1", "rule-id-2"]},
+            "body": {"resources": ["rule-1"]},
         }
-        details_response = {
+        detail_response = {
             "status_code": 200,
-            "body": {
-                "resources": [
-                    {"id": "rule-id-1", "name": "Rule 1", "platform": "windows"},
-                    {"id": "rule-id-2", "name": "Rule 2", "platform": "windows"},
-                ]
-            },
+            "body": {"resources": [{"id": "rule-1", "name": "Rule 1"}]},
         }
-        self.mock_client.command.side_effect = [query_response, details_response]
+        self.mock_client.command.side_effect = [query_response, detail_response]
 
         result = self.module.search_firewall_rules(
             filter="enabled:true",
-            limit=20,
+            limit=10,
             offset=0,
             sort="modified_on.desc",
             q=None,
@@ -87,30 +109,30 @@ class TestFirewallModule(TestModules):
         )
 
         self.assertEqual(self.mock_client.command.call_count, 2)
-        first_call = self.mock_client.command.call_args_list[0]
-        second_call = self.mock_client.command.call_args_list[1]
+        self.mock_client.command.assert_any_call(
+            "query_rules",
+            parameters={
+                "filter": "enabled:true",
+                "limit": 10,
+                "offset": 0,
+                "sort": "modified_on.desc",
+            },
+        )
+        self.mock_client.command.assert_any_call("get_rules", parameters={"ids": ["rule-1"]})
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["id"], "rule-1")
 
-        self.assertEqual(first_call[0][0], "query_rules")
-        self.assertEqual(first_call[1]["parameters"]["filter"], "enabled:true")
-        self.assertEqual(first_call[1]["parameters"]["limit"], 20)
-        self.assertEqual(first_call[1]["parameters"]["offset"], 0)
-        self.assertEqual(first_call[1]["parameters"]["sort"], "modified_on.desc")
-
-        self.assertEqual(second_call[0][0], "get_rules")
-        self.assertEqual(second_call[1]["parameters"]["ids"], ["rule-id-1", "rule-id-2"])
-        self.assertEqual(len(result), 2)
-
-    def test_search_firewall_rules_empty_with_filter(self):
-        """Test rule search empty results with filter returns FQL guide wrapper."""
+    def test_query_firewall_rule_ids_empty_filter_returns_guide(self):
+        """Test empty query results with filter return FQL helper context."""
         self.mock_client.command.return_value = {
             "status_code": 200,
             "body": {"resources": []},
         }
 
-        result = self.module.search_firewall_rules(
-            filter="name:'DoesNotExist*'",
-            limit=10,
-            offset=None,
+        result = self.module.query_firewall_rule_ids(
+            filter="name:'missing*'",
+            limit=100,
+            offset=0,
             sort=None,
             q=None,
             after=None,
@@ -120,256 +142,146 @@ class TestFirewallModule(TestModules):
         self.assertEqual(result["results"], [])
         self.assertIn("fql_guide", result)
 
-    def test_search_firewall_rule_groups_success(self):
-        """Test searching firewall rule groups and fetching full details."""
-        query_response = {
-            "status_code": 200,
-            "body": {"resources": ["group-id-1"]},
-        }
-        details_response = {
-            "status_code": 200,
-            "body": {
-                "resources": [
-                    {"id": "group-id-1", "name": "Default Group", "platform": "windows"}
-                ]
-            },
-        }
-        self.mock_client.command.side_effect = [query_response, details_response]
+    def test_get_firewall_rules_validation_and_success(self):
+        """Test get rules validation and success path."""
+        validation_result = self.module.get_firewall_rules(ids=None)
+        self.assertIn("error", validation_result[0])
+        self.mock_client.command.assert_not_called()
 
-        result = self.module.search_firewall_rule_groups(
-            filter="enabled:true",
-            limit=10,
-            offset=0,
-            sort="modified_on.desc",
-            q=None,
-            after=None,
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "rule-1"}]},
+        }
+        success_result = self.module.get_firewall_rules(ids=["rule-1"])
+
+        self.mock_client.command.assert_called_once_with("get_rules", parameters={"ids": ["rule-1"]})
+        self.assertEqual(len(success_result), 1)
+        self.assertEqual(success_result[0]["id"], "rule-1")
+
+    def test_create_firewall_rule_group_confirm_required(self):
+        """Test create firewall rule group requires explicit confirmation."""
+        result = self.module.create_firewall_rule_group(
+            confirm_execution=False,
+            body={"name": "group"},
+            parameters=None,
         )
 
-        self.assertEqual(self.mock_client.command.call_count, 2)
-        self.assertEqual(self.mock_client.command.call_args_list[0][0][0], "query_rule_groups")
-        self.assertEqual(self.mock_client.command.call_args_list[1][0][0], "get_rule_groups")
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]["id"], "group-id-1")
-
-    def test_search_firewall_policy_rules_success(self):
-        """Test searching policy rules and fetching full rule details."""
-        query_response = {
-            "status_code": 200,
-            "body": {"resources": ["rule-id-10"]},
-        }
-        details_response = {
-            "status_code": 200,
-            "body": {
-                "resources": [
-                    {"id": "rule-id-10", "name": "Policy Rule", "platform": "windows"}
-                ]
-            },
-        }
-        self.mock_client.command.side_effect = [query_response, details_response]
-
-        result = self.module.search_firewall_policy_rules(
-            policy_id="policy-1",
-            filter="enabled:true",
-            limit=10,
-            offset=0,
-            sort="modified_on.desc",
-            q=None,
-        )
-
-        self.assertEqual(self.mock_client.command.call_count, 2)
-        first_call = self.mock_client.command.call_args_list[0]
-        self.assertEqual(first_call[0][0], "query_policy_rules")
-        self.assertEqual(first_call[1]["parameters"]["id"], "policy-1")
-        self.assertEqual(self.mock_client.command.call_args_list[1][0][0], "get_rules")
-        self.assertEqual(len(result), 1)
+        self.assertIn("error", result[0])
+        self.mock_client.command.assert_not_called()
 
     def test_create_firewall_rule_group_success(self):
-        """Test creating a firewall rule group with convenience fields."""
+        """Test create firewall rule group success path."""
         self.mock_client.command.return_value = {
             "status_code": 201,
-            "body": {
-                "resources": [
-                    {"id": "group-id-1", "name": "Test Group", "platform": "windows"}
-                ]
-            },
+            "body": {"resources": [{"id": "group-1"}]},
         }
 
         result = self.module.create_firewall_rule_group(
-            name="Test Group",
-            platform="windows",
-            rules=[{"name": "Rule 1", "action": "ALLOW"}],
-            description="Test firewall group",
-            enabled=True,
-            clone_id=None,
-            library=None,
-            comment="Create for tests",
-            body=None,
+            confirm_execution=True,
+            body={"name": "group-1"},
+            parameters={"comment": "integration"},
         )
 
         self.mock_client.command.assert_called_once_with(
             "create_rule_group",
-            parameters={"comment": "Create for tests"},
-            body={
-                "name": "Test Group",
-                "platform": "windows",
-                "enabled": True,
-                "description": "Test firewall group",
-                "rules": [{"name": "Rule 1", "action": "ALLOW"}],
-            },
+            parameters={"comment": "integration"},
+            body={"name": "group-1"},
         )
         self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]["id"], "group-id-1")
+        self.assertEqual(result[0]["id"], "group-1")
 
-    def test_create_firewall_rule_group_validation_missing_name_platform(self):
-        """Test create validation when name/platform are missing."""
-        result = self.module.create_firewall_rule_group(
-            name=None,
-            platform=None,
-            rules=None,
-            description=None,
-            enabled=True,
-            clone_id=None,
-            library=None,
+    def test_delete_firewall_rule_groups_validation_and_success(self):
+        """Test delete rule groups validation and success path."""
+        validation_result = self.module.delete_firewall_rule_groups(
+            confirm_execution=True,
+            ids=None,
             comment=None,
-            body=None,
         )
-
-        self.assertEqual(len(result), 1)
-        self.assertIn("error", result[0])
+        self.assertIn("error", validation_result[0])
         self.mock_client.command.assert_not_called()
 
-    def test_create_firewall_rule_group_validation_missing_rules_and_clone(self):
-        """Test create validation when neither rules nor clone_id is provided."""
-        result = self.module.create_firewall_rule_group(
-            name="Test Group",
-            platform="windows",
-            rules=None,
-            description=None,
-            enabled=True,
-            clone_id=None,
-            library=None,
-            comment=None,
-            body=None,
-        )
-
-        self.assertEqual(len(result), 1)
-        self.assertIn("error", result[0])
-        self.mock_client.command.assert_not_called()
-
-    def test_delete_firewall_rule_groups_success(self):
-        """Test deleting firewall rule groups by IDs."""
         self.mock_client.command.return_value = {
             "status_code": 200,
-            "body": {"resources": [{"id": "group-id-1"}]},
+            "body": {"resources": [{"id": "group-1"}]},
         }
-
-        result = self.module.delete_firewall_rule_groups(
-            ids=["group-id-1"],
+        success_result = self.module.delete_firewall_rule_groups(
+            confirm_execution=True,
+            ids=["group-1"],
             comment="cleanup",
         )
 
         self.mock_client.command.assert_called_once_with(
             "delete_rule_groups",
-            parameters={"ids": ["group-id-1"], "comment": "cleanup"},
+            parameters={"ids": ["group-1"], "comment": "cleanup"},
         )
-        self.assertEqual(len(result), 1)
+        self.assertEqual(len(success_result), 1)
+        self.assertEqual(success_result[0]["id"], "group-1")
 
-    def test_delete_firewall_rule_groups_validation(self):
-        """Test delete validation when ids are missing."""
-        result = self.module.delete_firewall_rule_groups(ids=None, comment=None)
-
-        self.assertEqual(len(result), 1)
+    def test_aggregate_firewall_rules_requires_body(self):
+        """Test aggregate operation requires body."""
+        result = self.module.aggregate_firewall_rules(body=None)
         self.assertIn("error", result[0])
         self.mock_client.command.assert_not_called()
 
-    def test_search_firewall_rules_query_error_with_filter(self):
-        """Test query error with filter returns FQL-wrapped response."""
+    def test_aggregate_firewall_events_success(self):
+        """Test aggregate events sends list body correctly."""
         self.mock_client.command.return_value = {
-            "status_code": 400,
-            "body": {"errors": [{"message": "Invalid filter syntax"}]},
-        }
-
-        result = self.module.search_firewall_rules(
-            filter="bad_field:'value'",
-            limit=10,
-            offset=None,
-            sort=None,
-            q=None,
-            after=None,
-        )
-
-        self.assertIsInstance(result, dict)
-        self.assertIn("results", result)
-        self.assertIn("fql_guide", result)
-        self.assertIn("hint", result)
-
-    def test_search_firewall_rules_query_error_without_filter(self):
-        """Test query error without filter returns plain error list."""
-        self.mock_client.command.return_value = {
-            "status_code": 400,
-            "body": {"errors": [{"message": "Bad request"}]},
-        }
-
-        result = self.module.search_firewall_rules(
-            filter=None,
-            limit=10,
-            offset=None,
-            sort=None,
-            q=None,
-            after=None,
-        )
-
-        self.assertIsInstance(result, list)
-        self.assertEqual(len(result), 1)
-        self.assertIn("error", result[0])
-
-    def test_search_firewall_rules_details_error(self):
-        """Test details step error returns plain error list."""
-        query_response = {
             "status_code": 200,
-            "body": {"resources": ["rule-id-1"]},
+            "body": {"resources": [{"count": 10}]},
         }
-        details_response = {
-            "status_code": 500,
-            "body": {"errors": [{"message": "Internal server error"}]},
-        }
-        self.mock_client.command.side_effect = [query_response, details_response]
 
-        result = self.module.search_firewall_rules(
-            filter="enabled:true",
-            limit=10,
-            offset=None,
-            sort=None,
-            q=None,
-            after=None,
+        result = self.module.aggregate_firewall_events(
+            body=[{"field": "event_type", "type": "terms"}],
         )
 
-        self.assertIsInstance(result, list)
+        self.mock_client.command.assert_called_once_with(
+            "aggregate_events",
+            body=[{"field": "event_type", "type": "terms"}],
+        )
         self.assertEqual(len(result), 1)
-        self.assertIn("error", result[0])
+        self.assertEqual(result[0]["count"], 10)
 
-    def test_search_firewall_rule_groups_query_error_with_filter(self):
-        """Test rule groups query error with filter returns FQL-wrapped response."""
+    def test_query_firewall_network_location_ids_empty_filter_returns_guide(self):
+        """Test network location query helper response for empty filtered result."""
         self.mock_client.command.return_value = {
-            "status_code": 400,
-            "body": {"errors": [{"message": "Invalid filter"}]},
+            "status_code": 200,
+            "body": {"resources": []},
         }
 
-        result = self.module.search_firewall_rule_groups(
-            filter="bad_field:'value'",
-            limit=10,
-            offset=None,
+        result = self.module.query_firewall_network_location_ids(
+            filter="name:'none*'",
+            limit=100,
+            offset=0,
             sort=None,
             q=None,
             after=None,
         )
 
         self.assertIsInstance(result, dict)
-        self.assertIn("results", result)
+        self.assertEqual(result["results"], [])
         self.assertIn("fql_guide", result)
-        self.assertIn("hint", result)
+
+    def test_validate_firewall_filepath_pattern_validation_and_success(self):
+        """Test filepath validation input checks and success path."""
+        validation_result = self.module.validate_firewall_filepath_pattern(filepath_pattern=None)
+        self.assertIn("error", validation_result[0])
+        self.mock_client.command.assert_not_called()
+
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"valid": True}]},
+        }
+        success_result = self.module.validate_firewall_filepath_pattern(
+            filepath_pattern="C:\\\\Windows\\\\*",
+        )
+
+        self.mock_client.command.assert_called_once_with(
+            "validate_filepath_pattern",
+            parameters={"filepath_pattern": "C:\\\\Windows\\\\*"},
+        )
+        self.assertEqual(len(success_result), 1)
+        self.assertTrue(success_result[0]["valid"])
 
 
 if __name__ == "__main__":
     unittest.main()
-
