@@ -148,6 +148,14 @@ class TestApiScopes(unittest.TestCase):
             ["Device Control Policies:write"],
         )
         self.assertEqual(
+            get_required_scopes("queryCombinedFirewallPolicies"),
+            ["Firewall Policies:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("performFirewallPoliciesAction"),
+            ["Firewall Policies:write"],
+        )
+        self.assertEqual(
             get_required_scopes("WorkflowDefinitionsCombined"),
             ["Workflow:read"],
         )
@@ -275,6 +283,8 @@ class TestApiScopes(unittest.TestCase):
             ("performSensorUpdatePoliciesAction", ["Sensor Update Policies:write"]),
             ("queryCombinedDeviceControlPolicies", ["Device Control Policies:read"]),
             ("performDeviceControlPoliciesAction", ["Device Control Policies:write"]),
+            ("queryCombinedFirewallPolicies", ["Firewall Policies:read"]),
+            ("performFirewallPoliciesAction", ["Firewall Policies:write"]),
             ("WorkflowDefinitionsCombined", ["Workflow:read"]),
             ("WorkflowExecute", ["Workflow:write"]),
             ("RTR_ExecuteCommand", ["Real Time Response:read"]),
@@ -361,6 +371,7 @@ class TestApiScopes(unittest.TestCase):
             "Response Policies",
             "Sensor Update Policies",
             "Device Control Policies",
+            "Firewall Policies",
             "Workflow",
         ]
 
@@ -540,6 +551,18 @@ class TestApiScopes(unittest.TestCase):
                 "patchDeviceControlPoliciesV2",
                 "queryDeviceControlPolicyMembers",
                 "queryDeviceControlPolicies",
+            ],
+            "firewall_policies": [
+                "queryCombinedFirewallPolicyMembers",
+                "queryCombinedFirewallPolicies",
+                "performFirewallPoliciesAction",
+                "setFirewallPoliciesPrecedence",
+                "getFirewallPolicies",
+                "createFirewallPolicies",
+                "updateFirewallPolicies",
+                "deleteFirewallPolicies",
+                "queryFirewallPolicyMembers",
+                "queryFirewallPolicies",
             ],
             "workflows": [
                 "WorkflowActivitiesCombined",

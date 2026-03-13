@@ -33,6 +33,7 @@
   - [Prevention Policies Module](#prevention-policies-module)
   - [Response Policies Module](#response-policies-module)
   - [Device Control Policies Module](#device-control-policies-module)
+  - [Firewall Policies Module](#firewall-policies-module)
   - [Sensor Update Policies Module](#sensor-update-policies-module)
   - [Workflows Module](#workflows-module)
   - [IT Automation Module](#it-automation-module)
@@ -114,6 +115,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Prevention Policies** | `Prevention Policies:read`<br>`Prevention Policies:write` | Search and manage prevention policies, policy members, policy actions, and precedence ordering |
 | **Response Policies** | `Response Policies:read`<br>`Response Policies:write` | Search and manage response policies, policy members, policy actions, and precedence ordering |
 | **Device Control Policies** | `Device Control Policies:read`<br>`Device Control Policies:write` | Search and manage device control policies, defaults, classes, precedence, actions, and policy member relationships |
+| **Firewall Policies** | `Firewall Policies:read`<br>`Firewall Policies:write` | Search and manage firewall policies, policy actions, precedence, and policy member relationships |
 | **Sensor Update Policies** | `Sensor Update Policies:read`<br>`Sensor Update Policies:write` | Search and manage sensor update policies, builds, kernels, precedence, actions, and uninstall token reveal workflows |
 | **Workflows** | `Workflow:read`<br>`Workflow:write` | Search and manage workflow definitions, executions, human inputs, and system-definition lifecycle actions |
 | **IT Automation** | `IT Automation:read`<br>`IT Automation:write` | Execute high-impact task runs and live queries with execution status/result controls |
@@ -483,6 +485,34 @@ Provides full Device Control Policies service collection coverage:
 - `falcon://device-control-policies/safety-guide`: Operational guardrails for device control policy write operations
 
 **Use Cases**: Device policy inventory, host assignment analysis, default policy governance, class configuration management, and precedence orchestration
+
+### Firewall Policies Module
+
+**API Scopes Required**:
+
+- `Firewall Policies:read`
+- `Firewall Policies:write`
+
+Provides full Firewall Policies service collection coverage:
+
+- `falcon_search_firewall_policy_members`: Search members assigned to a specific firewall policy
+- `falcon_search_firewall_policies`: Search firewall policies with combined detail responses
+- `falcon_perform_firewall_policies_action`: Apply firewall policy actions (`confirm_execution=true` required)
+- `falcon_set_firewall_policies_precedence`: Set firewall policy precedence ordering (`confirm_execution=true` required)
+- `falcon_get_firewall_policy_details`: Retrieve firewall policy records by ID
+- `falcon_create_firewall_policies`: Create firewall policies (`confirm_execution=true` required)
+- `falcon_update_firewall_policies`: Update firewall policies (`confirm_execution=true` required)
+- `falcon_delete_firewall_policies`: Delete firewall policies (`confirm_execution=true` required)
+- `falcon_query_firewall_policy_member_ids`: Query firewall policy member IDs
+- `falcon_query_firewall_policy_ids`: Query firewall policy IDs
+
+**Resources**:
+
+- `falcon://firewall-policies/policies/fql-guide`: FQL documentation and examples for firewall policy search/query tools
+- `falcon://firewall-policies/members/fql-guide`: FQL documentation and examples for firewall policy member search/query tools
+- `falcon://firewall-policies/safety-guide`: Operational guardrails for firewall policy write operations
+
+**Use Cases**: Firewall policy inventory, host assignment analysis, policy lifecycle control, and precedence orchestration
 
 ### Sensor Update Policies Module
 

@@ -199,6 +199,17 @@ API_SCOPE_REQUIREMENTS = {
     "patchDeviceControlPoliciesV2": ["Device Control Policies:write"],
     "queryDeviceControlPolicyMembers": ["Device Control Policies:read"],
     "queryDeviceControlPolicies": ["Device Control Policies:read"],
+    # Firewall Policies operations
+    "queryCombinedFirewallPolicyMembers": ["Firewall Policies:read"],
+    "queryCombinedFirewallPolicies": ["Firewall Policies:read"],
+    "performFirewallPoliciesAction": ["Firewall Policies:write"],
+    "setFirewallPoliciesPrecedence": ["Firewall Policies:write"],
+    "getFirewallPolicies": ["Firewall Policies:read"],
+    "createFirewallPolicies": ["Firewall Policies:write"],
+    "updateFirewallPolicies": ["Firewall Policies:write"],
+    "deleteFirewallPolicies": ["Firewall Policies:write"],
+    "queryFirewallPolicyMembers": ["Firewall Policies:read"],
+    "queryFirewallPolicies": ["Firewall Policies:read"],
     # Response Policies operations
     "queryCombinedRTResponsePolicyMembers": ["Response Policies:read"],
     "queryCombinedRTResponsePolicies": ["Response Policies:read"],
