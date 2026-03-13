@@ -29,6 +29,7 @@
   - [Identity Protection Module](#identity-protection-module)
   - [User Management Module](#user-management-module)
   - [Incidents Module](#incidents-module)
+  - [Installation Tokens Module](#installation-tokens-module)
   - [IT Automation Module](#it-automation-module)
   - [NGSIEM Module](#ngsiem-module)
   - [Intel Module](#intel-module)
@@ -104,6 +105,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Identity Protection** | `Identity Protection Entities:read`<br>`Identity Protection Timeline:read`<br>`Identity Protection Detections:read`<br>`Identity Protection Assessment:read`<br>`Identity Protection GraphQL:write` | Comprehensive entity investigation and identity protection analysis |
 | **User Management** | `User Management:read`<br>`User Management:write` | Search users and roles, review grants, and perform controlled user/role assignment changes |
 | **Incidents** | `Incidents:read` | Analyze security incidents and coordinated activities |
+| **Installation Tokens** | `Installation Tokens:read`<br>`Installation Tokens:write`<br>`Installation Tokens Settings:write` | Search and manage installation tokens, inspect audit events, and control tenant token settings |
 | **IT Automation** | `IT Automation:read`<br>`IT Automation:write` | Execute high-impact task runs and live queries with execution status/result controls |
 | **NGSIEM** | `NGSIEM:read`<br>`NGSIEM:write` | Execute CQL queries against Next-Gen SIEM |
 | **Intel** | `Actors (Falcon Intelligence):read`<br>`Indicators (Falcon Intelligence):read`<br>`Reports (Falcon Intelligence):read` | Research threat actors, IOCs, and intelligence reports |
@@ -350,6 +352,34 @@ Provides tools for accessing and analyzing CrowdStrike Falcon incidents:
 - `falcon://incidents/behaviors/fql-guide`: Comprehensive FQL documentation and examples for behavior searches
 
 **Use Cases**: Incident management, threat assessment, attack pattern analysis, security posture monitoring
+
+### Installation Tokens Module
+
+**API Scopes Required**:
+
+- `Installation Tokens:read`
+- `Installation Tokens:write`
+- `Installation Tokens Settings:write`
+
+Provides full Installation Tokens service collection coverage:
+
+- `falcon_search_installation_tokens`: Search installation token IDs and return full token details
+- `falcon_get_installation_token_details`: Retrieve token records by ID
+- `falcon_create_installation_token`: Create a token (`confirm_execution=true` required)
+- `falcon_update_installation_tokens`: Update token fields (`confirm_execution=true` required)
+- `falcon_delete_installation_tokens`: Delete token IDs (`confirm_execution=true` required)
+- `falcon_search_installation_token_audit_events`: Search audit event IDs and return full event details
+- `falcon_get_installation_token_audit_event_details`: Retrieve audit event records by ID
+- `falcon_get_installation_token_customer_settings`: Read token customer settings
+- `falcon_update_installation_token_customer_settings`: Update token customer settings (`confirm_execution=true` required)
+
+**Resources**:
+
+- `falcon://installation-tokens/tokens/fql-guide`: FQL documentation and examples for token searches
+- `falcon://installation-tokens/audit/fql-guide`: FQL documentation and examples for audit event searches
+- `falcon://installation-tokens/safety-guide`: Operational guardrails for write operations
+
+**Use Cases**: Sensor installation token lifecycle management, token audit investigations, revocation workflows, tenant token policy governance
 
 ### IT Automation Module
 

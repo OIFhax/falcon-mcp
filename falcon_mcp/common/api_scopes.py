@@ -151,6 +151,16 @@ API_SCOPE_REQUIREMENTS = {
     "GetSensorInstallersCCIDByQuery": ["Sensor Download:read"],
     "GetSensorInstallersByQuery": ["Sensor Download:read"],
     "GetSensorInstallersByQueryV2": ["Sensor Download:read"],
+    # Installation Tokens operations
+    "audit_events_read": ["Installation Tokens:read"],
+    "customer_settings_read": ["Installation Tokens:read"],
+    "tokens_read": ["Installation Tokens:read"],
+    "audit_events_query": ["Installation Tokens:read"],
+    "tokens_query": ["Installation Tokens:read"],
+    "tokens_create": ["Installation Tokens:write"],
+    "tokens_delete": ["Installation Tokens:write"],
+    "tokens_update": ["Installation Tokens:write"],
+    "customer_settings_update": ["Installation Tokens Settings:write"],
     # Quarantine operations
     "ActionUpdateCount": ["Quarantined Files:read"],
     "GetAggregateFiles": ["Quarantined Files:read"],
