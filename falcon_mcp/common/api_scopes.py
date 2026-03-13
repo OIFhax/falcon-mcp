@@ -151,6 +151,13 @@ API_SCOPE_REQUIREMENTS = {
     "GetSensorInstallersCCIDByQuery": ["Sensor Download:read"],
     "GetSensorInstallersByQuery": ["Sensor Download:read"],
     "GetSensorInstallersByQueryV2": ["Sensor Download:read"],
+    # Quarantine operations
+    "ActionUpdateCount": ["Quarantined Files:read"],
+    "GetAggregateFiles": ["Quarantined Files:read"],
+    "GetQuarantineFiles": ["Quarantined Files:read"],
+    "QueryQuarantineFiles": ["Quarantined Files:read"],
+    "UpdateQfByQuery": ["Quarantined Files:write"],
+    "UpdateQuarantinedDetectsByIds": ["Quarantined Files:write"],
     # Serverless operations
     "GetCombinedVulnerabilitiesSARIF": ["Falcon Container Image:read"],
     # Scheduled Reports operations

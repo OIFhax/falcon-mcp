@@ -108,6 +108,10 @@ class TestApiScopes(unittest.TestCase):
             ["Sensor Download:read"],
         )
         self.assertEqual(
+            get_required_scopes("QueryQuarantineFiles"),
+            ["Quarantined Files:read"],
+        )
+        self.assertEqual(
             get_required_scopes("RTR_ExecuteAdminCommand"),
             ["Real Time Response Admin:write"],
         )
@@ -217,6 +221,7 @@ class TestApiScopes(unittest.TestCase):
             ("getAssessmentV1", ["Zero Trust Assessment:read"]),
             ("getCombinedAssessmentsQuery", ["Zero Trust Assessment:read"]),
             ("GetSensorInstallersByQueryV2", ["Sensor Download:read"]),
+            ("QueryQuarantineFiles", ["Quarantined Files:read"]),
             ("RTR_ExecuteCommand", ["Real Time Response:read"]),
             ("RTR_ExecuteAdminCommand", ["Real Time Response Admin:write"]),
             ("RTRAuditSessions", ["Real Time Response Audit:read"]),
@@ -295,6 +300,7 @@ class TestApiScopes(unittest.TestCase):
             "Exposure Management",
             "NGSIEM",
             "User Management",
+            "Quarantined Files",
         ]
 
         for resource in read_write_resources:
@@ -390,6 +396,14 @@ class TestApiScopes(unittest.TestCase):
                 "GetSensorInstallersCCIDByQuery",
                 "GetSensorInstallersByQuery",
                 "GetSensorInstallersByQueryV2",
+            ],
+            "quarantine": [
+                "ActionUpdateCount",
+                "GetAggregateFiles",
+                "GetQuarantineFiles",
+                "QueryQuarantineFiles",
+                "UpdateQfByQuery",
+                "UpdateQuarantinedDetectsByIds",
             ],
             "ioa_exclusions": [
                 "queryIOAExclusionsV1",

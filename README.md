@@ -35,6 +35,7 @@
   - [IOC Module](#ioc-module)
   - [IOA Exclusions Module](#ioa-exclusions-module)
   - [Firewall Management Module](#firewall-management-module)
+  - [Quarantine Module](#quarantine-module)
   - [Real Time Response Module](#real-time-response-module)
   - [Scheduled Reports Module](#scheduled-reports-module)
   - [Sensor Download Module](#sensor-download-module)
@@ -109,6 +110,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **IOC** | `IOC Management:read`<br>`IOC Management:write` | Search, create, and remove custom IOCs using IOC Service Collection endpoints |
 | **IOA Exclusions** | `IOA Exclusions:read`<br>`IOA Exclusions:write` | Search, create, update, and delete IOA exclusions |
 | **Firewall Management** | `Firewall Management:read`<br>`Firewall Management:write` | Search and manage firewall rules and rule groups |
+| **Quarantine** | `Quarantined Files:read`<br>`Quarantined Files:write` | Search and aggregate quarantined files, estimate update impact, and apply quarantine actions |
 | **Real Time Response** | `Real Time Response:read`<br>`Real Time Response Admin:write`<br>`Real Time Response Audit:read` | Unified RTR module covering session workflows, admin command/script operations, and audit session search |
 | **Scheduled Reports** | `Scheduled Reports:read` | Get details about scheduled reports and searches, run reports on demand, and download report files |
 | **Sensor Download** | `Sensor Download:read` | Query installer catalogs, retrieve metadata and CCID values, and download installer binaries |
@@ -471,6 +473,30 @@ Provides tools for searching and managing Falcon firewall rule entities:
 - `falcon://firewall/rules/fql-guide`: FQL documentation and examples for firewall rule searches
 
 **Use Cases**: Firewall policy hygiene, rule group lifecycle management, rule auditing, policy-specific rule analysis
+
+### Quarantine Module
+
+**API Scopes Required**:
+
+- `Quarantined Files:read`
+- `Quarantined Files:write`
+
+Provides full Quarantine service collection coverage:
+
+- `falcon_search_quarantine_files`: Search quarantined file IDs and return full metadata details
+- `falcon_get_quarantine_file_details`: Retrieve quarantined file metadata by ID
+- `falcon_aggregate_quarantine_files`: Run aggregate queries against quarantined file data
+- `falcon_get_quarantine_action_update_count`: Estimate impacted file counts per action using a filter
+- `falcon_update_quarantine_files_by_ids`: Apply `release`, `unrelease`, or `delete` action by explicit file IDs (requires `confirm_execution=true`)
+- `falcon_update_quarantine_files_by_query`: Apply `release`, `unrelease`, or `delete` action by query filter or phrase search (requires `confirm_execution=true`)
+
+**Resources**:
+
+- `falcon://quarantine/files/fql-guide`: FQL documentation and examples for quarantine search/action-count filters
+- `falcon://quarantine/files/aggregation-guide`: Aggregation body example for quarantine aggregate queries
+- `falcon://quarantine/files/safety-guide`: Operational guardrails for quarantine update operations
+
+**Use Cases**: Quarantine triage, release/delete workflow automation, impact estimation before actions, quarantine state analytics
 
 ### Real Time Response Module
 
