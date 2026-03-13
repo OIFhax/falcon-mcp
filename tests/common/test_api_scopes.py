@@ -124,6 +124,14 @@ class TestApiScopes(unittest.TestCase):
             ["Prevention Policies:write"],
         )
         self.assertEqual(
+            get_required_scopes("queryCombinedRTResponsePolicies"),
+            ["Response Policies:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("performRTResponsePoliciesAction"),
+            ["Response Policies:write"],
+        )
+        self.assertEqual(
             get_required_scopes("WorkflowDefinitionsCombined"),
             ["Workflow:read"],
         )
@@ -245,6 +253,8 @@ class TestApiScopes(unittest.TestCase):
             ("tokens_query", ["Installation Tokens:read"]),
             ("queryCombinedPreventionPolicies", ["Prevention Policies:read"]),
             ("performPreventionPoliciesAction", ["Prevention Policies:write"]),
+            ("queryCombinedRTResponsePolicies", ["Response Policies:read"]),
+            ("performRTResponsePoliciesAction", ["Response Policies:write"]),
             ("WorkflowDefinitionsCombined", ["Workflow:read"]),
             ("WorkflowExecute", ["Workflow:write"]),
             ("RTR_ExecuteCommand", ["Real Time Response:read"]),
@@ -328,6 +338,7 @@ class TestApiScopes(unittest.TestCase):
             "Quarantined Files",
             "Installation Tokens",
             "Prevention Policies",
+            "Response Policies",
             "Workflow",
         ]
 
@@ -455,6 +466,18 @@ class TestApiScopes(unittest.TestCase):
                 "deletePreventionPolicies",
                 "queryPreventionPolicyMembers",
                 "queryPreventionPolicies",
+            ],
+            "response_policies": [
+                "queryCombinedRTResponsePolicyMembers",
+                "queryCombinedRTResponsePolicies",
+                "performRTResponsePoliciesAction",
+                "setRTResponsePoliciesPrecedence",
+                "getRTResponsePolicies",
+                "createRTResponsePolicies",
+                "updateRTResponsePolicies",
+                "deleteRTResponsePolicies",
+                "queryRTResponsePolicyMembers",
+                "queryRTResponsePolicies",
             ],
             "workflows": [
                 "WorkflowActivitiesCombined",

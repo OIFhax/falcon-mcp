@@ -161,6 +161,17 @@ API_SCOPE_REQUIREMENTS = {
     "tokens_delete": ["Installation Tokens:write"],
     "tokens_update": ["Installation Tokens:write"],
     "customer_settings_update": ["Installation Tokens Settings:write"],
+    # Response Policies operations
+    "queryCombinedRTResponsePolicyMembers": ["Response Policies:read"],
+    "queryCombinedRTResponsePolicies": ["Response Policies:read"],
+    "getRTResponsePolicies": ["Response Policies:read"],
+    "queryRTResponsePolicyMembers": ["Response Policies:read"],
+    "queryRTResponsePolicies": ["Response Policies:read"],
+    "performRTResponsePoliciesAction": ["Response Policies:write"],
+    "setRTResponsePoliciesPrecedence": ["Response Policies:write"],
+    "createRTResponsePolicies": ["Response Policies:write"],
+    "updateRTResponsePolicies": ["Response Policies:write"],
+    "deleteRTResponsePolicies": ["Response Policies:write"],
     # Prevention Policies operations
     "queryCombinedPreventionPolicyMembers": ["Prevention Policies:read"],
     "queryCombinedPreventionPolicies": ["Prevention Policies:read"],

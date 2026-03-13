@@ -31,6 +31,7 @@
   - [Incidents Module](#incidents-module)
   - [Installation Tokens Module](#installation-tokens-module)
   - [Prevention Policies Module](#prevention-policies-module)
+  - [Response Policies Module](#response-policies-module)
   - [Workflows Module](#workflows-module)
   - [IT Automation Module](#it-automation-module)
   - [NGSIEM Module](#ngsiem-module)
@@ -109,6 +110,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Incidents** | `Incidents:read` | Analyze security incidents and coordinated activities |
 | **Installation Tokens** | `Installation Tokens:read`<br>`Installation Tokens:write`<br>`Installation Tokens Settings:write` | Search and manage installation tokens, inspect audit events, and control tenant token settings |
 | **Prevention Policies** | `Prevention Policies:read`<br>`Prevention Policies:write` | Search and manage prevention policies, policy members, policy actions, and precedence ordering |
+| **Response Policies** | `Response Policies:read`<br>`Response Policies:write` | Search and manage response policies, policy members, policy actions, and precedence ordering |
 | **Workflows** | `Workflow:read`<br>`Workflow:write` | Search and manage workflow definitions, executions, human inputs, and system-definition lifecycle actions |
 | **IT Automation** | `IT Automation:read`<br>`IT Automation:write` | Execute high-impact task runs and live queries with execution status/result controls |
 | **NGSIEM** | `NGSIEM:read`<br>`NGSIEM:write` | Execute CQL queries against Next-Gen SIEM |
@@ -412,6 +414,34 @@ Provides full Prevention Policies service collection coverage:
 - `falcon://prevention-policies/safety-guide`: Operational guardrails for prevention policy write operations
 
 **Use Cases**: Prevention policy inventory, policy-member assignment analysis, controlled policy lifecycle actions, and precedence governance
+
+### Response Policies Module
+
+**API Scopes Required**:
+
+- `Response Policies:read`
+- `Response Policies:write`
+
+Provides full Response Policies service collection coverage:
+
+- `falcon_search_response_policies`: Search response policies with combined detail responses
+- `falcon_search_response_policy_members`: Search members assigned to a specific response policy
+- `falcon_query_response_policy_ids`: Query response policy IDs
+- `falcon_query_response_policy_member_ids`: Query response policy member IDs for a specific policy
+- `falcon_get_response_policy_details`: Retrieve response policy records by ID
+- `falcon_create_response_policies`: Create response policies (`confirm_execution=true` required)
+- `falcon_update_response_policies`: Update response policies (`confirm_execution=true` required)
+- `falcon_delete_response_policies`: Delete response policies (`confirm_execution=true` required)
+- `falcon_perform_response_policies_action`: Apply response policy actions (`confirm_execution=true` required)
+- `falcon_set_response_policies_precedence`: Set response policy precedence ordering (`confirm_execution=true` required)
+
+**Resources**:
+
+- `falcon://response-policies/policies/fql-guide`: FQL documentation and examples for response policy search/query tools
+- `falcon://response-policies/members/fql-guide`: FQL documentation and examples for response policy member search/query tools
+- `falcon://response-policies/safety-guide`: Operational guardrails for response policy write operations
+
+**Use Cases**: Response policy inventory, policy-member assignment analysis, controlled policy lifecycle actions, and precedence governance
 
 ### Workflows Module
 
