@@ -37,6 +37,7 @@
   - [Firewall Management Module](#firewall-management-module)
   - [Real Time Response Module](#real-time-response-module)
   - [Scheduled Reports Module](#scheduled-reports-module)
+  - [Sensor Download Module](#sensor-download-module)
   - [Sensor Usage Module](#sensor-usage-module)
   - [Serverless Module](#serverless-module)
   - [Spotlight Module](#spotlight-module)
@@ -110,6 +111,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Firewall Management** | `Firewall Management:read`<br>`Firewall Management:write` | Search and manage firewall rules and rule groups |
 | **Real Time Response** | `Real Time Response:read`<br>`Real Time Response Admin:write`<br>`Real Time Response Audit:read` | Unified RTR module covering session workflows, admin command/script operations, and audit session search |
 | **Scheduled Reports** | `Scheduled Reports:read` | Get details about scheduled reports and searches, run reports on demand, and download report files |
+| **Sensor Download** | `Sensor Download:read` | Query installer catalogs, retrieve metadata and CCID values, and download installer binaries |
 | **Sensor Usage** | `Sensor Usage:read` | Access and analyze sensor usage data |
 | **Serverless** | `Falcon Container Image:read` | Search for vulnerabilities in serverless functions across cloud service providers |
 | **Spotlight** | `Vulnerabilities:read` | Manage and analyze vulnerability data and security assessments |
@@ -532,6 +534,29 @@ Provides tools for accessing and managing CrowdStrike Falcon scheduled reports a
 - `falcon://scheduled-reports/executions/search/fql-guide`: Comprehensive FQL documentation for searching report executions
 
 **Use Cases**: Automated report management, report execution monitoring, scheduled search analysis, report download automation
+
+### Sensor Download Module
+
+**API Scopes Required**: `Sensor Download:read`
+
+Provides tools for querying and downloading Falcon sensor installers:
+
+- `falcon_search_sensor_installer_ids`: Query installer SHA256 IDs using Sensor Download v1 query endpoint
+- `falcon_search_sensor_installer_ids_v2`: Query installer SHA256 IDs using Sensor Download v2 query endpoint
+- `falcon_get_sensor_installer_details`: Retrieve installer metadata by SHA256 (v1)
+- `falcon_get_sensor_installer_details_v2`: Retrieve installer metadata by SHA256 (v2, includes architectures)
+- `falcon_search_sensor_installers_combined`: Search installer metadata directly using combined v1 endpoint
+- `falcon_search_sensor_installers_combined_v2`: Search installer metadata directly using combined v2 endpoint
+- `falcon_get_sensor_installer_ccid`: Retrieve tenant installer CCID values
+- `falcon_download_sensor_installer`: Download installer binary via v1 endpoint with optional inline base64 return
+- `falcon_download_sensor_installer_v2`: Download installer binary via v2 endpoint with optional inline base64 return
+
+**Resources**:
+
+- `falcon://sensor-download/installers/fql-guide`: FQL filter/sort guidance for installer search tools
+- `falcon://sensor-download/installers/download-guide`: Binary download behavior and inline content guidance
+
+**Use Cases**: Sensor deployment automation, installer inventory validation, installer retrieval workflows, architecture-aware sensor packaging
 
 ### Serverless Module
 

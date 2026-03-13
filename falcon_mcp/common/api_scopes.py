@@ -141,6 +141,16 @@ API_SCOPE_REQUIREMENTS = {
     "userRolesActionV1": ["User Management:write"],
     # Sensor Usage operations
     "GetSensorUsageWeekly": ["Sensor Usage:read"],
+    # Sensor Download operations
+    "GetCombinedSensorInstallersByQuery": ["Sensor Download:read"],
+    "GetCombinedSensorInstallersByQueryV2": ["Sensor Download:read"],
+    "DownloadSensorInstallerById": ["Sensor Download:read"],
+    "DownloadSensorInstallerByIdV2": ["Sensor Download:read"],
+    "GetSensorInstallersEntities": ["Sensor Download:read"],
+    "GetSensorInstallersEntitiesV2": ["Sensor Download:read"],
+    "GetSensorInstallersCCIDByQuery": ["Sensor Download:read"],
+    "GetSensorInstallersByQuery": ["Sensor Download:read"],
+    "GetSensorInstallersByQueryV2": ["Sensor Download:read"],
     # Serverless operations
     "GetCombinedVulnerabilitiesSARIF": ["Falcon Container Image:read"],
     # Scheduled Reports operations

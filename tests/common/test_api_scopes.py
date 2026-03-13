@@ -104,6 +104,10 @@ class TestApiScopes(unittest.TestCase):
             ["Zero Trust Assessment:read"],
         )
         self.assertEqual(
+            get_required_scopes("GetSensorInstallersByQueryV2"),
+            ["Sensor Download:read"],
+        )
+        self.assertEqual(
             get_required_scopes("RTR_ExecuteAdminCommand"),
             ["Real Time Response Admin:write"],
         )
@@ -212,6 +216,7 @@ class TestApiScopes(unittest.TestCase):
             ("GetArchiveExport", ["CAO Hunting:read"]),
             ("getAssessmentV1", ["Zero Trust Assessment:read"]),
             ("getCombinedAssessmentsQuery", ["Zero Trust Assessment:read"]),
+            ("GetSensorInstallersByQueryV2", ["Sensor Download:read"]),
             ("RTR_ExecuteCommand", ["Real Time Response:read"]),
             ("RTR_ExecuteAdminCommand", ["Real Time Response Admin:write"]),
             ("RTRAuditSessions", ["Real Time Response Audit:read"]),
@@ -269,7 +274,7 @@ class TestApiScopes(unittest.TestCase):
             "Alerts", "Hosts", "Incidents", "Vulnerabilities",
             "Assets", "Sensor Usage", "Scheduled Reports",
             "Real Time Response", "Real Time Response Audit", "CAO Hunting",
-            "Zero Trust Assessment",
+            "Zero Trust Assessment", "Sensor Download",
         ]
 
         for resource in read_only_resources:
@@ -374,6 +379,17 @@ class TestApiScopes(unittest.TestCase):
             "scheduled_reports": [
                 "scheduled_reports_query", "scheduled_reports_get", "scheduled_reports_launch",
                 "report_executions_query", "report_executions_get", "report_executions_download_get"
+            ],
+            "sensor_download": [
+                "GetCombinedSensorInstallersByQuery",
+                "GetCombinedSensorInstallersByQueryV2",
+                "DownloadSensorInstallerById",
+                "DownloadSensorInstallerByIdV2",
+                "GetSensorInstallersEntities",
+                "GetSensorInstallersEntitiesV2",
+                "GetSensorInstallersCCIDByQuery",
+                "GetSensorInstallersByQuery",
+                "GetSensorInstallersByQueryV2",
             ],
             "ioa_exclusions": [
                 "queryIOAExclusionsV1",
