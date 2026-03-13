@@ -132,6 +132,14 @@ class TestApiScopes(unittest.TestCase):
             ["Response Policies:write"],
         )
         self.assertEqual(
+            get_required_scopes("queryCombinedSensorUpdatePolicies"),
+            ["Sensor Update Policies:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("performSensorUpdatePoliciesAction"),
+            ["Sensor Update Policies:write"],
+        )
+        self.assertEqual(
             get_required_scopes("WorkflowDefinitionsCombined"),
             ["Workflow:read"],
         )
@@ -255,6 +263,8 @@ class TestApiScopes(unittest.TestCase):
             ("performPreventionPoliciesAction", ["Prevention Policies:write"]),
             ("queryCombinedRTResponsePolicies", ["Response Policies:read"]),
             ("performRTResponsePoliciesAction", ["Response Policies:write"]),
+            ("queryCombinedSensorUpdatePolicies", ["Sensor Update Policies:read"]),
+            ("performSensorUpdatePoliciesAction", ["Sensor Update Policies:write"]),
             ("WorkflowDefinitionsCombined", ["Workflow:read"]),
             ("WorkflowExecute", ["Workflow:write"]),
             ("RTR_ExecuteCommand", ["Real Time Response:read"]),
@@ -339,6 +349,7 @@ class TestApiScopes(unittest.TestCase):
             "Installation Tokens",
             "Prevention Policies",
             "Response Policies",
+            "Sensor Update Policies",
             "Workflow",
         ]
 
@@ -478,6 +489,26 @@ class TestApiScopes(unittest.TestCase):
                 "deleteRTResponsePolicies",
                 "queryRTResponsePolicyMembers",
                 "queryRTResponsePolicies",
+            ],
+            "sensor_update_policies": [
+                "revealUninstallToken",
+                "queryCombinedSensorUpdateBuilds",
+                "queryCombinedSensorUpdateKernels",
+                "queryCombinedSensorUpdatePolicyMembers",
+                "queryCombinedSensorUpdatePolicies",
+                "queryCombinedSensorUpdatePoliciesV2",
+                "performSensorUpdatePoliciesAction",
+                "setSensorUpdatePoliciesPrecedence",
+                "getSensorUpdatePolicies",
+                "createSensorUpdatePolicies",
+                "updateSensorUpdatePolicies",
+                "deleteSensorUpdatePolicies",
+                "getSensorUpdatePoliciesV2",
+                "createSensorUpdatePoliciesV2",
+                "updateSensorUpdatePoliciesV2",
+                "querySensorUpdateKernelsDistinct",
+                "querySensorUpdatePolicyMembers",
+                "querySensorUpdatePolicies",
             ],
             "workflows": [
                 "WorkflowActivitiesCombined",
