@@ -32,6 +32,7 @@
   - [Installation Tokens Module](#installation-tokens-module)
   - [Prevention Policies Module](#prevention-policies-module)
   - [Response Policies Module](#response-policies-module)
+  - [Device Control Policies Module](#device-control-policies-module)
   - [Sensor Update Policies Module](#sensor-update-policies-module)
   - [Workflows Module](#workflows-module)
   - [IT Automation Module](#it-automation-module)
@@ -112,6 +113,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Installation Tokens** | `Installation Tokens:read`<br>`Installation Tokens:write`<br>`Installation Tokens Settings:write` | Search and manage installation tokens, inspect audit events, and control tenant token settings |
 | **Prevention Policies** | `Prevention Policies:read`<br>`Prevention Policies:write` | Search and manage prevention policies, policy members, policy actions, and precedence ordering |
 | **Response Policies** | `Response Policies:read`<br>`Response Policies:write` | Search and manage response policies, policy members, policy actions, and precedence ordering |
+| **Device Control Policies** | `Device Control Policies:read`<br>`Device Control Policies:write` | Search and manage device control policies, defaults, classes, precedence, actions, and policy member relationships |
 | **Sensor Update Policies** | `Sensor Update Policies:read`<br>`Sensor Update Policies:write` | Search and manage sensor update policies, builds, kernels, precedence, actions, and uninstall token reveal workflows |
 | **Workflows** | `Workflow:read`<br>`Workflow:write` | Search and manage workflow definitions, executions, human inputs, and system-definition lifecycle actions |
 | **IT Automation** | `IT Automation:read`<br>`IT Automation:write` | Execute high-impact task runs and live queries with execution status/result controls |
@@ -444,6 +446,43 @@ Provides full Response Policies service collection coverage:
 - `falcon://response-policies/safety-guide`: Operational guardrails for response policy write operations
 
 **Use Cases**: Response policy inventory, policy-member assignment analysis, controlled policy lifecycle actions, and precedence governance
+
+### Device Control Policies Module
+
+**API Scopes Required**:
+
+- `Device Control Policies:read`
+- `Device Control Policies:write`
+
+Provides full Device Control Policies service collection coverage:
+
+- `falcon_search_device_control_policy_members`: Search members assigned to a specific device control policy
+- `falcon_search_device_control_policies`: Search device control policies with combined detail responses
+- `falcon_get_default_device_control_policies`: Retrieve default device control policy configuration
+- `falcon_update_default_device_control_policies`: Update default policy configuration (`confirm_execution=true` required)
+- `falcon_perform_device_control_policies_action`: Apply policy actions (`confirm_execution=true` required)
+- `falcon_update_device_control_policies_classes`: Patch policy class configuration (`confirm_execution=true` required)
+- `falcon_get_default_device_control_settings`: Retrieve default device control settings
+- `falcon_update_default_device_control_settings`: Update default settings (`confirm_execution=true` required)
+- `falcon_set_device_control_policies_precedence`: Set policy precedence ordering (`confirm_execution=true` required)
+- `falcon_get_device_control_policy_details`: Retrieve policy records by ID (v1)
+- `falcon_create_device_control_policies`: Create policies (v1, `confirm_execution=true` required)
+- `falcon_update_device_control_policies`: Update policies (v1, `confirm_execution=true` required)
+- `falcon_delete_device_control_policies`: Delete policies (`confirm_execution=true` required)
+- `falcon_get_device_control_policy_details_v2`: Retrieve policy records by ID (v2)
+- `falcon_create_device_control_policies_v2`: Create policies (v2, `confirm_execution=true` required)
+- `falcon_update_device_control_policies_v2`: Update policies (v2, `confirm_execution=true` required)
+- `falcon_query_device_control_policy_member_ids`: Query policy member IDs
+- `falcon_query_device_control_policy_ids`: Query policy IDs
+
+**Resources**:
+
+- `falcon://device-control-policies/policies/fql-guide`: FQL documentation and examples for device control policy search/query tools
+- `falcon://device-control-policies/members/fql-guide`: FQL documentation and examples for device control policy member search/query tools
+- `falcon://device-control-policies/defaults/guide`: Guidance for default and class-level policy operations
+- `falcon://device-control-policies/safety-guide`: Operational guardrails for device control policy write operations
+
+**Use Cases**: Device policy inventory, host assignment analysis, default policy governance, class configuration management, and precedence orchestration
 
 ### Sensor Update Policies Module
 

@@ -140,6 +140,14 @@ class TestApiScopes(unittest.TestCase):
             ["Sensor Update Policies:write"],
         )
         self.assertEqual(
+            get_required_scopes("queryCombinedDeviceControlPolicies"),
+            ["Device Control Policies:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("performDeviceControlPoliciesAction"),
+            ["Device Control Policies:write"],
+        )
+        self.assertEqual(
             get_required_scopes("WorkflowDefinitionsCombined"),
             ["Workflow:read"],
         )
@@ -265,6 +273,8 @@ class TestApiScopes(unittest.TestCase):
             ("performRTResponsePoliciesAction", ["Response Policies:write"]),
             ("queryCombinedSensorUpdatePolicies", ["Sensor Update Policies:read"]),
             ("performSensorUpdatePoliciesAction", ["Sensor Update Policies:write"]),
+            ("queryCombinedDeviceControlPolicies", ["Device Control Policies:read"]),
+            ("performDeviceControlPoliciesAction", ["Device Control Policies:write"]),
             ("WorkflowDefinitionsCombined", ["Workflow:read"]),
             ("WorkflowExecute", ["Workflow:write"]),
             ("RTR_ExecuteCommand", ["Real Time Response:read"]),
@@ -350,6 +360,7 @@ class TestApiScopes(unittest.TestCase):
             "Prevention Policies",
             "Response Policies",
             "Sensor Update Policies",
+            "Device Control Policies",
             "Workflow",
         ]
 
@@ -509,6 +520,26 @@ class TestApiScopes(unittest.TestCase):
                 "querySensorUpdateKernelsDistinct",
                 "querySensorUpdatePolicyMembers",
                 "querySensorUpdatePolicies",
+            ],
+            "device_control_policies": [
+                "queryCombinedDeviceControlPolicyMembers",
+                "queryCombinedDeviceControlPolicies",
+                "getDefaultDeviceControlPolicies",
+                "updateDefaultDeviceControlPolicies",
+                "performDeviceControlPoliciesAction",
+                "patchDeviceControlPoliciesClassesV1",
+                "getDefaultDeviceControlSettings",
+                "updateDefaultDeviceControlSettings",
+                "setDeviceControlPoliciesPrecedence",
+                "getDeviceControlPolicies",
+                "createDeviceControlPolicies",
+                "updateDeviceControlPolicies",
+                "deleteDeviceControlPolicies",
+                "getDeviceControlPoliciesV2",
+                "postDeviceControlPoliciesV2",
+                "patchDeviceControlPoliciesV2",
+                "queryDeviceControlPolicyMembers",
+                "queryDeviceControlPolicies",
             ],
             "workflows": [
                 "WorkflowActivitiesCombined",
