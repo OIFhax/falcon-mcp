@@ -30,6 +30,7 @@
   - [User Management Module](#user-management-module)
   - [Incidents Module](#incidents-module)
   - [Installation Tokens Module](#installation-tokens-module)
+  - [Workflows Module](#workflows-module)
   - [IT Automation Module](#it-automation-module)
   - [NGSIEM Module](#ngsiem-module)
   - [Intel Module](#intel-module)
@@ -106,6 +107,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **User Management** | `User Management:read`<br>`User Management:write` | Search users and roles, review grants, and perform controlled user/role assignment changes |
 | **Incidents** | `Incidents:read` | Analyze security incidents and coordinated activities |
 | **Installation Tokens** | `Installation Tokens:read`<br>`Installation Tokens:write`<br>`Installation Tokens Settings:write` | Search and manage installation tokens, inspect audit events, and control tenant token settings |
+| **Workflows** | `Workflow:read`<br>`Workflow:write` | Search and manage workflow definitions, executions, human inputs, and system-definition lifecycle actions |
 | **IT Automation** | `IT Automation:read`<br>`IT Automation:write` | Execute high-impact task runs and live queries with execution status/result controls |
 | **NGSIEM** | `NGSIEM:read`<br>`NGSIEM:write` | Execute CQL queries against Next-Gen SIEM |
 | **Intel** | `Actors (Falcon Intelligence):read`<br>`Indicators (Falcon Intelligence):read`<br>`Reports (Falcon Intelligence):read` | Research threat actors, IOCs, and intelligence reports |
@@ -380,6 +382,46 @@ Provides full Installation Tokens service collection coverage:
 - `falcon://installation-tokens/safety-guide`: Operational guardrails for write operations
 
 **Use Cases**: Sensor installation token lifecycle management, token audit investigations, revocation workflows, tenant token policy governance
+
+### Workflows Module
+
+**API Scopes Required**:
+
+- `Workflow:read`
+- `Workflow:write`
+
+Provides full Falcon Workflows service collection coverage:
+
+- `falcon_search_workflow_activities`: Search workflow activities with FQL filters
+- `falcon_search_workflow_activities_content`: Search workflow activity content records with FQL filters
+- `falcon_search_workflow_definitions`: Search workflow definitions
+- `falcon_search_workflow_executions`: Search workflow execution records
+- `falcon_search_workflow_triggers`: Search workflow trigger records
+- `falcon_export_workflow_definition`: Export a workflow definition by ID
+- `falcon_import_workflow_definition`: Import a workflow definition from YAML (`confirm_execution=true` required)
+- `falcon_update_workflow_definition`: Update workflow definition payloads (`confirm_execution=true` required)
+- `falcon_update_workflow_definition_status`: Enable, disable, or cancel definition executions (`confirm_execution=true` required)
+- `falcon_execute_workflow`: Execute on-demand workflows (`confirm_execution=true` required)
+- `falcon_execute_workflow_internal`: Execute internal on-demand workflows (`confirm_execution=true` required)
+- `falcon_mock_execute_workflow`: Execute workflow definitions with mocks (`confirm_execution=true` required)
+- `falcon_update_workflow_execution_state`: Resume or cancel workflow executions (`confirm_execution=true` required)
+- `falcon_get_workflow_execution_results`: Retrieve workflow execution results by ID
+- `falcon_get_workflow_human_input`: Retrieve workflow human input records by ID
+- `falcon_update_workflow_human_input`: Submit workflow human-input decisions (`confirm_execution=true` required)
+- `falcon_deprovision_workflow_system_definition`: Deprovision system definitions (`confirm_execution=true` required)
+- `falcon_promote_workflow_system_definition`: Promote system definitions (`confirm_execution=true` required)
+- `falcon_provision_workflow_system_definition`: Provision system definitions (`confirm_execution=true` required)
+
+**Resources**:
+
+- `falcon://workflows/activities/fql-guide`: FQL documentation and examples for workflow activity searches
+- `falcon://workflows/definitions/fql-guide`: FQL documentation and examples for workflow definition searches
+- `falcon://workflows/executions/fql-guide`: FQL documentation and examples for workflow execution searches
+- `falcon://workflows/triggers/fql-guide`: FQL documentation and examples for workflow trigger searches
+- `falcon://workflows/import/guide`: Import guidance for workflow definition YAML payloads
+- `falcon://workflows/safety-guide`: Operational guardrails for workflow write and execution tools
+
+**Use Cases**: Workflow inventory and lifecycle management, controlled workflow execution, execution recovery actions, and human-approval orchestration
 
 ### IT Automation Module
 

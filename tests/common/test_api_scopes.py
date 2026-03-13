@@ -116,6 +116,14 @@ class TestApiScopes(unittest.TestCase):
             ["Installation Tokens:read"],
         )
         self.assertEqual(
+            get_required_scopes("WorkflowDefinitionsCombined"),
+            ["Workflow:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("WorkflowExecute"),
+            ["Workflow:write"],
+        )
+        self.assertEqual(
             get_required_scopes("RTR_ExecuteAdminCommand"),
             ["Real Time Response Admin:write"],
         )
@@ -227,6 +235,8 @@ class TestApiScopes(unittest.TestCase):
             ("GetSensorInstallersByQueryV2", ["Sensor Download:read"]),
             ("QueryQuarantineFiles", ["Quarantined Files:read"]),
             ("tokens_query", ["Installation Tokens:read"]),
+            ("WorkflowDefinitionsCombined", ["Workflow:read"]),
+            ("WorkflowExecute", ["Workflow:write"]),
             ("RTR_ExecuteCommand", ["Real Time Response:read"]),
             ("RTR_ExecuteAdminCommand", ["Real Time Response Admin:write"]),
             ("RTRAuditSessions", ["Real Time Response Audit:read"]),
@@ -307,6 +317,7 @@ class TestApiScopes(unittest.TestCase):
             "User Management",
             "Quarantined Files",
             "Installation Tokens",
+            "Workflow",
         ]
 
         for resource in read_write_resources:
@@ -421,6 +432,27 @@ class TestApiScopes(unittest.TestCase):
                 "audit_events_query",
                 "tokens_query",
                 "customer_settings_update",
+            ],
+            "workflows": [
+                "WorkflowActivitiesCombined",
+                "WorkflowActivitiesContentCombined",
+                "WorkflowDefinitionsCombined",
+                "WorkflowExecutionsCombined",
+                "WorkflowTriggersCombined",
+                "WorkflowDefinitionsExport",
+                "WorkflowExecutionResults",
+                "WorkflowGetHumanInputV1",
+                "WorkflowDefinitionsAction",
+                "WorkflowDefinitionsImport",
+                "WorkflowDefinitionsUpdate",
+                "WorkflowExecute",
+                "WorkflowExecuteInternal",
+                "WorkflowMockExecute",
+                "WorkflowExecutionsAction",
+                "WorkflowUpdateHumanInputV1",
+                "WorkflowSystemDefinitionsDeProvision",
+                "WorkflowSystemDefinitionsPromote",
+                "WorkflowSystemDefinitionsProvision",
             ],
             "ioa_exclusions": [
                 "queryIOAExclusionsV1",
