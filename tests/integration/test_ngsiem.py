@@ -24,6 +24,21 @@ class TestNGSIEMIntegration(BaseIntegrationTest):
         """Set up the NGSIEM module with a real client."""
         self.module = NGSIEMModule(falcon_client)
 
+    @staticmethod
+    def _extract_status_code(result):
+        """Extract status code from standardized error responses."""
+        if isinstance(result, dict):
+            details = result.get("details", {})
+            if isinstance(details, dict):
+                return details.get("status_code")
+        if isinstance(result, list) and result:
+            first = result[0]
+            if isinstance(first, dict):
+                details = first.get("details", {})
+                if isinstance(details, dict):
+                    return details.get("status_code")
+        return None
+
     def test_search_ngsiem_returns_events(self):
         """Test that search_ngsiem returns an events list without errors.
 
@@ -195,3 +210,52 @@ class TestNGSIEMIntegration(BaseIntegrationTest):
         assert "timed out" in result["error"].lower(), (
             f"Expected timeout message, got: {result['error']}"
         )
+
+    def test_low_level_search_operations_roundtrip(self):
+        """Validate start/status/stop operation wiring directly."""
+        end_time = datetime.now(timezone.utc)
+        start_time = end_time - timedelta(minutes=10)
+
+        start_result = self.call_method(
+            self.module.start_ngsiem_search,
+            confirm_execution=True,
+            query_string="*",
+            start=start_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            end=end_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            repository="search-all",
+            body=None,
+        )
+        start_status = self._extract_status_code(start_result)
+        if start_status == 403:
+            self.skip_with_warning(
+                "Missing NGSIEM:write scope",
+                context="test_low_level_search_operations_roundtrip",
+            )
+        self.assert_no_error(start_result, context="start_ngsiem_search")
+
+        search_id = start_result.get("id") if isinstance(start_result, dict) else None
+        if not search_id:
+            self.skip_with_warning(
+                "No search_id returned from start operation",
+                context="test_low_level_search_operations_roundtrip",
+            )
+
+        status_result = self.call_method(
+            self.module.get_ngsiem_search_status,
+            repository="search-all",
+            search_id=search_id,
+        )
+        self.assert_no_error(status_result, context="get_ngsiem_search_status")
+        assert isinstance(status_result, dict), (
+            f"Expected dict search status response, got {type(status_result)}"
+        )
+
+        stop_result = self.call_method(
+            self.module.stop_ngsiem_search,
+            confirm_execution=True,
+            repository="search-all",
+            search_id=search_id,
+        )
+        stop_status = self._extract_status_code(stop_result)
+        if stop_status not in (None, 400, 404):
+            self.assert_no_error(stop_result, context="stop_ngsiem_search")

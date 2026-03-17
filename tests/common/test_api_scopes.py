@@ -81,6 +81,8 @@ class TestApiScopes(unittest.TestCase):
         self.assertEqual(get_required_scopes("createIOAExclusionsV1"), ["IOA Exclusions:write"])
         self.assertEqual(get_required_scopes("query_rules"), ["Firewall Management:read"])
         self.assertEqual(get_required_scopes("create_rule_group"), ["Firewall Management:write"])
+        self.assertEqual(get_required_scopes("GetDashboardTemplate"), ["NGSIEM:read"])
+        self.assertEqual(get_required_scopes("CreateDashboardFromTemplate"), ["NGSIEM:write"])
         self.assertEqual(
             get_required_scopes("query_external_assets_v2"),
             ["Exposure Management:read"],
@@ -270,6 +272,8 @@ class TestApiScopes(unittest.TestCase):
             ("createIOAExclusionsV1", ["IOA Exclusions:write"]),
             ("query_rules", ["Firewall Management:read"]),
             ("create_rule_group", ["Firewall Management:write"]),
+            ("GetDashboardTemplate", ["NGSIEM:read"]),
+            ("CreateDashboardFromTemplate", ["NGSIEM:write"]),
             ("query_external_assets_v2", ["Exposure Management:read"]),
             ("delete_external_assets", ["Exposure Management:write"]),
             ("SearchHuntingGuides", ["CAO Hunting:read"]),
@@ -630,6 +634,37 @@ class TestApiScopes(unittest.TestCase):
                 "delete_network_locations",
                 "delete_rule_groups",
                 "validate_filepath_pattern",
+            ],
+            "ngsiem": [
+                "GetDashboardTemplate",
+                "CreateDashboardFromTemplate",
+                "UpdateDashboardFromTemplate",
+                "DeleteDashboard",
+                "UploadLookupV1",
+                "GetLookupV1",
+                "GetLookupFromPackageV1",
+                "GetLookupFromPackageWithNamespaceV1",
+                "GetLookupFile",
+                "CreateLookupFile",
+                "UpdateLookupFile",
+                "DeleteLookupFile",
+                "GetParserTemplate",
+                "CreateParserFromTemplate",
+                "GetParser",
+                "CreateParser",
+                "UpdateParser",
+                "DeleteParser",
+                "GetSavedQueryTemplate",
+                "CreateSavedQuery",
+                "UpdateSavedQueryFromTemplate",
+                "DeleteSavedQuery",
+                "ListDashboards",
+                "ListLookupFiles",
+                "ListParsers",
+                "ListSavedQueries",
+                "StartSearchV1",
+                "GetSearchStatusV1",
+                "StopSearchV1",
             ],
             "rtr": [
                 "RTR_ListAllSessions",

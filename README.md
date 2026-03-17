@@ -119,7 +119,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Sensor Update Policies** | `Sensor Update Policies:read`<br>`Sensor Update Policies:write` | Search and manage sensor update policies, builds, kernels, precedence, actions, and uninstall token reveal workflows |
 | **Workflows** | `Workflow:read`<br>`Workflow:write` | Search and manage workflow definitions, executions, human inputs, and system-definition lifecycle actions |
 | **IT Automation** | `IT Automation:read`<br>`IT Automation:write` | Execute high-impact task runs and live queries with execution status/result controls |
-| **NGSIEM** | `NGSIEM:read`<br>`NGSIEM:write` | Execute CQL queries against Next-Gen SIEM |
+| **NGSIEM** | `NGSIEM:read`<br>`NGSIEM:write` | Full NGSIEM coverage for search jobs, dashboards, lookup files, parsers, and saved queries |
 | **Intel** | `Actors (Falcon Intelligence):read`<br>`Indicators (Falcon Intelligence):read`<br>`Reports (Falcon Intelligence):read` | Research threat actors, IOCs, and intelligence reports |
 | **IOC** | `IOC Management:read`<br>`IOC Management:write` | Search, create, and remove custom IOCs using IOC Service Collection endpoints |
 | **IOA Exclusions** | `IOA Exclusions:read`<br>`IOA Exclusions:write` | Search, create, update, and delete IOA exclusions |
@@ -623,9 +623,31 @@ Provides Phase 3 IT Automation execution tools:
 
 **API Scopes Required**: `NGSIEM:read`, `NGSIEM:write`
 
-Provides tools for executing CQL queries against CrowdStrike's Next-Gen SIEM:
+Provides full NGSIEM service collection coverage:
 
-- `search_ngsiem`: Execute a CQL query against Next-Gen SIEM repositories
+- Search jobs:
+  - `falcon_search_ngsiem` (async convenience execution + polling)
+  - `falcon_start_ngsiem_search`, `falcon_get_ngsiem_search_status`, `falcon_stop_ngsiem_search`
+- Dashboards:
+  - `falcon_get_ngsiem_dashboard_template`, `falcon_list_ngsiem_dashboards`
+  - `falcon_create_ngsiem_dashboard_from_template`, `falcon_update_ngsiem_dashboard_from_template`, `falcon_delete_ngsiem_dashboard`
+- Lookup files:
+  - `falcon_upload_ngsiem_lookup`, `falcon_get_ngsiem_lookup`, `falcon_get_ngsiem_lookup_from_package`
+  - `falcon_get_ngsiem_lookup_from_namespace_package`, `falcon_get_ngsiem_lookup_file`, `falcon_list_ngsiem_lookup_files`
+  - `falcon_create_ngsiem_lookup_file`, `falcon_update_ngsiem_lookup_file`, `falcon_delete_ngsiem_lookup_file`
+- Parsers:
+  - `falcon_get_ngsiem_parser_template`, `falcon_get_ngsiem_parser`, `falcon_list_ngsiem_parsers`
+  - `falcon_create_ngsiem_parser_from_template`, `falcon_create_ngsiem_parser`, `falcon_update_ngsiem_parser`, `falcon_delete_ngsiem_parser`
+- Saved queries:
+  - `falcon_get_ngsiem_saved_query_template`, `falcon_list_ngsiem_saved_queries`
+  - `falcon_create_ngsiem_saved_query`, `falcon_update_ngsiem_saved_query_from_template`, `falcon_delete_ngsiem_saved_query`
+- Write/delete operations require `confirm_execution=true`
+
+**Resources**:
+
+- `falcon://ngsiem/repository-guide`: Repository and operation guidance for NGSIEM tools
+- `falcon://ngsiem/search-guide`: Search workflow guidance and timestamp requirements
+- `falcon://ngsiem/safety-guide`: Operational guardrails for NGSIEM write/delete operations
 
 > [!IMPORTANT]
 > This tool executes pre-written CQL queries only. It does **not** assist with query construction or provide CQL syntax guidance. Users must supply complete, valid CQL queries. For CQL documentation, refer to the [CrowdStrike LogScale documentation](https://library.humio.com/).
