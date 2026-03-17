@@ -110,7 +110,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Hosts** | `Hosts:read`<br>`Host Groups:read`<br>`Host Groups:write`<br>`Host Migration:read`<br>`Host Migration:write` | Search hosts, manage host groups, and orchestrate migration workflows |
 | **Identity Protection** | `Identity Protection Entities:read`<br>`Identity Protection Timeline:read`<br>`Identity Protection Detections:read`<br>`Identity Protection Assessment:read`<br>`Identity Protection GraphQL:write` | Comprehensive entity investigation and identity protection analysis |
 | **User Management** | `User Management:read`<br>`User Management:write` | Search users and roles, review grants, and perform controlled user/role assignment changes |
-| **Incidents** | `Incidents:read` | Analyze security incidents and coordinated activities |
+| **Incidents** | `Incidents:read`<br>`Incidents:write` | Full incidents coverage for crowd score, incident/behavior query+details, and controlled incident action workflows |
 | **Installation Tokens** | `Installation Tokens:read`<br>`Installation Tokens:write`<br>`Installation Tokens Settings:write` | Search and manage installation tokens, inspect audit events, and control tenant token settings |
 | **Prevention Policies** | `Prevention Policies:read`<br>`Prevention Policies:write` | Search and manage prevention policies, policy members, policy actions, and precedence ordering |
 | **Response Policies** | `Response Policies:read`<br>`Response Policies:write` | Search and manage response policies, policy members, policy actions, and precedence ordering |
@@ -362,23 +362,30 @@ Provides tools for Falcon User Management workflows:
 
 ### Incidents Module
 
-**API Scopes Required**: `Incidents:read`
+**API Scopes Required**:
 
-Provides tools for accessing and analyzing CrowdStrike Falcon incidents:
+- `Incidents:read`
+- `Incidents:write`
 
-- `falcon_show_crowd_score`: View calculated CrowdScores and security posture metrics for your environment
-- `falcon_search_incidents`: Find and analyze security incidents to understand coordinated activity in your environment
-- `falcon_get_incident_details`: Get comprehensive incident details to understand attack patterns and coordinated activities
-- `falcon_search_behaviors`: Find and analyze behaviors to understand suspicious activity in your environment
-- `falcon_get_behavior_details`: Get detailed behavior information to understand attack techniques and tactics
+Provides full Incidents service collection coverage:
+
+- `falcon_show_crowd_score`: View calculated CrowdScore records with environment-level score summaries
+- `falcon_search_incidents`: Search incidents and return full incident details (two-step query + detail retrieval)
+- `falcon_query_incident_ids`: Query incident IDs directly from FQL criteria
+- `falcon_get_incident_details`: Retrieve full incident records by ID
+- `falcon_search_behaviors`: Search incident behaviors and return full behavior details
+- `falcon_query_behavior_ids`: Query behavior IDs directly from FQL criteria
+- `falcon_get_behavior_details`: Retrieve full behavior records by ID
+- `falcon_perform_incident_action`: Apply incident update actions (`confirm_execution=true` required)
 
 **Resources**:
 
 - `falcon://incidents/crowd-score/fql-guide`: Comprehensive FQL documentation for CrowdScore queries
 - `falcon://incidents/search/fql-guide`: Comprehensive FQL documentation and examples for incident searches
 - `falcon://incidents/behaviors/fql-guide`: Comprehensive FQL documentation and examples for behavior searches
+- `falcon://incidents/actions/guide`: Incident action safety and parameter guidance
 
-**Use Cases**: Incident management, threat assessment, attack pattern analysis, security posture monitoring
+**Use Cases**: Incident management, threat assessment, attack pattern analysis, analyst assignment/status updates, SOC triage workflow automation
 
 ### Installation Tokens Module
 

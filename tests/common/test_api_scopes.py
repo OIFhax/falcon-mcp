@@ -72,6 +72,7 @@ class TestApiScopes(unittest.TestCase):
         self.assertEqual(get_required_scopes("PatchEntitiesAlertsV2"), ["Alerts:write"])
         self.assertEqual(get_required_scopes("PatchEntitiesAlertsV3"), ["Alerts:write"])
         self.assertEqual(get_required_scopes("QueryIncidents"), ["Incidents:read"])
+        self.assertEqual(get_required_scopes("PerformIncidentAction"), ["Incidents:write"])
         self.assertEqual(get_required_scopes("RTR_ListAllSessions"), ["Real Time Response:read"])
         self.assertEqual(get_required_scopes("queryHostGroups"), ["Host Groups:read"])
         self.assertEqual(get_required_scopes("createHostGroups"), ["Host Groups:write"])
@@ -286,6 +287,7 @@ class TestApiScopes(unittest.TestCase):
             ("PatchEntitiesAlertsV2", ["Alerts:write"]),
             ("PatchEntitiesAlertsV3", ["Alerts:write"]),
             ("QueryIncidents", ["Incidents:read"]),
+            ("PerformIncidentAction", ["Incidents:write"]),
             ("QueryIntelActorEntities", ["Actors (Falcon Intelligence):read"]),
             ("queryHostGroups", ["Host Groups:read"]),
             ("createHostGroups", ["Host Groups:write"]),
@@ -379,7 +381,7 @@ class TestApiScopes(unittest.TestCase):
 
         # Validate that most resources use consistent permission patterns
         read_only_resources = [
-            "Hosts", "Incidents", "Vulnerabilities",
+            "Hosts", "Vulnerabilities",
             "Assets", "Sensor Usage", "Scheduled Reports",
             "Real Time Response", "Real Time Response Audit", "CAO Hunting",
             "Zero Trust Assessment", "Sensor Download",
@@ -395,6 +397,7 @@ class TestApiScopes(unittest.TestCase):
 
         read_write_resources = [
             "Alerts",
+            "Incidents",
             "Host Groups",
             "Host Migration",
             "IT Automation",

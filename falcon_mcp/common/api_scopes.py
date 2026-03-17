@@ -59,6 +59,7 @@ API_SCOPE_REQUIREMENTS = {
     "GetIncidents": ["Incidents:read"],
     "GetBehaviors": ["Incidents:read"],
     "QueryBehaviors": ["Incidents:read"],
+    "PerformIncidentAction": ["Incidents:write"],
     # Intel operations
     "QueryIntelActorEntities": ["Actors (Falcon Intelligence):read"],
     "QueryIntelIndicatorEntities": ["Indicators (Falcon Intelligence):read"],

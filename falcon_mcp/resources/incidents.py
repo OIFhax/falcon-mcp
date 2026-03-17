@@ -452,3 +452,27 @@ property_name:[operator]'value'
 • Use square brackets for exact matches: ['exact_value']
 • Date format must be UTC: 'YYYY-MM-DDTHH:MM:SSZ'
 """
+
+INCIDENT_ACTIONS_GUIDE = """Incident Actions Guide
+
+Use `falcon_perform_incident_action` for write operations against incidents.
+This tool requires `confirm_execution=true`.
+
+Supported action names:
+- `add_comment`
+- `add_tag`
+- `delete_tag`
+- `update_name`
+- `update_description`
+- `update_assigned_to_v2` (user UUID)
+- `update_status` (`20` new, `25` reopened, `30` in_progress, `40` closed)
+- `unassign`
+
+Request options:
+- Provide `action_parameters` directly as a list of `{name, value}` objects, or
+- Use convenience fields (`add_comment`, `update_status`, etc.) and let the tool build action parameters.
+
+Optional query flags:
+- `update_detects`: also update associated detections
+- `overwrite_detects`: overwrite existing detection assignment/status values when updating detections
+"""
