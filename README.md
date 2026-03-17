@@ -105,7 +105,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Core** | _No additional scopes_ | Basic connectivity and system information |
 | **Custom IOA** | `Custom IOA Rules:read`<br>`Custom IOA Rules:write` | Create and manage Custom IOA behavioral detection rules and rule groups |
 | **Detections** | `Alerts:read`<br>`Alerts:write` | Full detections coverage for query/search/details, aggregation, and controlled detection update actions |
-| **Discover** | `Assets:read` | Search and analyze application inventory across your environment |
+| **Discover** | `Assets:read` | Full Discover coverage for applications, hosts, accounts, IoT hosts, and login entities (query/get/combined workflows) |
 | **Exposure Management** | `Exposure Management:read`<br>`Exposure Management:write` | Search external assets and perform controlled asset inventory/triage updates |
 | **Hosts** | `Hosts:read`<br>`Host Groups:read`<br>`Host Groups:write`<br>`Host Migration:read`<br>`Host Migration:write` | Search hosts, manage host groups, and orchestrate migration workflows |
 | **Identity Protection** | `Identity Protection Entities:read`<br>`Identity Protection Timeline:read`<br>`Identity Protection Detections:read`<br>`Identity Protection Assessment:read`<br>`Identity Protection GraphQL:write` | Comprehensive entity investigation and identity protection analysis |
@@ -253,17 +253,21 @@ Provides full Alerts/detections operation coverage:
 
 **API Scopes Required**: `Assets:read`
 
-Provides tools for accessing and managing CrowdStrike Falcon Discover applications and unmanaged assets:
+Provides full Discover read coverage:
 
-- `falcon_search_applications`: Search for applications in your CrowdStrike environment
-- `falcon_search_unmanaged_assets`: Search for unmanaged assets (systems without Falcon sensor installed) that have been discovered by managed systems
+- `falcon_search_applications`, `falcon_query_application_ids`, `falcon_get_application_details`
+- `falcon_search_hosts_combined`, `falcon_query_host_ids`, `falcon_get_host_details`, `falcon_search_hosts`
+- `falcon_search_unmanaged_assets` (enforces `entity_type:'unmanaged'`)
+- `falcon_query_account_ids`, `falcon_get_account_details`, `falcon_search_accounts`
+- `falcon_query_login_ids`, `falcon_get_login_details`, `falcon_search_logins`
+- `falcon_query_iot_host_ids`, `falcon_query_iot_host_ids_v2`, `falcon_get_iot_host_details`, `falcon_search_iot_hosts`
 
 **Resources**:
 
 - `falcon://discover/applications/fql-guide`: Comprehensive FQL documentation and examples for application searches
 - `falcon://discover/hosts/fql-guide`: Comprehensive FQL documentation and examples for unmanaged assets searches
 
-**Use Cases**: Application inventory management, software asset management, license compliance, vulnerability assessment, unmanaged asset discovery, security gap analysis
+**Use Cases**: Application inventory management, software asset management, unmanaged and managed host visibility, account/login telemetry analysis, IoT asset discovery workflows
 
 ### Exposure Management Module
 

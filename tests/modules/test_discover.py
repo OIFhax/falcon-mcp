@@ -1,227 +1,317 @@
-"""
-Unit tests for the Discover module.
-"""
+"""Tests for the Discover module."""
 
 import unittest
-from unittest.mock import MagicMock, patch
 
-from mcp.server import FastMCP
-
-from falcon_mcp.client import FalconClient
+from falcon_mcp.modules.base import READ_ONLY_ANNOTATIONS
 from falcon_mcp.modules.discover import DiscoverModule
+from tests.modules.utils.test_modules import TestModules
 
 
-class TestDiscoverModule(unittest.TestCase):
+class TestDiscoverModule(TestModules):
     """Test cases for the Discover module."""
 
     def setUp(self):
         """Set up test fixtures."""
-        self.client = MagicMock(spec=FalconClient)
-        self.module = DiscoverModule(self.client)
-        self.server = MagicMock(spec=FastMCP)
+        self.setup_module(DiscoverModule)
 
     def test_register_tools(self):
-        """Test that tools are registered correctly."""
-        self.module.register_tools(self.server)
-        self.assertEqual(self.server.add_tool.call_count, 2)
-        self.assertEqual(len(self.module.tools), 2)
-        self.assertEqual(self.module.tools[0], "falcon_search_applications")
-        self.assertEqual(self.module.tools[1], "falcon_search_unmanaged_assets")
+        """Test registering tools with the server."""
+        expected_tools = [
+            "falcon_search_applications",
+            "falcon_query_application_ids",
+            "falcon_get_application_details",
+            "falcon_search_hosts_combined",
+            "falcon_query_host_ids",
+            "falcon_get_host_details",
+            "falcon_search_hosts",
+            "falcon_search_unmanaged_assets",
+            "falcon_query_account_ids",
+            "falcon_get_account_details",
+            "falcon_search_accounts",
+            "falcon_query_login_ids",
+            "falcon_get_login_details",
+            "falcon_search_logins",
+            "falcon_query_iot_host_ids",
+            "falcon_query_iot_host_ids_v2",
+            "falcon_get_iot_host_details",
+            "falcon_search_iot_hosts",
+        ]
+        self.assert_tools_registered(expected_tools)
 
     def test_register_resources(self):
-        """Test that resources are registered correctly."""
-        self.module.register_resources(self.server)
-        self.assertEqual(self.server.add_resource.call_count, 2)
-        self.assertEqual(len(self.module.resources), 2)
-        self.assertEqual(
-            str(self.module.resources[0]), "falcon://discover/applications/fql-guide"
-        )
-        self.assertEqual(
-            str(self.module.resources[1]), "falcon://discover/hosts/fql-guide"
-        )
+        """Test registering resources with the server."""
+        expected_resources = [
+            "falcon_search_applications_fql_guide",
+            "falcon_search_unmanaged_assets_fql_guide",
+        ]
+        self.assert_resources_registered(expected_resources)
 
-    @patch("falcon_mcp.modules.discover.prepare_api_parameters")
-    @patch("falcon_mcp.modules.discover.handle_api_response")
-    def test_search_applications(self, mock_handle_response, mock_prepare_params):
-        """Test search_applications method."""
-        # Setup mocks
-        mock_prepare_params.return_value = {"filter": "name:'Chrome'"}
-        mock_response = MagicMock()
-        self.client.command.return_value = mock_response
-        mock_handle_response.return_value = [{"id": "app1", "name": "Chrome"}]
+    def test_tool_annotations(self):
+        """Test tools are registered with read-only annotations."""
+        self.module.register_tools(self.mock_server)
+        self.assert_tool_annotations("falcon_search_applications", READ_ONLY_ANNOTATIONS)
+        self.assert_tool_annotations("falcon_search_iot_hosts", READ_ONLY_ANNOTATIONS)
 
-        # Call the method
-        result = self.module.search_applications(filter="name:'Chrome'")
-
-        # Assertions
-        # Don't check the exact arguments, just verify it was called once
-        self.assertEqual(mock_prepare_params.call_count, 1)
-        self.client.command.assert_called_once_with(
-            "combined_applications", parameters={"filter": "name:'Chrome'"}
-        )
-        mock_handle_response.assert_called_once_with(
-            mock_response,
-            operation="combined_applications",
-            error_message="Failed to search applications",
-            default_result=[],
-        )
-        self.assertEqual(result, [{"id": "app1", "name": "Chrome"}])
-
-    @patch("falcon_mcp.modules.discover.prepare_api_parameters")
-    @patch("falcon_mcp.modules.discover.handle_api_response")
-    def test_search_applications_with_error(self, mock_handle_response, mock_prepare_params):
-        """Test search_applications method when an error occurs."""
-        # Setup mocks
-        mock_prepare_params.return_value = {"filter": "name:'Chrome'"}
-        mock_response = MagicMock()
-        self.client.command.return_value = mock_response
-        error_response = {"error": "API Error", "message": "Something went wrong"}
-        mock_handle_response.return_value = error_response
-
-        # Call the method
-        result = self.module.search_applications(filter="name:'Chrome'")
-
-        # Assertions
-        self.assertEqual(result, [error_response])
-
-    @patch("falcon_mcp.modules.discover.prepare_api_parameters")
-    @patch("falcon_mcp.modules.discover.handle_api_response")
-    def test_search_applications_with_all_params(self, mock_handle_response, mock_prepare_params):
-        """Test search_applications method with all parameters."""
-        # Setup mocks
-        mock_prepare_params.return_value = {
-            "filter": "name:'Chrome'",
-            "facet": "host_info",
-            "limit": 50,
-            "sort": "name.asc",
+    def test_search_applications_success(self):
+        """Test search_applications uses combined_applications operation."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "app-1", "name": "Chrome"}]},
         }
-        mock_response = MagicMock()
-        self.client.command.return_value = mock_response
-        mock_handle_response.return_value = [{"id": "app1", "name": "Chrome"}]
 
-        # Call the method
         result = self.module.search_applications(
             filter="name:'Chrome'",
             facet="host_info",
-            limit=50,
+            limit=25,
+            after="cursor",
             sort="name.asc",
         )
 
-        # Assertions
-        # Don't check the exact arguments, just verify it was called once
-        self.assertEqual(mock_prepare_params.call_count, 1)
-        self.client.command.assert_called_once_with(
+        self.mock_client.command.assert_called_once_with(
             "combined_applications",
             parameters={
                 "filter": "name:'Chrome'",
                 "facet": "host_info",
-                "limit": 50,
+                "limit": 25,
+                "after": "cursor",
                 "sort": "name.asc",
             },
         )
-        self.assertEqual(result, [{"id": "app1", "name": "Chrome"}])
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["id"], "app-1")
 
-    @patch("falcon_mcp.modules.discover.prepare_api_parameters")
-    @patch("falcon_mcp.modules.discover.handle_api_response")
-    def test_search_unmanaged_assets(self, mock_handle_response, mock_prepare_params):
-        """Test search_unmanaged_assets method."""
-        # Setup mocks
-        mock_prepare_params.return_value = {"filter": "entity_type:'unmanaged'+platform_name:'Windows'"}
-        mock_response = MagicMock()
-        self.client.command.return_value = mock_response
-        mock_handle_response.return_value = [{"device_id": "host1", "hostname": "PC-001"}]
-
-        # Call the method
-        result = self.module.search_unmanaged_assets(filter="platform_name:'Windows'")
-
-        # Assertions
-        # Don't check the exact arguments, just verify it was called once
-        self.assertEqual(mock_prepare_params.call_count, 1)
-        self.client.command.assert_called_once_with(
-            "combined_hosts", parameters={"filter": "entity_type:'unmanaged'+platform_name:'Windows'"}
-        )
-        mock_handle_response.assert_called_once_with(
-            mock_response,
-            operation="combined_hosts",
-            error_message="Failed to search unmanaged assets",
-            default_result=[],
-        )
-        self.assertEqual(result, [{"device_id": "host1", "hostname": "PC-001"}])
-
-    @patch("falcon_mcp.modules.discover.prepare_api_parameters")
-    @patch("falcon_mcp.modules.discover.handle_api_response")
-    def test_search_unmanaged_assets_without_filter(self, mock_handle_response, mock_prepare_params):
-        """Test search_unmanaged_assets method without user filter."""
-        # Setup mocks
-        mock_prepare_params.return_value = {"filter": "entity_type:'unmanaged'"}
-        mock_response = MagicMock()
-        self.client.command.return_value = mock_response
-        mock_handle_response.return_value = [{"device_id": "host1", "hostname": "PC-001"}]
-
-        # Call the method with no filter
-        result = self.module.search_unmanaged_assets()
-
-        # Assertions
-        # Don't check the exact arguments, just verify it was called once
-        self.assertEqual(mock_prepare_params.call_count, 1)
-        self.client.command.assert_called_once_with(
-            "combined_hosts", parameters={"filter": "entity_type:'unmanaged'"}
-        )
-        self.assertEqual(result, [{"device_id": "host1", "hostname": "PC-001"}])
-
-    @patch("falcon_mcp.modules.discover.prepare_api_parameters")
-    @patch("falcon_mcp.modules.discover.handle_api_response")
-    def test_search_unmanaged_assets_with_error(self, mock_handle_response, mock_prepare_params):
-        """Test search_unmanaged_assets method when an error occurs."""
-        # Setup mocks
-        mock_prepare_params.return_value = {"filter": "entity_type:'unmanaged'+platform_name:'Windows'"}
-        mock_response = MagicMock()
-        self.client.command.return_value = mock_response
-        error_response = {"error": "API Error", "message": "Something went wrong"}
-        mock_handle_response.return_value = error_response
-
-        # Call the method
-        result = self.module.search_unmanaged_assets(filter="platform_name:'Windows'")
-
-        # Assertions
-        self.assertEqual(result, [error_response])
-
-    @patch("falcon_mcp.modules.discover.prepare_api_parameters")
-    @patch("falcon_mcp.modules.discover.handle_api_response")
-    def test_search_unmanaged_assets_with_all_params(self, mock_handle_response, mock_prepare_params):
-        """Test search_unmanaged_assets method with all parameters."""
-        # Setup mocks
-        mock_prepare_params.return_value = {
-            "filter": "entity_type:'unmanaged'+criticality:'Critical'",
-            "limit": 50,
-            "offset": 10,
-            "sort": "hostname.asc",
+    def test_query_application_ids_success(self):
+        """Test query_application_ids uses query_applications operation."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": ["app-1", "app-2"]},
         }
-        mock_response = MagicMock()
-        self.client.command.return_value = mock_response
-        mock_handle_response.return_value = [{"device_id": "host1", "hostname": "PC-001"}]
 
-        # Call the method
-        result = self.module.search_unmanaged_assets(
-            filter="criticality:'Critical'",
-            limit=50,
-            offset=10,
-            sort="hostname.asc",
+        result = self.module.query_application_ids(
+            filter="vendor:'Microsoft Corporation'",
+            limit=10,
+            offset=5,
+            sort="name.asc",
         )
 
-        # Assertions
-        # Don't check the exact arguments, just verify it was called once
-        self.assertEqual(mock_prepare_params.call_count, 1)
-        self.client.command.assert_called_once_with(
-            "combined_hosts",
+        self.mock_client.command.assert_called_once_with(
+            "query_applications",
             parameters={
-                "filter": "entity_type:'unmanaged'+criticality:'Critical'",
-                "limit": 50,
-                "offset": 10,
-                "sort": "hostname.asc",
+                "filter": "vendor:'Microsoft Corporation'",
+                "limit": 10,
+                "offset": 5,
+                "sort": "name.asc",
             },
         )
-        self.assertEqual(result, [{"device_id": "host1", "hostname": "PC-001"}])
+        self.assertEqual(result, ["app-1", "app-2"])
+
+    def test_get_application_details_validation_and_success(self):
+        """Test get_application_details validates ids and retrieves data."""
+        validation_result = self.module.get_application_details(ids=None)
+        self.assertEqual(len(validation_result), 1)
+        self.assertIn("error", validation_result[0])
+        self.mock_client.command.assert_not_called()
+
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "app-1", "name": "Chrome"}]},
+        }
+        success_result = self.module.get_application_details(ids=["app-1"])
+
+        self.mock_client.command.assert_called_once_with(
+            "get_applications",
+            parameters={"ids": ["app-1"]},
+        )
+        self.assertEqual(len(success_result), 1)
+        self.assertEqual(success_result[0]["id"], "app-1")
+
+    def test_search_unmanaged_assets_enforces_unmanaged_filter(self):
+        """Test unmanaged asset search always enforces entity_type:'unmanaged'."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "host-1", "hostname": "PC-001"}]},
+        }
+
+        result = self.module.search_unmanaged_assets(
+            filter="platform_name:'Windows'",
+            limit=50,
+            after="cursor",
+            sort="hostname.asc",
+            facet="risk_factors",
+        )
+
+        self.mock_client.command.assert_called_once_with(
+            "combined_hosts",
+            parameters={
+                "filter": "entity_type:'unmanaged'+platform_name:'Windows'",
+                "limit": 50,
+                "after": "cursor",
+                "sort": "hostname.asc",
+                "facet": "risk_factors",
+            },
+        )
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["id"], "host-1")
+
+    def test_search_accounts_two_step_flow(self):
+        """Test search_accounts runs query + details workflow."""
+        query_response = {
+            "status_code": 200,
+            "body": {"resources": ["acct-1"]},
+        }
+        details_response = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "acct-1", "username": "alice"}]},
+        }
+        self.mock_client.command.side_effect = [query_response, details_response]
+
+        result = self.module.search_accounts(
+            filter="username:'alice'",
+            limit=10,
+            offset=0,
+            sort="username|asc",
+        )
+
+        self.assertEqual(self.mock_client.command.call_count, 2)
+        self.mock_client.command.assert_any_call(
+            "query_accounts",
+            parameters={
+                "filter": "username:'alice'",
+                "limit": 10,
+                "offset": 0,
+                "sort": "username|asc",
+            },
+        )
+        self.mock_client.command.assert_any_call(
+            "get_accounts",
+            parameters={"ids": ["acct-1"]},
+        )
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["id"], "acct-1")
+
+    def test_search_logins_two_step_flow(self):
+        """Test search_logins runs query + details workflow."""
+        query_response = {
+            "status_code": 200,
+            "body": {"resources": ["login-1"]},
+        }
+        details_response = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "login-1"}]},
+        }
+        self.mock_client.command.side_effect = [query_response, details_response]
+
+        result = self.module.search_logins(
+            filter="account_name:'alice'",
+            limit=5,
+            offset=0,
+            sort="login_timestamp|desc",
+        )
+
+        self.assertEqual(self.mock_client.command.call_count, 2)
+        self.mock_client.command.assert_any_call(
+            "query_logins",
+            parameters={
+                "filter": "account_name:'alice'",
+                "limit": 5,
+                "offset": 0,
+                "sort": "login_timestamp|desc",
+            },
+        )
+        self.mock_client.command.assert_any_call(
+            "get_logins",
+            parameters={"ids": ["login-1"]},
+        )
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["id"], "login-1")
+
+    def test_search_iot_hosts_two_step_flow(self):
+        """Test search_iot_hosts runs v2 query + details workflow."""
+        query_response = {
+            "status_code": 200,
+            "body": {"resources": ["iot-1"]},
+        }
+        details_response = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "iot-1"}]},
+        }
+        self.mock_client.command.side_effect = [query_response, details_response]
+
+        result = self.module.search_iot_hosts(
+            filter="device_class:'PLC'",
+            limit=10,
+            after="cursor",
+            sort="hostname|asc",
+        )
+
+        self.assertEqual(self.mock_client.command.call_count, 2)
+        self.mock_client.command.assert_any_call(
+            "query_iot_hostsV2",
+            parameters={
+                "filter": "device_class:'PLC'",
+                "limit": 10,
+                "after": "cursor",
+                "sort": "hostname|asc",
+            },
+        )
+        self.mock_client.command.assert_any_call(
+            "get_iot_hosts",
+            parameters={"ids": ["iot-1"]},
+        )
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["id"], "iot-1")
+
+    def test_query_iot_host_ids_v1_and_v2(self):
+        """Test IoT host ID query operation names."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": ["iot-1", "iot-2"]},
+        }
+        v1_result = self.module.query_iot_host_ids(
+            filter="device_type:'Camera'",
+            limit=20,
+            offset=10,
+            sort="hostname|asc",
+        )
+        self.mock_client.command.assert_called_once_with(
+            "query_iot_hosts",
+            parameters={
+                "filter": "device_type:'Camera'",
+                "limit": 20,
+                "offset": 10,
+                "sort": "hostname|asc",
+            },
+        )
+        self.assertEqual(v1_result, ["iot-1", "iot-2"])
+
+        self.mock_client.command.reset_mock()
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": ["iot-3"]},
+        }
+        v2_result = self.module.query_iot_host_ids_v2(
+            filter="device_type:'Camera'",
+            limit=20,
+            after="cursor",
+            sort="hostname|asc",
+        )
+        self.mock_client.command.assert_called_once_with(
+            "query_iot_hostsV2",
+            parameters={
+                "filter": "device_type:'Camera'",
+                "limit": 20,
+                "after": "cursor",
+                "sort": "hostname|asc",
+            },
+        )
+        self.assertEqual(v2_result, ["iot-3"])
+
+    def test_get_host_details_validation(self):
+        """Test get_host_details requires IDs."""
+        result = self.module.get_host_details(ids=None)
+        self.assertEqual(len(result), 1)
+        self.assertIn("error", result[0])
+        self.mock_client.command.assert_not_called()
 
 
 if __name__ == "__main__":

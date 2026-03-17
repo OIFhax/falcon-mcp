@@ -137,6 +137,17 @@ API_SCOPE_REQUIREMENTS = {
     # Discover operations
     "combined_applications": ["Assets:read"],
     "combined_hosts": ["Assets:read"],
+    "query_accounts": ["Assets:read"],
+    "query_applications": ["Assets:read"],
+    "query_hosts": ["Assets:read"],
+    "query_iot_hosts": ["Assets:read"],
+    "query_iot_hostsV2": ["Assets:read"],
+    "query_logins": ["Assets:read"],
+    "get_accounts": ["Assets:read"],
+    "get_applications": ["Assets:read"],
+    "get_hosts": ["Assets:read"],
+    "get_iot_hosts": ["Assets:read"],
+    "get_logins": ["Assets:read"],
     # Exposure Management operations
     "query_external_assets_v2": ["Exposure Management:read"],
     "get_external_assets": ["Exposure Management:read"],

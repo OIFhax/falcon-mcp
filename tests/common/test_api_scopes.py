@@ -73,6 +73,10 @@ class TestApiScopes(unittest.TestCase):
         self.assertEqual(get_required_scopes("PatchEntitiesAlertsV3"), ["Alerts:write"])
         self.assertEqual(get_required_scopes("QueryIncidents"), ["Incidents:read"])
         self.assertEqual(get_required_scopes("PerformIncidentAction"), ["Incidents:write"])
+        self.assertEqual(get_required_scopes("combined_applications"), ["Assets:read"])
+        self.assertEqual(get_required_scopes("query_accounts"), ["Assets:read"])
+        self.assertEqual(get_required_scopes("query_iot_hostsV2"), ["Assets:read"])
+        self.assertEqual(get_required_scopes("get_iot_hosts"), ["Assets:read"])
         self.assertEqual(get_required_scopes("RTR_ListAllSessions"), ["Real Time Response:read"])
         self.assertEqual(get_required_scopes("queryHostGroups"), ["Host Groups:read"])
         self.assertEqual(get_required_scopes("createHostGroups"), ["Host Groups:write"])
@@ -288,6 +292,10 @@ class TestApiScopes(unittest.TestCase):
             ("PatchEntitiesAlertsV3", ["Alerts:write"]),
             ("QueryIncidents", ["Incidents:read"]),
             ("PerformIncidentAction", ["Incidents:write"]),
+            ("combined_applications", ["Assets:read"]),
+            ("query_accounts", ["Assets:read"]),
+            ("query_iot_hostsV2", ["Assets:read"]),
+            ("get_iot_hosts", ["Assets:read"]),
             ("QueryIntelActorEntities", ["Actors (Falcon Intelligence):read"]),
             ("queryHostGroups", ["Host Groups:read"]),
             ("createHostGroups", ["Host Groups:write"]),
@@ -472,7 +480,21 @@ class TestApiScopes(unittest.TestCase):
                 "getRemediationsV2",
             ],
             "cloud": ["ReadContainerCombined", "ReadContainerCount", "ReadCombinedVulnerabilities"],
-            "discover": ["combined_applications", "combined_hosts"],
+            "discover": [
+                "combined_applications",
+                "combined_hosts",
+                "query_accounts",
+                "query_applications",
+                "query_hosts",
+                "query_iot_hosts",
+                "query_iot_hostsV2",
+                "query_logins",
+                "get_accounts",
+                "get_applications",
+                "get_hosts",
+                "get_iot_hosts",
+                "get_logins",
+            ],
             "exposure_management": [
                 "query_external_assets_v2",
                 "get_external_assets",
