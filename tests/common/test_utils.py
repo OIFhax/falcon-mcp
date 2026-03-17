@@ -5,6 +5,8 @@ Tests for the utility functions.
 import unittest
 from unittest.mock import patch
 
+from pydantic import Field
+
 from falcon_mcp.common.utils import (
     extract_first_resource,
     extract_resources,
@@ -70,6 +72,17 @@ class TestUtilFunctions(unittest.TestCase):
         # Parameters without None values
         params = {"filter": "name:test", "limit": 100}
         self.assertEqual(prepare_api_parameters(params), params)
+
+        # FieldInfo defaults should resolve to their underlying default values
+        params_with_field_info = {
+            "offset": Field(default=None, description="Offset field"),
+            "limit": Field(default=50, description="Limit field"),
+            "filter": "name:'test'",
+        }
+        self.assertEqual(
+            prepare_api_parameters(params_with_field_info),
+            {"limit": 50, "filter": "name:'test'"},
+        )
 
     def test_extract_resources(self):
         """Test extract_resources function."""

@@ -13,7 +13,7 @@ from mcp.server.fastmcp.resources import TextResource
 from mcp.types import ToolAnnotations
 from pydantic import AnyUrl, Field
 
-from falcon_mcp.common.errors import _format_error_response
+from falcon_mcp.common.errors import _format_error_response, handle_api_response
 from falcon_mcp.modules.base import BaseModule
 from falcon_mcp.resources.user_management import (
     SEARCH_USERS_FQL_DOCUMENTATION,
@@ -47,6 +47,11 @@ class UserManagementModule(BaseModule):
         """
         self._add_tool(
             server=server,
+            method=self.aggregate_users,
+            name="aggregate_users",
+        )
+        self._add_tool(
+            server=server,
             method=self.search_users,
             name="search_users",
         )
@@ -62,6 +67,16 @@ class UserManagementModule(BaseModule):
         )
         self._add_tool(
             server=server,
+            method=self.get_user_role_details,
+            name="get_user_role_details",
+        )
+        self._add_tool(
+            server=server,
+            method=self.get_user_role_details_v1,
+            name="get_user_role_details_v1",
+        )
+        self._add_tool(
+            server=server,
             method=self.get_user_role_grants,
             name="get_user_role_grants",
         )
@@ -73,8 +88,20 @@ class UserManagementModule(BaseModule):
         )
         self._add_tool(
             server=server,
+            method=self.update_user,
+            name="update_user",
+            annotations=WRITE_ANNOTATIONS,
+        )
+        self._add_tool(
+            server=server,
             method=self.delete_user,
             name="delete_user",
+            annotations=DESTRUCTIVE_WRITE_ANNOTATIONS,
+        )
+        self._add_tool(
+            server=server,
+            method=self.perform_user_action,
+            name="perform_user_action",
             annotations=DESTRUCTIVE_WRITE_ANNOTATIONS,
         )
         self._add_tool(
@@ -120,6 +147,35 @@ class UserManagementModule(BaseModule):
         self._add_resource(server, search_users_fql_resource)
         self._add_resource(server, user_role_grants_fql_resource)
         self._add_resource(server, user_management_safety_resource)
+
+    def aggregate_users(
+        self,
+        body: list[dict[str, Any]] | None = Field(
+            default=None,
+            description="Aggregation specification body for `aggregateUsersV1`.",
+        ),
+    ) -> list[dict[str, Any]]:
+        """Run aggregate analysis over user-management records."""
+        if not body:
+            return [
+                _format_error_response(
+                    "`body` is required for user aggregation.",
+                    operation="aggregateUsersV1",
+                )
+            ]
+
+        command_response = self.client.command("aggregateUsersV1", body=body)
+        result = handle_api_response(
+            command_response,
+            operation="aggregateUsersV1",
+            error_message="Failed to aggregate users",
+            default_result=[],
+        )
+
+        if self._is_error(result):
+            return [result]
+
+        return result
 
     def search_users(
         self,
@@ -249,11 +305,70 @@ class UserManagementModule(BaseModule):
         if not role_ids:
             return []
 
+        result = self.get_user_role_details(
+            ids=role_ids,
+            cid=cid,
+        )
+
+        return result
+
+    def get_user_role_details(
+        self,
+        ids: list[str] | None = Field(
+            default=None,
+            description="Role IDs to retrieve using `entitiesRolesGETV2`.",
+        ),
+        cid: str | None = Field(
+            default=None,
+            description="Optional CID for Flight Control role detail retrieval.",
+        ),
+    ) -> list[dict[str, Any]]:
+        """Retrieve role records by role ID using entitiesRolesGETV2."""
+        if not ids:
+            return [
+                _format_error_response(
+                    "`ids` is required to retrieve role details.",
+                    operation="entitiesRolesGETV2",
+                )
+            ]
+
         result = self._base_query_api_call(
             operation="entitiesRolesGETV2",
             query_params={"cid": cid},
-            body_params={"ids": role_ids},
+            body_params={"ids": ids},
             error_message="Failed to retrieve role details",
+            default_result=[],
+        )
+
+        if self._is_error(result):
+            return [result]
+
+        return result
+
+    def get_user_role_details_v1(
+        self,
+        ids: list[str] | None = Field(
+            default=None,
+            description="Role IDs to retrieve using legacy `entitiesRolesV1`.",
+        ),
+        cid: str | None = Field(
+            default=None,
+            description="Optional CID for Flight Control role detail retrieval.",
+        ),
+    ) -> list[dict[str, Any]]:
+        """Retrieve role records by role ID using entitiesRolesV1."""
+        if not ids:
+            return [
+                _format_error_response(
+                    "`ids` is required to retrieve role details.",
+                    operation="entitiesRolesV1",
+                )
+            ]
+
+        result = self._base_query_api_call(
+            operation="entitiesRolesV1",
+            query_params={"ids": ids, "cid": cid},
+            error_message="Failed to retrieve role details (v1)",
             default_result=[],
         )
 
@@ -401,6 +516,70 @@ class UserManagementModule(BaseModule):
 
         return result
 
+    def update_user(
+        self,
+        confirm_execution: bool = Field(
+            default=False,
+            description="Explicit safety confirmation. Must be set to `true` to execute this write operation.",
+        ),
+        user_uuid: str | None = Field(
+            default=None,
+            description="User UUID to update.",
+        ),
+        first_name: str | None = Field(
+            default=None,
+            description="Updated first name. Required with `last_name`.",
+        ),
+        last_name: str | None = Field(
+            default=None,
+            description="Updated last name. Required with `first_name`.",
+        ),
+    ) -> list[dict[str, Any]]:
+        """Update a user's first and last name."""
+        if not confirm_execution:
+            return [
+                _format_error_response(
+                    "This operation requires `confirm_execution=true`.",
+                    operation="updateUserV1",
+                )
+            ]
+
+        if not user_uuid:
+            return [
+                _format_error_response(
+                    "`user_uuid` is required to update a user.",
+                    operation="updateUserV1",
+                )
+            ]
+
+        if not first_name or not last_name:
+            return [
+                _format_error_response(
+                    "`first_name` and `last_name` are required to update a user.",
+                    operation="updateUserV1",
+                )
+            ]
+
+        result = self._base_query_api_call(
+            operation="updateUserV1",
+            query_params={"user_uuid": user_uuid},
+            body_params={"first_name": first_name, "last_name": last_name},
+            error_message="Failed to update user",
+            default_result=[
+                {
+                    "user_uuid": user_uuid,
+                    "first_name": first_name,
+                    "last_name": last_name,
+                    "status": "submitted",
+                }
+            ],
+        )
+
+        if self._is_error(result):
+            return [result]
+
+        return result
+
     def delete_user(
         self,
         confirm_execution: bool = Field(
@@ -434,6 +613,81 @@ class UserManagementModule(BaseModule):
             query_params={"user_uuid": user_uuid},
             error_message="Failed to delete user",
             default_result=[{"user_uuid": user_uuid, "status": "submitted"}],
+        )
+
+        if self._is_error(result):
+            return [result]
+
+        return result
+
+    def perform_user_action(
+        self,
+        confirm_execution: bool = Field(
+            default=False,
+            description="Explicit safety confirmation. Must be set to `true` to execute this destructive operation.",
+        ),
+        action_name: str | None = Field(
+            default=None,
+            description="Action to apply. Supported values: `reset_2fa`, `reset_password`.",
+            examples={"reset_password", "reset_2fa"},
+        ),
+        user_uuids: list[str] | None = Field(
+            default=None,
+            description="User UUIDs to apply the action to.",
+        ),
+        action_value: str | None = Field(
+            default=None,
+            description="Optional action value parameter.",
+        ),
+    ) -> list[dict[str, Any]]:
+        """Apply user actions such as password or 2FA reset."""
+        if not confirm_execution:
+            return [
+                _format_error_response(
+                    "This operation requires `confirm_execution=true`.",
+                    operation="userActionV1",
+                )
+            ]
+
+        if not action_name:
+            return [
+                _format_error_response(
+                    "`action_name` is required to perform a user action.",
+                    operation="userActionV1",
+                )
+            ]
+
+        if action_name not in {"reset_2fa", "reset_password"}:
+            return [
+                _format_error_response(
+                    "`action_name` must be one of: `reset_2fa`, `reset_password`.",
+                    operation="userActionV1",
+                )
+            ]
+
+        if not user_uuids:
+            return [
+                _format_error_response(
+                    "`user_uuids` is required to perform a user action.",
+                    operation="userActionV1",
+                )
+            ]
+
+        action_payload: dict[str, Any] = {"action_name": action_name}
+        if action_value is not None:
+            action_payload["action_value"] = action_value
+
+        result = self._base_query_api_call(
+            operation="userActionV1",
+            body_params={"ids": user_uuids, "action": action_payload},
+            error_message="Failed to perform user action",
+            default_result=[
+                {
+                    "action_name": action_name,
+                    "user_uuids": user_uuids,
+                    "status": "submitted",
+                }
+            ],
         )
 
         if self._is_error(result):
@@ -582,4 +836,3 @@ class UserManagementModule(BaseModule):
             return [result]
 
         return result
-

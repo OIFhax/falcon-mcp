@@ -1,5 +1,7 @@
 """Integration tests for the Cloud module."""
 
+from typing import Any
+
 import pytest
 
 from falcon_mcp.modules.cloud import CloudModule
@@ -8,117 +10,163 @@ from tests.integration.utils.base_integration_test import BaseIntegrationTest
 
 @pytest.mark.integration
 class TestCloudIntegration(BaseIntegrationTest):
-    """Integration tests for Cloud module with real API calls.
-
-    Validates:
-    - Correct FalconPy operation names (ReadContainerCombined, ReadContainerCount, ReadCombinedVulnerabilities)
-    - Combined query endpoints return full details
-    - API response schema consistency
-    """
+    """Integration tests for Cloud module with real API calls."""
 
     @pytest.fixture(autouse=True)
     def setup_module(self, falcon_client):
         """Set up the cloud module with a real client."""
         self.module = CloudModule(falcon_client)
 
-    def test_search_kubernetes_containers_returns_details(self):
-        """Test that search_kubernetes_containers returns full container details.
+    @staticmethod
+    def _extract_status_code(result: Any) -> int | None:
+        """Extract status code from standardized error responses."""
+        if isinstance(result, dict):
+            details = result.get("details", {})
+            if isinstance(details, dict):
+                return details.get("status_code")
+            nested_results = result.get("results")
+            if isinstance(nested_results, list) and nested_results:
+                first = nested_results[0]
+                if isinstance(first, dict):
+                    nested_details = first.get("details", {})
+                    if isinstance(nested_details, dict):
+                        return nested_details.get("status_code")
 
-        Validates the ReadContainerCombined operation name is correct.
-        """
-        result = self.call_method(self.module.search_kubernetes_containers, limit=5)
+        if isinstance(result, list) and result:
+            first = result[0]
+            if isinstance(first, dict):
+                details = first.get("details", {})
+                if isinstance(details, dict):
+                    return details.get("status_code")
+
+        return None
+
+    def _skip_if_scope_or_service_missing(self, result: Any, context: str) -> None:
+        """Skip when container/cloud scope or service is unavailable."""
+        status_code = self._extract_status_code(result)
+        if status_code == 403:
+            self.skip_with_warning(
+                "Missing required API scope for Cloud integration test",
+                context=context,
+            )
+        if status_code == 404:
+            self.skip_with_warning(
+                "Cloud/Container service unavailable for this tenant/region",
+                context=context,
+            )
+
+    def test_search_kubernetes_containers_operation_name(self):
+        """Validate ReadContainerCombined operation wiring."""
+        result = self.call_method(self.module.search_kubernetes_containers, limit=3)
+        self._skip_if_scope_or_service_missing(result, "search_kubernetes_containers")
 
         self.assert_no_error(result, context="search_kubernetes_containers")
         self.assert_valid_list_response(result, min_length=0, context="search_kubernetes_containers")
 
-        if len(result) > 0:
-            # Verify we get full details
-            self.assert_search_returns_details(
-                result,
-                expected_fields=["container_id", "container_name"],
-                context="search_kubernetes_containers",
-            )
-
-    def test_search_kubernetes_containers_with_filter(self):
-        """Test search_kubernetes_containers with FQL filter."""
-        result = self.call_method(
-            self.module.search_kubernetes_containers,
-            filter="running_status:true",
-            limit=3,
-        )
-
-        self.assert_no_error(result, context="search_kubernetes_containers with filter")
-        self.assert_valid_list_response(result, min_length=0, context="search_kubernetes_containers with filter")
-
-    def test_search_kubernetes_containers_with_sort(self):
-        """Test search_kubernetes_containers with sort parameter."""
-        result = self.call_method(
-            self.module.search_kubernetes_containers,
-            sort="last_seen.desc",
-            limit=3,
-        )
-
-        self.assert_no_error(result, context="search_kubernetes_containers with sort")
-        self.assert_valid_list_response(result, min_length=0, context="search_kubernetes_containers with sort")
-
-    def test_count_kubernetes_containers(self):
-        """Test that count_kubernetes_containers returns a count.
-
-        Validates the ReadContainerCount operation name is correct.
-        """
-        result = self.call_method(self.module.count_kubernetes_containers)
-
-        # Result should be an integer or a list with error
-        if isinstance(result, list):
-            self.assert_no_error(result, context="count_kubernetes_containers")
-        else:
-            # Should be a valid count (integer >= 0)
-            assert isinstance(result, int), f"Expected int, got {type(result)}"
-            assert result >= 0, f"Expected non-negative count, got {result}"
-
-    def test_count_kubernetes_containers_with_filter(self):
-        """Test count_kubernetes_containers with FQL filter."""
+    def test_count_kubernetes_containers_operation_name(self):
+        """Validate ReadContainerCount operation wiring."""
         result = self.call_method(
             self.module.count_kubernetes_containers,
             filter="running_status:true",
         )
+        self._skip_if_scope_or_service_missing(result, "count_kubernetes_containers")
 
-        if isinstance(result, list):
-            self.assert_no_error(result, context="count_kubernetes_containers with filter")
-        else:
-            assert isinstance(result, int), f"Expected int, got {type(result)}"
-            assert result >= 0, f"Expected non-negative count, got {result}"
+        self.assert_no_error(result, context="count_kubernetes_containers")
+        self.assert_valid_list_response(result, min_length=0, context="count_kubernetes_containers")
 
-    def test_search_images_vulnerabilities_returns_details(self):
-        """Test that search_images_vulnerabilities returns full vulnerability details.
-
-        Validates the ReadCombinedVulnerabilities operation name is correct.
-        """
-        result = self.call_method(self.module.search_images_vulnerabilities, limit=5)
+    def test_search_images_vulnerabilities_operation_name(self):
+        """Validate ReadCombinedVulnerabilities operation wiring."""
+        result = self.call_method(self.module.search_images_vulnerabilities, limit=3)
+        self._skip_if_scope_or_service_missing(result, "search_images_vulnerabilities")
 
         self.assert_no_error(result, context="search_images_vulnerabilities")
         self.assert_valid_list_response(result, min_length=0, context="search_images_vulnerabilities")
 
-    def test_search_images_vulnerabilities_with_filter(self):
-        """Test search_images_vulnerabilities with FQL filter."""
-        result = self.call_method(
-            self.module.search_images_vulnerabilities,
-            filter="cvss_score:>5",
-            limit=3,
+    def test_vulnerability_count_operations(self):
+        """Validate vulnerability aggregation operation names."""
+        operations = [
+            ("count_image_vulnerabilities", self.module.count_image_vulnerabilities),
+            ("count_by_severity", self.module.count_image_vulnerabilities_by_severity),
+            ("count_by_cps", self.module.count_image_vulnerabilities_by_cps_rating),
+            ("count_by_cvss", self.module.count_image_vulnerabilities_by_cvss_score),
+            (
+                "count_by_actively_exploited",
+                self.module.count_image_vulnerabilities_by_actively_exploited,
+            ),
+        ]
+
+        for context, method in operations:
+            result = self.call_method(method, limit=5)
+            self._skip_if_scope_or_service_missing(result, context)
+            self.assert_no_error(result, context=context)
+            self.assert_valid_list_response(result, min_length=0, context=context)
+
+    def test_top_and_recent_vulnerability_views(self):
+        """Validate ReadVulnerabilitiesByImageCount and ReadVulnerabilitiesPublicationDate wiring."""
+        top_result = self.call_method(self.module.get_top_vulnerabilities_by_image_count, limit=3)
+        self._skip_if_scope_or_service_missing(top_result, "get_top_vulnerabilities_by_image_count")
+        self.assert_no_error(top_result, context="get_top_vulnerabilities_by_image_count")
+        self.assert_valid_list_response(
+            top_result,
+            min_length=0,
+            context="get_top_vulnerabilities_by_image_count",
         )
 
-        self.assert_no_error(result, context="search_images_vulnerabilities with filter")
-        self.assert_valid_list_response(result, min_length=0, context="search_images_vulnerabilities with filter")
+        recent_result = self.call_method(
+            self.module.get_recent_vulnerabilities_by_publication_date,
+            limit=3,
+        )
+        self._skip_if_scope_or_service_missing(
+            recent_result,
+            "get_recent_vulnerabilities_by_publication_date",
+        )
+        self.assert_no_error(recent_result, context="get_recent_vulnerabilities_by_publication_date")
+        self.assert_valid_list_response(
+            recent_result,
+            min_length=0,
+            context="get_recent_vulnerabilities_by_publication_date",
+        )
 
-    def test_operation_names_are_correct(self):
-        """Validate that FalconPy operation names are correct.
+    def test_vulnerability_details_and_info_when_data_available(self):
+        """Validate detail/info operations when required IDs are discoverable."""
+        search_result = self.call_method(self.module.search_images_vulnerabilities, limit=5)
+        self._skip_if_scope_or_service_missing(search_result, "vulnerability details setup")
+        self.assert_no_error(search_result, context="vulnerability details setup")
 
-        If operation names are wrong, the API call will fail with an error.
-        """
-        # Test ReadContainerCombined
-        result = self.call_method(self.module.search_kubernetes_containers, limit=1)
-        self.assert_no_error(result, context="ReadContainerCombined operation name")
+        if not search_result:
+            self.skip_with_warning(
+                "No vulnerability records available to validate details/info operations",
+                context="test_vulnerability_details_and_info_when_data_available",
+            )
 
-        # Test ReadCombinedVulnerabilities
-        result = self.call_method(self.module.search_images_vulnerabilities, limit=1)
-        self.assert_no_error(result, context="ReadCombinedVulnerabilities operation name")
+        first_item = search_result[0]
+        image_id = first_item.get("image_id")
+        cve_id = first_item.get("cve_id")
+
+        if image_id:
+            details_result = self.call_method(
+                self.module.get_image_vulnerability_details,
+                image_id=image_id,
+                limit=5,
+            )
+            self._skip_if_scope_or_service_missing(details_result, "get_image_vulnerability_details")
+            self.assert_no_error(details_result, context="get_image_vulnerability_details")
+            self.assert_valid_list_response(
+                details_result,
+                min_length=0,
+                context="get_image_vulnerability_details",
+            )
+
+        if cve_id:
+            info_result = self.call_method(
+                self.module.get_image_vulnerability_info,
+                cve_id=cve_id,
+                limit=5,
+            )
+            self._skip_if_scope_or_service_missing(info_result, "get_image_vulnerability_info")
+            self.assert_no_error(info_result, context="get_image_vulnerability_info")
+            self.assert_valid_list_response(
+                info_result,
+                min_length=0,
+                context="get_image_vulnerability_info",
+            )

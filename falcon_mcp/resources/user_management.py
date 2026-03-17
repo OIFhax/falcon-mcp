@@ -114,14 +114,13 @@ User Management tools can change access across your Falcon tenant.
 - Use a dedicated API client for IAM automation and apply least privilege scopes.
 - Run in a separate MCP instance from endpoint-response modules when possible.
 - Keep write actions gated with `confirm_execution=true`.
-- Prefer read-only discovery tools first (`search_users`, `search_user_roles`, `get_user_role_grants`).
+- Prefer read-only discovery tools first (`aggregate_users`, `search_users`, `search_user_roles`, `get_user_role_details`, `get_user_role_grants`).
 - Log all user and role changes through your internal change-control process.
 
 ## High-impact tool sequence
 
 1. `search_users` and confirm the target `uuid`.
-2. `search_user_roles` and confirm intended role IDs.
-3. Execute a single write action with `confirm_execution=true`.
-4. Re-check role grants using `get_user_role_grants`.
+2. `search_user_roles` and `get_user_role_details` to confirm intended role IDs.
+3. Execute one write action (`create_user`, `update_user`, `perform_user_action`, `grant_user_roles`, or `revoke_user_roles`) with `confirm_execution=true`.
+4. Re-check user state and role grants using `get_user_details` / `get_user_role_grants`.
 """
-

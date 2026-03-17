@@ -101,7 +101,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | Module | Required API Scopes | Purpose |
 | - | - | - |
 | **CAO Hunting** | `CAO Hunting:read` | Search hunting guides and intelligence queries, run aggregations, and request archive exports |
-| **Cloud Security** | `Falcon Container Image:read` | Find and analyze kubernetes containers inventory and container imges vulnerabilities |
+| **Cloud Security** | `Falcon Container Image:read` | Search Kubernetes container inventory and run full container vulnerability analytics |
 | **Core** | _No additional scopes_ | Basic connectivity and system information |
 | **Custom IOA** | `Custom IOA Rules:read`<br>`Custom IOA Rules:write` | Create and manage Custom IOA behavioral detection rules and rule groups |
 | **Detections** | `Alerts:read`<br>`Alerts:write` | Full detections coverage for query/search/details, aggregation, and controlled detection update actions |
@@ -109,7 +109,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Exposure Management** | `Exposure Management:read`<br>`Exposure Management:write` | Search external assets and perform controlled asset inventory/triage updates |
 | **Hosts** | `Hosts:read`<br>`Host Groups:read`<br>`Host Groups:write`<br>`Host Migration:read`<br>`Host Migration:write` | Search hosts, manage host groups, and orchestrate migration workflows |
 | **Identity Protection** | `Identity Protection Entities:read`<br>`Identity Protection Timeline:read`<br>`Identity Protection Detections:read`<br>`Identity Protection Assessment:read`<br>`Identity Protection GraphQL:write` | Comprehensive entity investigation and identity protection analysis |
-| **User Management** | `User Management:read`<br>`User Management:write` | Search users and roles, review grants, and perform controlled user/role assignment changes |
+| **User Management** | `User Management:read`<br>`User Management:write` | Full User Management coverage for aggregation, user/role discovery, grants, and controlled user/role actions |
 | **Incidents** | `Incidents:read`<br>`Incidents:write` | Full incidents coverage for crowd score, incident/behavior query+details, and controlled incident action workflows |
 | **Installation Tokens** | `Installation Tokens:read`<br>`Installation Tokens:write`<br>`Installation Tokens Settings:write` | Search and manage installation tokens, inspect audit events, and control tenant token settings |
 | **Prevention Policies** | `Prevention Policies:read`<br>`Prevention Policies:write` | Search and manage prevention policies, policy members, policy actions, and precedence ordering |
@@ -146,18 +146,30 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 
 - `Falcon Container Image:read`
 
-Provides tools for accessing and analyzing CrowdStrike Cloud Security resources:
+Provides tools for CrowdStrike Cloud Security inventory and full Container Vulnerabilities coverage:
 
-- `falcon_search_kubernetes_containers`: Search for containers from CrowdStrike Kubernetes & Containers inventory
-- `falcon_count_kubernetes_containers`: Count for containers by filter criteria from CrowdStrike Kubernetes & Containers inventory
-- `falcon_search_images_vulnerabilities`: Search for images vulnerabilities from CrowdStrike Image Assessments
+- Kubernetes container inventory:
+  - `falcon_search_kubernetes_containers`
+  - `falcon_count_kubernetes_containers`
+- Vulnerability search and enrichment:
+  - `falcon_search_images_vulnerabilities`
+  - `falcon_get_image_vulnerability_details`
+  - `falcon_get_image_vulnerability_info`
+- Vulnerability aggregations and ranking views:
+  - `falcon_count_image_vulnerabilities`
+  - `falcon_count_image_vulnerabilities_by_severity`
+  - `falcon_count_image_vulnerabilities_by_cps_rating`
+  - `falcon_count_image_vulnerabilities_by_cvss_score`
+  - `falcon_count_image_vulnerabilities_by_actively_exploited`
+  - `falcon_get_top_vulnerabilities_by_image_count`
+  - `falcon_get_recent_vulnerabilities_by_publication_date`
 
 **Resources**:
 
 - `falcon://cloud/kubernetes-containers/fql-guide`: Comprehensive FQL documentation and examples for kubernetes containers searches
 - `falcon://cloud/images-vulnerabilities/fql-guide`: Comprehensive FQL documentation and examples for images vulnerabilities searches
 
-**Use Cases**: Manage kubernetes containers inventory, container images vulnerabilities analysis
+**Use Cases**: Container inventory hygiene, image vulnerability triage, CVE enrichment, exploitability-focused risk analysis
 
 ### CAO Hunting Module
 
@@ -345,14 +357,19 @@ Provides tools for accessing and managing CrowdStrike Falcon Identity Protection
 - `User Management:read`
 - `User Management:write`
 
-Provides tools for Falcon User Management workflows:
+Provides full User Management service collection coverage:
 
+- `falcon_aggregate_users`: Run user-management aggregate queries with list-based aggregation payloads
 - `falcon_search_users`: Search users and return full user details (two-step query + entity retrieval)
 - `falcon_get_user_details`: Retrieve full user records by UUID
 - `falcon_search_user_roles`: Search available roles and return full role details
+- `falcon_get_user_role_details`: Retrieve role records by ID using `entitiesRolesGETV2`
+- `falcon_get_user_role_details_v1`: Retrieve role records by ID using `entitiesRolesV1`
 - `falcon_get_user_role_grants`: Review role grants for a specific user
 - `falcon_create_user`: Create users (`confirm_execution=true` required)
+- `falcon_update_user`: Update user first/last name (`confirm_execution=true` required)
 - `falcon_delete_user`: Delete users (`confirm_execution=true` required)
+- `falcon_perform_user_action`: Apply user actions (`reset_password` / `reset_2fa`) (`confirm_execution=true` required)
 - `falcon_grant_user_roles`: Grant roles to a user (`confirm_execution=true` required)
 - `falcon_revoke_user_roles`: Revoke roles from a user (`confirm_execution=true` required)
 
@@ -688,12 +705,22 @@ Provides full NGSIEM service collection coverage:
 - `Indicators (Falcon Intelligence):read`
 - `Reports (Falcon Intelligence):read`
 
-Provides tools for accessing and analyzing CrowdStrike Intelligence:
+Provides full FalconPy Intel service collection coverage:
 
-- `falcon_search_actors`: Research threat actors and adversary groups tracked by CrowdStrike intelligence
-- `falcon_search_indicators`: Search for threat indicators and indicators of compromise (IOCs) from CrowdStrike intelligence
-- `falcon_search_reports`: Access CrowdStrike intelligence publications and threat reports
-- `falcon_get_mitre_report`: Generate MITRE ATT&CK reports for threat actors, providing detailed tactics, techniques, and procedures (TTPs) in JSON or CSV format
+- Actors:
+  - `falcon_search_actors`, `falcon_query_actor_ids`, `falcon_get_actor_details`
+- Indicators:
+  - `falcon_search_indicators`, `falcon_query_indicator_ids`, `falcon_get_indicator_details`
+- Reports:
+  - `falcon_search_reports`, `falcon_query_report_ids`, `falcon_get_report_details`, `falcon_download_report_pdf`
+- Rules:
+  - `falcon_query_rule_ids`, `falcon_get_rule_details`, `falcon_download_rule_file`, `falcon_download_latest_rule_file`
+- Malware:
+  - `falcon_query_malware_ids`, `falcon_search_malware`, `falcon_get_malware_details`, `falcon_get_malware_mitre_report`
+- MITRE:
+  - `falcon_query_mitre_attacks`, `falcon_query_mitre_attacks_for_malware`, `falcon_get_mitre_attack_details`, `falcon_get_mitre_report`
+- Vulnerabilities:
+  - `falcon_query_vulnerability_ids`, `falcon_get_vulnerability_details`
 
 **Resources**:
 

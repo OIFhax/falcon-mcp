@@ -21,12 +21,17 @@ class TestUserManagementModule(TestModules):
     def test_register_tools(self):
         """Test registering tools with the server."""
         expected_tools = [
+            "falcon_aggregate_users",
             "falcon_search_users",
             "falcon_get_user_details",
             "falcon_search_user_roles",
+            "falcon_get_user_role_details",
+            "falcon_get_user_role_details_v1",
             "falcon_get_user_role_grants",
             "falcon_create_user",
+            "falcon_update_user",
             "falcon_delete_user",
+            "falcon_perform_user_action",
             "falcon_grant_user_roles",
             "falcon_revoke_user_roles",
         ]
@@ -40,6 +45,27 @@ class TestUserManagementModule(TestModules):
             "falcon_user_management_safety_guide",
         ]
         self.assert_resources_registered(expected_resources)
+
+    def test_aggregate_users_requires_body(self):
+        """Test aggregate_users requires body."""
+        result = self.module.aggregate_users(body=None)
+
+        self.assertEqual(len(result), 1)
+        self.assertIn("error", result[0])
+        self.mock_client.command.assert_not_called()
+
+    def test_aggregate_users_success(self):
+        """Test aggregate_users operation wiring."""
+        aggregation_body = [{"field": "status", "type": "terms", "size": 10}]
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"status": "active", "count": 3}]},
+        }
+
+        result = self.module.aggregate_users(body=aggregation_body)
+
+        self.mock_client.command.assert_called_once_with("aggregateUsersV1", body=aggregation_body)
+        self.assertEqual(result, [{"status": "active", "count": 3}])
 
     def test_search_users_success(self):
         """Test searching users and fetching full details."""
@@ -173,6 +199,53 @@ class TestUserManagementModule(TestModules):
         self.assertEqual(len(result), 2)
         self.assertEqual(result[0]["id"], "role-id-1")
 
+    def test_get_user_role_details_requires_ids(self):
+        """Test role detail retrieval requires ids."""
+        result = self.module.get_user_role_details(ids=None, cid=None)
+
+        self.assertEqual(len(result), 1)
+        self.assertIn("error", result[0])
+        self.mock_client.command.assert_not_called()
+
+    def test_get_user_role_details_success(self):
+        """Test role detail retrieval using entitiesRolesGETV2."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "role-id-1", "name": "Falcon Administrator"}]},
+        }
+
+        result = self.module.get_user_role_details(
+            ids=["role-id-1"],
+            cid="1234567890abcdef",
+        )
+
+        self.mock_client.command.assert_called_once_with(
+            "entitiesRolesGETV2",
+            parameters={"cid": "1234567890abcdef"},
+            body={"ids": ["role-id-1"]},
+        )
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["id"], "role-id-1")
+
+    def test_get_user_role_details_v1_success(self):
+        """Test role detail retrieval using entitiesRolesV1."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "role-id-2", "name": "Falcon Analyst"}]},
+        }
+
+        result = self.module.get_user_role_details_v1(
+            ids=["role-id-2"],
+            cid="1234567890abcdef",
+        )
+
+        self.mock_client.command.assert_called_once_with(
+            "entitiesRolesV1",
+            parameters={"ids": ["role-id-2"], "cid": "1234567890abcdef"},
+        )
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["id"], "role-id-2")
+
     def test_get_user_role_grants_validation_error(self):
         """Test get_user_role_grants requires user_uuid."""
         result = self.module.get_user_role_grants(user_uuid=None)
@@ -283,6 +356,53 @@ class TestUserManagementModule(TestModules):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]["uuid"], "user-uuid-1")
 
+    def test_update_user_requires_confirmation(self):
+        """Test update_user requires explicit confirmation."""
+        result = self.module.update_user(
+            confirm_execution=False,
+            user_uuid="user-uuid-1",
+            first_name="Updated",
+            last_name="User",
+        )
+
+        self.assertEqual(len(result), 1)
+        self.assertIn("error", result[0])
+        self.mock_client.command.assert_not_called()
+
+    def test_update_user_requires_first_and_last_name(self):
+        """Test update_user requires both first_name and last_name."""
+        result = self.module.update_user(
+            confirm_execution=True,
+            user_uuid="user-uuid-1",
+            first_name="Updated",
+            last_name=None,
+        )
+
+        self.assertEqual(len(result), 1)
+        self.assertIn("error", result[0])
+        self.mock_client.command.assert_not_called()
+
+    def test_update_user_success(self):
+        """Test update_user request wiring and default submitted response."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": []},
+        }
+
+        result = self.module.update_user(
+            confirm_execution=True,
+            user_uuid="user-uuid-1",
+            first_name="Updated",
+            last_name="Name",
+        )
+
+        self.mock_client.command.assert_called_once_with(
+            "updateUserV1",
+            parameters={"user_uuid": "user-uuid-1"},
+            body={"first_name": "Updated", "last_name": "Name"},
+        )
+        self.assertEqual(result[0]["status"], "submitted")
+
     def test_delete_user_requires_confirmation(self):
         """Test delete_user requires explicit confirmation."""
         result = self.module.delete_user(
@@ -311,6 +431,56 @@ class TestUserManagementModule(TestModules):
             parameters={"user_uuid": "user-uuid-1"},
         )
         self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["status"], "submitted")
+
+    def test_perform_user_action_requires_confirmation(self):
+        """Test perform_user_action requires explicit confirmation."""
+        result = self.module.perform_user_action(
+            confirm_execution=False,
+            action_name="reset_password",
+            user_uuids=["user-uuid-1"],
+        )
+
+        self.assertEqual(len(result), 1)
+        self.assertIn("error", result[0])
+        self.mock_client.command.assert_not_called()
+
+    def test_perform_user_action_invalid_action_name(self):
+        """Test perform_user_action validates action_name."""
+        result = self.module.perform_user_action(
+            confirm_execution=True,
+            action_name="invalid_action",
+            user_uuids=["user-uuid-1"],
+        )
+
+        self.assertEqual(len(result), 1)
+        self.assertIn("error", result[0])
+        self.mock_client.command.assert_not_called()
+
+    def test_perform_user_action_success(self):
+        """Test perform_user_action sends expected payload."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": []},
+        }
+
+        result = self.module.perform_user_action(
+            confirm_execution=True,
+            action_name="reset_password",
+            user_uuids=["user-uuid-1", "user-uuid-2"],
+            action_value="temporary-password",
+        )
+
+        self.mock_client.command.assert_called_once_with(
+            "userActionV1",
+            body={
+                "ids": ["user-uuid-1", "user-uuid-2"],
+                "action": {
+                    "action_name": "reset_password",
+                    "action_value": "temporary-password",
+                },
+            },
+        )
         self.assertEqual(result[0]["status"], "submitted")
 
     def test_grant_user_roles_requires_confirmation(self):
@@ -396,6 +566,19 @@ class TestUserManagementModule(TestModules):
             ),
         )
 
+    def test_update_user_has_write_annotations(self):
+        """Test that update_user is registered with write annotations."""
+        self.module.register_tools(self.mock_server)
+        self.assert_tool_annotations(
+            "falcon_update_user",
+            ToolAnnotations(
+                readOnlyHint=False,
+                destructiveHint=False,
+                idempotentHint=False,
+                openWorldHint=True,
+            ),
+        )
+
     def test_delete_user_has_destructive_annotations(self):
         """Test that delete_user is registered with destructive write annotations."""
         self.module.register_tools(self.mock_server)
@@ -409,7 +592,19 @@ class TestUserManagementModule(TestModules):
             ),
         )
 
+    def test_perform_user_action_has_destructive_annotations(self):
+        """Test that perform_user_action is registered as destructive."""
+        self.module.register_tools(self.mock_server)
+        self.assert_tool_annotations(
+            "falcon_perform_user_action",
+            ToolAnnotations(
+                readOnlyHint=False,
+                destructiveHint=True,
+                idempotentHint=True,
+                openWorldHint=True,
+            ),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
-

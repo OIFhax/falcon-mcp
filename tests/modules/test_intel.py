@@ -1,9 +1,8 @@
-"""
-Tests for the Intel module.
-"""
+"""Tests for the Intel module."""
 
 import unittest
 
+from falcon_mcp.modules.base import READ_ONLY_ANNOTATIONS
 from falcon_mcp.modules.intel import IntelModule
 from tests.modules.utils.test_modules import TestModules
 
@@ -16,12 +15,32 @@ class TestIntelModule(TestModules):
         self.setup_module(IntelModule)
 
     def test_register_tools(self):
-        """Test registering tools with the server."""
+        """Test registering all intel tools with the server."""
         expected_tools = [
             "falcon_search_actors",
+            "falcon_query_actor_ids",
+            "falcon_get_actor_details",
             "falcon_search_indicators",
+            "falcon_query_indicator_ids",
+            "falcon_get_indicator_details",
             "falcon_search_reports",
+            "falcon_query_report_ids",
+            "falcon_get_report_details",
+            "falcon_download_report_pdf",
+            "falcon_query_rule_ids",
+            "falcon_get_rule_details",
+            "falcon_download_rule_file",
+            "falcon_download_latest_rule_file",
+            "falcon_query_malware_ids",
+            "falcon_search_malware",
+            "falcon_get_malware_details",
+            "falcon_get_malware_mitre_report",
+            "falcon_query_mitre_attacks",
+            "falcon_query_mitre_attacks_for_malware",
+            "falcon_get_mitre_attack_details",
             "falcon_get_mitre_report",
+            "falcon_query_vulnerability_ids",
+            "falcon_get_vulnerability_details",
         ]
         self.assert_tools_registered(expected_tools)
 
@@ -34,510 +53,486 @@ class TestIntelModule(TestModules):
         ]
         self.assert_resources_registered(expected_resources)
 
-    def test_search_actors_success(self):
-        """Test searching actors with successful response."""
-        # Setup mock response with sample actors
-        mock_response = {
-            "status_code": 200,
-            "body": {
-                "resources": [
-                    {"id": "actor1", "name": "Actor 1", "description": "Description 1"},
-                    {"id": "actor2", "name": "Actor 2", "description": "Description 2"},
-                ]
-            },
-        }
-        self.mock_client.command.return_value = mock_response
+    def test_tool_annotations(self):
+        """Test tools are registered as read-only."""
+        self.module.register_tools(self.mock_server)
+        self.assert_tool_annotations("falcon_search_actors", READ_ONLY_ANNOTATIONS)
+        self.assert_tool_annotations("falcon_get_mitre_report", READ_ONLY_ANNOTATIONS)
+        self.assert_tool_annotations("falcon_download_rule_file", READ_ONLY_ANNOTATIONS)
 
-        # Call search_actors with test parameters
-        result = self.module.query_actor_entities(
-            filter="name:'Actor*'",
-            limit=100,
+    def test_search_actors_success(self):
+        """Test search_actors uses QueryIntelActorEntities."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "actor-1", "name": "Actor One"}]},
+        }
+
+        result = self.module.search_actors(
+            filter="name:'Actor One'",
+            limit=25,
             offset=0,
-            sort="name.asc",
-            q="test",
+            sort="created_date|desc",
+            q="actor",
+            fields=["id", "name"],
         )
 
-        # Verify client command was called correctly
         self.mock_client.command.assert_called_once_with(
             "QueryIntelActorEntities",
             parameters={
-                "filter": "name:'Actor*'",
-                "limit": 100,
+                "filter": "name:'Actor One'",
+                "limit": 25,
                 "offset": 0,
-                "sort": "name.asc",
-                "q": "test",
+                "sort": "created_date|desc",
+                "q": "actor",
+                "fields": ["id", "name"],
             },
         )
+        self.assertEqual(result[0]["id"], "actor-1")
 
-        # Verify result contains expected values
-        self.assertEqual(len(result), 2)
-        self.assertEqual(result[0]["id"], "actor1")
-        self.assertEqual(result[1]["id"], "actor2")
-
-    def test_search_actors_empty_response(self):
-        """Test searching actors with empty response."""
-        # Setup mock response with empty resources
-        mock_response = {"status_code": 200, "body": {"resources": []}}
-        self.mock_client.command.return_value = mock_response
-
-        # Call search_actors
-        result = self.module.query_actor_entities()
-
-        # Verify client command was called with the correct operation
-        self.assertEqual(self.mock_client.command.call_count, 1)
-        call_args = self.mock_client.command.call_args
-        self.assertEqual(call_args[0][0], "QueryIntelActorEntities")
-
-        # Verify result is an empty list
-        self.assertEqual(result, [])
-
-    def test_search_actors_error(self):
-        """Test searching actors with API error."""
-        # Setup mock response with error
-        mock_response = {
-            "status_code": 400,
-            "body": {"errors": [{"message": "Invalid query"}]},
-        }
-        self.mock_client.command.return_value = mock_response
-
-        # Call search_actors
-        results = self.module.query_actor_entities(filter="invalid query")
-        result = results[0]
-
-        # Verify result contains error
-        self.assertIn("error", result)
-        self.assertIn("details", result)
-        # Check that the error message starts with the expected prefix
-        self.assertTrue(result["error"].startswith("Failed to search actors"))
-
-    def test_query_indicator_entities_success(self):
-        """Test querying indicator entities with successful response."""
-        # Setup mock response with sample indicators
-        mock_response = {
+    def test_query_actor_ids_success(self):
+        """Test query_actor_ids uses QueryIntelActorIds."""
+        self.mock_client.command.return_value = {
             "status_code": 200,
-            "body": {
-                "resources": [
-                    {
-                        "id": "indicator1",
-                        "indicator": "malicious.com",
-                        "type": "domain",
-                    },
-                    {
-                        "id": "indicator2",
-                        "indicator": "192.168.1.1",
-                        "type": "ip_address",
-                    },
-                ]
-            },
+            "body": {"resources": ["111", "222"]},
         }
-        self.mock_client.command.return_value = mock_response
 
-        # Call query_indicator_entities with test parameters
-        result = self.module.query_indicator_entities(
+        result = self.module.query_actor_ids(filter="animal_classifier:'BEAR'", limit=2)
+
+        self.mock_client.command.assert_called_once_with(
+            "QueryIntelActorIds",
+            parameters={"filter": "animal_classifier:'BEAR'", "limit": 2},
+        )
+        self.assertEqual(result, ["111", "222"])
+
+    def test_get_actor_details_requires_ids(self):
+        """Test get_actor_details validates required IDs."""
+        result = self.module.get_actor_details(ids=None)
+        self.assertEqual(len(result), 1)
+        self.assertIn("error", result[0])
+        self.mock_client.command.assert_not_called()
+
+    def test_get_actor_details_success(self):
+        """Test get_actor_details uses GetIntelActorEntities."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "111", "name": "Actor One"}]},
+        }
+
+        result = self.module.get_actor_details(ids=["111"], fields=["id", "name"])
+
+        self.mock_client.command.assert_called_once_with(
+            "GetIntelActorEntities",
+            parameters={"ids": ["111"], "fields": ["id", "name"]},
+        )
+        self.assertEqual(result[0]["id"], "111")
+
+    def test_search_indicators_success(self):
+        """Test search_indicators uses QueryIntelIndicatorEntities."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "ioc-1", "indicator": "evil.example"}]},
+        }
+
+        result = self.module.search_indicators(
             filter="type:'domain'",
-            limit=100,
-            offset=0,
-            sort="published_date.desc",
-            q="malicious",
+            limit=10,
             include_deleted=True,
             include_relations=True,
         )
 
-        # Verify client command was called correctly
         self.mock_client.command.assert_called_once_with(
             "QueryIntelIndicatorEntities",
             parameters={
                 "filter": "type:'domain'",
-                "limit": 100,
-                "offset": 0,
-                "sort": "published_date.desc",
-                "q": "malicious",
+                "limit": 10,
                 "include_deleted": True,
                 "include_relations": True,
             },
         )
+        self.assertEqual(result[0]["id"], "ioc-1")
 
-        # Verify result contains expected values
-        self.assertEqual(len(result), 2)
-        self.assertEqual(result[0]["id"], "indicator1")
-        self.assertEqual(result[1]["id"], "indicator2")
-
-    def test_query_indicator_entities_empty_response(self):
-        """Test querying indicator entities with empty response."""
-        # Setup mock response with empty resources
-        mock_response = {"status_code": 200, "body": {"resources": []}}
-        self.mock_client.command.return_value = mock_response
-
-        # Call query_indicator_entities
-        result = self.module.query_indicator_entities()
-
-        # Verify client command was called with the correct operation
-        self.assertEqual(self.mock_client.command.call_count, 1)
-        call_args = self.mock_client.command.call_args
-        self.assertEqual(call_args[0][0], "QueryIntelIndicatorEntities")
-
-        # Verify result is an empty list
-        self.assertEqual(result, [])
-
-    def test_query_indicator_entities_error(self):
-        """Test querying indicator entities with API error."""
-        # Setup mock response with error
-        mock_response = {
-            "status_code": 400,
-            "body": {"errors": [{"message": "Invalid query"}]},
-        }
-        self.mock_client.command.return_value = mock_response
-
-        # Call query_indicator_entities
-        result = self.module.query_indicator_entities(filter="invalid query")
-
-        # Verify result contains error
-        self.assertEqual(len(result), 1)
-        self.assertIn("error", result[0])
-        self.assertIn("details", result[0])
-        # Check that the error message starts with the expected prefix
-        self.assertTrue(result[0]["error"].startswith("Failed to search indicators"))
-
-    def test_query_report_entities_success(self):
-        """Test querying report entities with successful response."""
-        # Setup mock response with sample reports
-        mock_response = {
+    def test_query_indicator_ids_success(self):
+        """Test query_indicator_ids uses QueryIntelIndicatorIds."""
+        self.mock_client.command.return_value = {
             "status_code": 200,
-            "body": {
-                "resources": [
-                    {
-                        "id": "report1",
-                        "name": "Report 1",
-                        "description": "Description 1",
-                    },
-                    {
-                        "id": "report2",
-                        "name": "Report 2",
-                        "description": "Description 2",
-                    },
-                ]
-            },
+            "body": {"resources": ["ioc-1"]},
         }
-        self.mock_client.command.return_value = mock_response
 
-        # Call query_report_entities with test parameters
-        result = self.module.query_report_entities(
-            filter="name:'Report*'",
-            limit=100,
-            offset=0,
-            sort="created_date.desc",
-            q="test",
+        result = self.module.query_indicator_ids(
+            filter="type:'hash_sha256'",
+            limit=1,
+            include_relations=True,
         )
 
-        # Verify client command was called correctly
+        self.mock_client.command.assert_called_once_with(
+            "QueryIntelIndicatorIds",
+            parameters={
+                "filter": "type:'hash_sha256'",
+                "limit": 1,
+                "include_deleted": False,
+                "include_relations": True,
+            },
+        )
+        self.assertEqual(result, ["ioc-1"])
+
+    def test_get_indicator_details_uses_body(self):
+        """Test get_indicator_details uses POST body for ids."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "ioc-1"}]},
+        }
+
+        result = self.module.get_indicator_details(ids=["ioc-1"])
+
+        self.mock_client.command.assert_called_once_with(
+            "GetIntelIndicatorEntities",
+            body={"ids": ["ioc-1"]},
+        )
+        self.assertEqual(result[0]["id"], "ioc-1")
+
+    def test_search_reports_success(self):
+        """Test search_reports uses QueryIntelReportEntities."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "report-1", "name": "Report"}]},
+        }
+
+        result = self.module.search_reports(filter="type:'CSIT'", limit=3)
+
         self.mock_client.command.assert_called_once_with(
             "QueryIntelReportEntities",
-            parameters={
-                "filter": "name:'Report*'",
-                "limit": 100,
-                "offset": 0,
-                "sort": "created_date.desc",
-                "q": "test",
-            },
+            parameters={"filter": "type:'CSIT'", "limit": 3},
         )
+        self.assertEqual(result[0]["id"], "report-1")
 
-        # Verify result contains expected values
-        self.assertEqual(len(result), 2)
-        self.assertEqual(result[0]["id"], "report1")
-        self.assertEqual(result[1]["id"], "report2")
-
-    def test_query_report_entities_empty_response(self):
-        """Test querying report entities with empty response."""
-        # Setup mock response with empty resources
-        mock_response = {"status_code": 200, "body": {"resources": []}}
-        self.mock_client.command.return_value = mock_response
-
-        # Call query_report_entities
-        result = self.module.query_report_entities()
-
-        # Verify client command was called with the correct operation
-        self.assertEqual(self.mock_client.command.call_count, 1)
-        call_args = self.mock_client.command.call_args
-        self.assertEqual(call_args[0][0], "QueryIntelReportEntities")
-
-        # Verify result is an empty list
-        self.assertEqual(result, [])
-
-    def test_query_report_entities_error(self):
-        """Test querying report entities with API error."""
-        # Setup mock response with error
-        mock_response = {
-            "status_code": 400,
-            "body": {"errors": [{"message": "Invalid query"}]},
-        }
-        self.mock_client.command.return_value = mock_response
-
-        # Call query_report_entities
-        result = self.module.query_report_entities(filter="invalid query")
-
-        # Verify result contains error
-        self.assertEqual(len(result), 1)
-        self.assertIn("error", result[0])
-        self.assertIn("details", result[0])
-        # Check that the error message starts with the expected prefix
-        self.assertTrue(result[0]["error"].startswith("Failed to search reports"))
-
-    def test_get_mitre_report_success(self):
-        """Test getting MITRE report with successful response.
-
-        FalconPy returns raw bytes directly for binary endpoints like GetMitreReport.
-        """
-        # Setup mock response with fake MITRE JSON data as binary content
-        fake_json_content = '''[
-            {
-                "id": "my_id",
-                "tactic_id": "my_tactic_id",
-                "tactic_name": "Fake Tactic",
-                "technique_id": "technique_id",
-                "technique_name": "Fake Technique",
-                "reports": ["FAKE001"],
-                "observables": ["This is fake observable data for testing purposes."]
-            },
-            {
-                "id": "my_id2",
-                "tactic_id": "my_tactic_id2",
-                "tactic_name": "Another Fake Tactic",
-                "technique_id": "technique_id2",
-                "technique_name": "Another Fake Technique",
-                "reports": ["FAKE002"],
-                "observables": ["This is another fake observable for testing."]
-            }
-        ]'''
-
-        # FalconPy returns raw bytes directly for binary endpoints
-        self.mock_client.command.return_value = fake_json_content.encode('utf-8')
-
-        # Call get_mitre_report with numeric actor ID
-        result = self.module.get_mitre_report(actor="123456", format="json")
-
-        # Verify client command was called correctly
-        self.mock_client.command.assert_called_once_with(
-            "GetMitreReport",
-            parameters={
-                "actor_id": "123456",
-                "format": "json",
-            },
-        )
-
-        # Verify result is decoded string content
-        self.assertIsInstance(result, str)
-        self.assertIn("my_id", result)
-        self.assertIn("Fake Tactic", result)
-        self.assertIn("Fake Technique", result)
-        self.assertIn("FAKE001", result)
-        self.assertIn("technique_id2", result)
-
-    def test_get_mitre_report_csv_format(self):
-        """Test getting MITRE report with CSV format.
-
-        FalconPy returns raw bytes directly for binary endpoints like GetMitreReport.
-        """
-        # Setup mock response for CSV format using fake CSV structure
-        fake_csv = (
-            "id,tactic_id,tactic_name,technique_id,technique_name,reports,observables\n"
-            "fake_id1,fake_tactic_id1,Fake Tactic,fake_technique_id1,Fake Technique,FAKE001,"
-            "This is fake observable data for CSV testing.\n"
-            "fake_id2,fake_tactic_id2,Another Fake Tactic,fake_technique_id2,Another Fake Technique,"
-            "FAKE002,This is another fake observable for CSV testing."
-        )
-        # FalconPy returns raw bytes directly for binary endpoints
-        self.mock_client.command.return_value = fake_csv.encode('utf-8')
-
-        # Call get_mitre_report with CSV format
-        result = self.module.get_mitre_report(actor="123456", format="csv")
-
-        # Verify client command was called correctly
-        self.mock_client.command.assert_called_once_with(
-            "GetMitreReport",
-            parameters={
-                "actor_id": "123456",
-                "format": "csv",
-            },
-        )
-
-        # Verify result is decoded CSV string content
-        self.assertIsInstance(result, str)
-        self.assertIn("fake_id1", result)
-        self.assertIn("Fake Tactic", result)
-        self.assertIn("fake_technique_id2", result)
-
-    def test_get_mitre_report_error(self):
-        """Test getting MITRE report with API error."""
-        # Setup mock response with error
-        mock_response = {
-            "status_code": 404,
-            "body": {"errors": [{"message": "Actor not found"}]},
-        }
-        self.mock_client.command.return_value = mock_response
-
-        # Call get_mitre_report
-        result = self.module.get_mitre_report(actor="invalid_id", format="json")
-
-        # Verify result contains error
-        self.assertEqual(len(result), 1)
-        self.assertIn("error", result[0])
-        # The error structure includes details from the failed search
-        self.assertIn("details", result[0])
-
-    def test_get_mitre_report_empty_response(self):
-        """Test getting MITRE report with empty response.
-
-        FalconPy returns raw bytes directly for binary endpoints like GetMitreReport.
-        """
-        # FalconPy returns raw bytes directly for binary endpoints
-        self.mock_client.command.return_value = b""
-
-        # Call get_mitre_report
-        result = self.module.get_mitre_report(actor="123456", format="json")
-
-        # Verify client command was called with the correct operation
-        self.assertEqual(self.mock_client.command.call_count, 1)
-        call_args = self.mock_client.command.call_args
-        self.assertEqual(call_args[0][0], "GetMitreReport")
-
-        # Verify result is empty string
-        self.assertEqual(result, "")
-
-    def test_get_mitre_report_default_format(self):
-        """Test that default format is JSON when not specified.
-
-        FalconPy returns raw bytes directly for binary endpoints like GetMitreReport.
-        """
-        # Setup mock response with binary content
-        fake_json_content = '{"actor_id": "123456", "format": "JSON"}'
-        # FalconPy returns raw bytes directly for binary endpoints
-        self.mock_client.command.return_value = fake_json_content.encode('utf-8')
-
-        # Call get_mitre_report without format parameter - should use default json
-        self.module.get_mitre_report(actor="123456", format="json")
-
-        # Verify the API call was made with json as the default format
-        self.mock_client.command.assert_called_once_with(
-            "GetMitreReport",
-            parameters={
-                "actor_id": "123456",
-                "format": "json",  # Should default to json
-            },
-        )
-
-    def test_get_mitre_report_by_actor_name(self):
-        """Test getting MITRE report using actor name (automatically resolves to ID).
-
-        FalconPy returns raw bytes directly for binary endpoints like GetMitreReport,
-        but returns dict for standard endpoints like QueryIntelActorEntities.
-        """
-        # Setup mock response for actor search (standard dict response)
-        search_mock_response = {
+    def test_query_report_ids_success(self):
+        """Test query_report_ids uses QueryIntelReportIds."""
+        self.mock_client.command.return_value = {
             "status_code": 200,
-            "body": {
-                "resources": [
-                    {
-                        "id": "789012",
-                        "name": "FAKE BEAR",
-                        "short_description": "Fake test actor",
-                        "animal_classifier": "BEAR",
-                    }
-                ]
-            },
+            "body": {"resources": ["report-1"]},
         }
 
-        # Setup mock response for MITRE report (raw bytes)
-        fake_json_content = '''[
-            {
-                "id": "fake_id_1",
-                "tactic_id": "fake_tactic_001",
-                "tactic_name": "Fake Tactic",
-                "technique_id": "fake_technique_001",
-                "technique_name": "Fake Technique",
-                "reports": ["FAKE001"],
-                "observables": ["This is fake observable data for testing."]
-            }
-        ]'''
+        result = self.module.query_report_ids(filter="name:'weekly'", limit=1)
 
-        # Configure mock to return different responses for different operations
-        def mock_command_side_effect(operation, **_):
-            if operation == "QueryIntelActorEntities":
-                return search_mock_response
-            elif operation == "GetMitreReport":
-                # FalconPy returns raw bytes directly for binary endpoints
-                return fake_json_content.encode('utf-8')
-            return {"status_code": 404, "body": {"errors": [{"message": "Unknown operation"}]}}
+        self.mock_client.command.assert_called_once_with(
+            "QueryIntelReportIds",
+            parameters={"filter": "name:'weekly'", "limit": 1},
+        )
+        self.assertEqual(result, ["report-1"])
 
-        self.mock_client.command.side_effect = mock_command_side_effect
+    def test_get_report_details_success(self):
+        """Test get_report_details uses GetIntelReportEntities."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "report-1"}]},
+        }
 
-        # Call get_mitre_report with actor name
-        result = self.module.get_mitre_report(actor="FAKE BEAR", format="json")
+        result = self.module.get_report_details(ids=["report-1"], fields=["id", "name"])
 
-        # Verify both API calls were made
-        self.assertEqual(self.mock_client.command.call_count, 2)
+        self.mock_client.command.assert_called_once_with(
+            "GetIntelReportEntities",
+            parameters={"ids": ["report-1"], "fields": ["id", "name"]},
+        )
+        self.assertEqual(result[0]["id"], "report-1")
 
-        # Verify first call was actor search
-        first_call = self.mock_client.command.call_args_list[0]
-        self.assertEqual(first_call[0][0], "QueryIntelActorEntities")
-        self.assertIn("name:'FAKE BEAR'", first_call[1]["parameters"]["filter"])
-        self.assertEqual(first_call[1]["parameters"]["limit"], 1)
+    def test_download_report_pdf_binary_returns_metadata(self):
+        """Test download_report_pdf returns metadata for PDF binary."""
+        self.mock_client.command.return_value = b"%PDF-1.7 fake bytes"
 
-        # Verify second call was MITRE report with resolved ID
-        second_call = self.mock_client.command.call_args_list[1]
-        self.assertEqual(second_call[0][0], "GetMitreReport")
-        self.assertEqual(second_call[1]["parameters"]["actor_id"], "789012")
-        self.assertEqual(second_call[1]["parameters"]["format"], "json")
+        result = self.module.download_report_pdf(report_id="report-1")
 
-        # Verify result is decoded JSON string content
+        self.mock_client.command.assert_called_once_with(
+            "GetIntelReportPDF",
+            parameters={"id": "report-1"},
+        )
+        self.assertEqual(len(result), 1)
+        self.assertIn("message", result[0])
+        self.assertIn("size_bytes", result[0])
+
+    def test_query_rule_ids_success(self):
+        """Test query_rule_ids uses QueryIntelRuleIds."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [12345]},
+        }
+
+        result = self.module.query_rule_ids(
+            rule_type="yara-master",
+            limit=1,
+            offset=0,
+            q="ransomware",
+        )
+
+        self.mock_client.command.assert_called_once_with(
+            "QueryIntelRuleIds",
+            parameters={"type": "yara-master", "limit": 1, "offset": 0, "q": "ransomware"},
+        )
+        self.assertEqual(result, [12345])
+
+    def test_get_rule_details_success(self):
+        """Test get_rule_details uses GetIntelRuleEntities."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "12345"}]},
+        }
+
+        result = self.module.get_rule_details(ids=["12345"])
+
+        self.mock_client.command.assert_called_once_with(
+            "GetIntelRuleEntities",
+            parameters={"ids": ["12345"]},
+        )
+        self.assertEqual(result[0]["id"], "12345")
+
+    def test_download_rule_file_binary_returns_metadata(self):
+        """Test download_rule_file handles archive binary payload."""
+        self.mock_client.command.return_value = b"PK\x03\x04fake-zip"
+
+        result = self.module.download_rule_file(rule_id=12345, format="zip")
+
+        self.mock_client.command.assert_called_once_with(
+            "GetIntelRuleFile",
+            parameters={"id": 12345, "format": "zip"},
+        )
+        self.assertEqual(len(result), 1)
+        self.assertIn("Archive content is binary", result[0]["message"])
+
+    def test_download_latest_rule_file_with_conditions(self):
+        """Test download_latest_rule_file passes optional condition parameters."""
+        self.mock_client.command.return_value = b"PK\x03\x04latest-zip"
+
+        result = self.module.download_latest_rule_file(
+            rule_type="cql-master",
+            format="gzip",
+            if_none_match="etag-value",
+            if_modified_since="Wed, 21 Oct 2015 07:28:00 GMT",
+        )
+
+        self.mock_client.command.assert_called_once_with(
+            "GetLatestIntelRuleFile",
+            parameters={
+                "type": "cql-master",
+                "format": "gzip",
+                "if_none_match": "etag-value",
+                "if_modified_since": "Wed, 21 Oct 2015 07:28:00 GMT",
+            },
+        )
+        self.assertEqual(len(result), 1)
+        self.assertIn("size_bytes", result[0])
+
+    def test_query_malware_ids_success(self):
+        """Test query_malware_ids uses QueryMalware."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": ["emotet"]},
+        }
+
+        result = self.module.query_malware_ids(filter="name:'emotet'", limit=1)
+
+        self.mock_client.command.assert_called_once_with(
+            "QueryMalware",
+            parameters={"filter": "name:'emotet'", "limit": 1},
+        )
+        self.assertEqual(result, ["emotet"])
+
+    def test_search_malware_success(self):
+        """Test search_malware uses QueryMalwareEntities."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "emotet"}]},
+        }
+
+        result = self.module.search_malware(filter="family:'emotet'", limit=5, fields=["id"])
+
+        self.mock_client.command.assert_called_once_with(
+            "QueryMalwareEntities",
+            parameters={"filter": "family:'emotet'", "limit": 5, "fields": ["id"]},
+        )
+        self.assertEqual(result[0]["id"], "emotet")
+
+    def test_get_malware_details_requires_ids(self):
+        """Test get_malware_details validates required IDs."""
+        result = self.module.get_malware_details(ids=None)
+
+        self.assertEqual(len(result), 1)
+        self.assertIn("error", result[0])
+        self.mock_client.command.assert_not_called()
+
+    def test_get_malware_details_success(self):
+        """Test get_malware_details returns entity records."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "emotet"}]},
+        }
+
+        result = self.module.get_malware_details(ids=["emotet"])
+
+        self.mock_client.command.assert_called_once_with(
+            "GetMalwareEntities",
+            parameters={"ids": ["emotet"]},
+        )
+        self.assertEqual(result[0]["id"], "emotet")
+
+    def test_get_malware_mitre_report_decodes_bytes(self):
+        """Test malware MITRE report bytes are decoded to string."""
+        self.mock_client.command.return_value = b'{"family":"emotet"}'
+
+        result = self.module.get_malware_mitre_report(malware_id="emotet", format="JSON")
+
+        self.mock_client.command.assert_called_once_with(
+            "GetMalwareMitreReport",
+            parameters={"id": "emotet", "format": "JSON"},
+        )
         self.assertIsInstance(result, str)
-        self.assertIn("fake_id_1", result)
-        self.assertIn("Fake Tactic", result)
-        self.assertIn("fake_technique_001", result)
+        self.assertIn("emotet", result)
+
+    def test_query_mitre_attacks_requires_id_or_ids(self):
+        """Test query_mitre_attacks validates required actor input."""
+        result = self.module.query_mitre_attacks(id=None, ids=None)
+        self.assertEqual(len(result), 1)
+        self.assertIn("error", result[0])
+        self.mock_client.command.assert_not_called()
+
+    def test_query_mitre_attacks_success(self):
+        """Test query_mitre_attacks uses QueryMitreAttacks."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": ["fancy-bear_TA0011_T1071"]},
+        }
+
+        result = self.module.query_mitre_attacks(ids=["fancy-bear"])
+
+        self.mock_client.command.assert_called_once_with(
+            "QueryMitreAttacks",
+            parameters={"ids": ["fancy-bear"]},
+        )
+        self.assertEqual(result, ["fancy-bear_TA0011_T1071"])
+
+    def test_query_mitre_attacks_for_malware_requires_ids(self):
+        """Test query_mitre_attacks_for_malware validates required IDs."""
+        result = self.module.query_mitre_attacks_for_malware(ids=None)
+        self.assertEqual(len(result), 1)
+        self.assertIn("error", result[0])
+        self.mock_client.command.assert_not_called()
+
+    def test_get_mitre_attack_details_uses_body(self):
+        """Test get_mitre_attack_details uses PostMitreAttacks body payload."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "fancy-bear_TA0011_T1071"}]},
+        }
+
+        result = self.module.get_mitre_attack_details(ids=["fancy-bear_TA0011_T1071"])
+
+        self.mock_client.command.assert_called_once_with(
+            "PostMitreAttacks",
+            body={"ids": ["fancy-bear_TA0011_T1071"]},
+        )
+        self.assertEqual(result[0]["id"], "fancy-bear_TA0011_T1071")
+
+    def test_get_mitre_report_by_actor_id(self):
+        """Test get_mitre_report by numeric actor ID."""
+        self.mock_client.command.return_value = b'{"actor":"123456"}'
+
+        result = self.module.get_mitre_report(actor="123456", format="json")
+
+        self.mock_client.command.assert_called_once_with(
+            "GetMitreReport",
+            parameters={"actor_id": "123456", "format": "json"},
+        )
+        self.assertIsInstance(result, str)
+        self.assertIn("123456", result)
+
+    def test_get_mitre_report_by_actor_name_resolves_id(self):
+        """Test get_mitre_report resolves actor name before MITRE request."""
+        self.mock_client.command.side_effect = [
+            {
+                "status_code": 200,
+                "body": {"resources": [{"id": "7890", "name": "FAKE BEAR"}]},
+            },
+            b'{"actor":"7890"}',
+        ]
+
+        result = self.module.get_mitre_report(actor="FAKE BEAR", format="csv")
+
+        self.assertEqual(self.mock_client.command.call_count, 2)
+        self.assertEqual(
+            self.mock_client.command.call_args_list[0],
+            unittest.mock.call(
+                "QueryIntelActorEntities",
+                parameters={"filter": "name:'FAKE BEAR'", "limit": 1},
+            ),
+        )
+        self.assertEqual(
+            self.mock_client.command.call_args_list[1],
+            unittest.mock.call(
+                "GetMitreReport",
+                parameters={"actor_id": "7890", "format": "csv"},
+            ),
+        )
+        self.assertIsInstance(result, str)
+        self.assertIn("7890", result)
 
     def test_get_mitre_report_actor_name_not_found(self):
-        """Test getting MITRE report when actor name is not found."""
-        # Setup mock response for empty actor search
-        search_mock_response = {
+        """Test get_mitre_report returns clear not-found error for actor name."""
+        self.mock_client.command.return_value = {
             "status_code": 200,
-            "body": {"resources": []}
+            "body": {"resources": []},
         }
 
-        self.mock_client.command.return_value = search_mock_response
+        result = self.module.get_mitre_report(actor="UNKNOWN ACTOR", format="json")
 
-        # Call get_mitre_report with non-existent actor name
-        result = self.module.get_mitre_report(actor="NONEXISTENT ACTOR", format="json")
-
-        # Verify only one API call was made (actor search)
-        self.assertEqual(self.mock_client.command.call_count, 1)
-
-        # Verify it was an actor search
-        call_args = self.mock_client.command.call_args
-        self.assertEqual(call_args[0][0], "QueryIntelActorEntities")
-        self.assertIn("name:'NONEXISTENT ACTOR'", call_args[1]["parameters"]["filter"])
-
-        # Verify result contains error
+        self.mock_client.command.assert_called_once_with(
+            "QueryIntelActorEntities",
+            parameters={"filter": "name:'UNKNOWN ACTOR'", "limit": 1},
+        )
         self.assertEqual(len(result), 1)
-        self.assertIn("error", result[0])
         self.assertIn("Actor not found", result[0]["error"])
-        self.assertIn("NONEXISTENT ACTOR", result[0]["message"])
 
-    def test_get_mitre_report_actor_search_error(self):
-        """Test getting MITRE report when actor search returns an error."""
-        # Setup mock response for actor search error
-        search_mock_response = {
-            "status_code": 400,
-            "body": {"errors": [{"message": "Invalid search query"}]}
+    def test_query_vulnerability_ids_success(self):
+        """Test query_vulnerability_ids uses QueryVulnerabilities."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": ["vuln-1"]},
         }
 
-        self.mock_client.command.return_value = search_mock_response
+        result = self.module.query_vulnerability_ids(
+            filter="severity:'high'",
+            limit=2,
+            sort="updated_timestamp|desc",
+        )
 
-        # Call get_mitre_report with actor name
-        result = self.module.get_mitre_report(actor="FAKE ACTOR", format="json")
+        self.mock_client.command.assert_called_once_with(
+            "QueryVulnerabilities",
+            parameters={
+                "filter": "severity:'high'",
+                "limit": 2,
+                "sort": "updated_timestamp|desc",
+            },
+        )
+        self.assertEqual(result, ["vuln-1"])
 
-        # Verify only one API call was made (actor search)
-        self.assertEqual(self.mock_client.command.call_count, 1)
+    def test_get_vulnerability_details_uses_body(self):
+        """Test get_vulnerability_details uses GetVulnerabilities body payload."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "vuln-1"}]},
+        }
 
-        # Verify result contains the search error
+        result = self.module.get_vulnerability_details(ids=["vuln-1"])
+
+        self.mock_client.command.assert_called_once_with(
+            "GetVulnerabilities",
+            body={"ids": ["vuln-1"]},
+        )
+        self.assertEqual(result[0]["id"], "vuln-1")
+
+    def test_binary_text_decode_error_returns_error(self):
+        """Test non-UTF8 binary response returns structured error."""
+        self.mock_client.command.return_value = b"\xff\xfe\x00\x01"
+
+        result = self.module.get_malware_mitre_report(malware_id="emotet", format="JSON")
+
         self.assertEqual(len(result), 1)
         self.assertIn("error", result[0])
 

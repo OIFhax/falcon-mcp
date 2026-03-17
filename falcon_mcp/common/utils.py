@@ -7,6 +7,8 @@ This module provides common utility functions for the Falcon MCP server.
 import re
 from typing import Any, Optional
 
+from pydantic.fields import FieldInfo
+
 from .errors import _format_error_response, is_success_response
 from .logging import get_logger
 
@@ -34,8 +36,14 @@ def prepare_api_parameters(params: dict[str, Any]) -> dict[str, Any]:
     Returns:
         Dict[str, Any]: Prepared parameters
     """
+    normalized = {}
+    for key, value in params.items():
+        if isinstance(value, FieldInfo):
+            value = value.default
+        normalized[key] = value
+
     # Remove None values
-    filtered = filter_none_values(params)
+    filtered = filter_none_values(normalized)
 
     # Handle special parameter formatting if needed
     if "filter" in filtered and isinstance(filtered["filter"], dict):
