@@ -83,6 +83,10 @@ class TestApiScopes(unittest.TestCase):
         self.assertEqual(get_required_scopes("create_rule_group"), ["Firewall Management:write"])
         self.assertEqual(get_required_scopes("GetDashboardTemplate"), ["NGSIEM:read"])
         self.assertEqual(get_required_scopes("CreateDashboardFromTemplate"), ["NGSIEM:write"])
+        self.assertEqual(get_required_scopes("queryVulnerabilities"), ["Vulnerabilities:read"])
+        self.assertEqual(get_required_scopes("getVulnerabilities"), ["Vulnerabilities:read"])
+        self.assertEqual(get_required_scopes("getRemediations"), ["Vulnerabilities:read"])
+        self.assertEqual(get_required_scopes("getRemediationsV2"), ["Vulnerabilities:read"])
         self.assertEqual(
             get_required_scopes("query_external_assets_v2"),
             ["Exposure Management:read"],
@@ -274,6 +278,10 @@ class TestApiScopes(unittest.TestCase):
             ("create_rule_group", ["Firewall Management:write"]),
             ("GetDashboardTemplate", ["NGSIEM:read"]),
             ("CreateDashboardFromTemplate", ["NGSIEM:write"]),
+            ("queryVulnerabilities", ["Vulnerabilities:read"]),
+            ("getVulnerabilities", ["Vulnerabilities:read"]),
+            ("getRemediations", ["Vulnerabilities:read"]),
+            ("getRemediationsV2", ["Vulnerabilities:read"]),
             ("query_external_assets_v2", ["Exposure Management:read"]),
             ("delete_external_assets", ["Exposure Management:write"]),
             ("SearchHuntingGuides", ["CAO Hunting:read"]),
@@ -430,7 +438,13 @@ class TestApiScopes(unittest.TestCase):
             ],
             "incidents": ["QueryIncidents", "GetIncidents", "QueryBehaviors", "GetBehaviors", "CrowdScore"],
             "intel": ["QueryIntelActorEntities", "QueryIntelIndicatorEntities", "QueryIntelReportEntities", "GetMitreReport"],
-            "spotlight": ["combinedQueryVulnerabilities"],
+            "spotlight": [
+                "combinedQueryVulnerabilities",
+                "queryVulnerabilities",
+                "getVulnerabilities",
+                "getRemediations",
+                "getRemediationsV2",
+            ],
             "cloud": ["ReadContainerCombined", "ReadContainerCount", "ReadCombinedVulnerabilities"],
             "discover": ["combined_applications", "combined_hosts"],
             "exposure_management": [

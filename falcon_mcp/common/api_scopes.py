@@ -121,6 +121,10 @@ API_SCOPE_REQUIREMENTS = {
     "RTRAuditSessions": ["Real Time Response Audit:read"],
     # Spotlight operations
     "combinedQueryVulnerabilities": ["Vulnerabilities:read"],
+    "queryVulnerabilities": ["Vulnerabilities:read"],
+    "getVulnerabilities": ["Vulnerabilities:read"],
+    "getRemediations": ["Vulnerabilities:read"],
+    "getRemediationsV2": ["Vulnerabilities:read"],
     # Discover operations
     "combined_applications": ["Assets:read"],
     "combined_hosts": ["Assets:read"],

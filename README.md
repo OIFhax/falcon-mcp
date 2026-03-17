@@ -887,13 +887,18 @@ Provides tools for accessing and managing CrowdStrike Falcon Serverless Vulnerab
 
 Provides tools for accessing and managing CrowdStrike Spotlight vulnerabilities:
 
-- `falcon_search_vulnerabilities`: Search for vulnerabilities in your CrowdStrike environment
+- `falcon_search_vulnerabilities`: Search vulnerabilities with combined detail records
+- `falcon_query_vulnerability_ids`: Query vulnerability IDs using Spotlight FQL
+- `falcon_get_vulnerability_details`: Retrieve vulnerability detail records by ID
+- `falcon_get_remediation_details`: Retrieve remediation detail records by remediation ID (v1)
+- `falcon_get_remediation_details_v2`: Retrieve remediation detail records by remediation ID (v2)
 
 **Resources**:
 
 - `falcon://spotlight/vulnerabilities/fql-guide`: Comprehensive FQL documentation and examples for vulnerability searches
+- `falcon://spotlight/remediations/usage-guide`: Guidance for resolving and using remediation IDs with remediation detail tools
 
-**Use Cases**: Vulnerability management, security assessments, compliance reporting, risk analysis, patch prioritization
+**Use Cases**: Vulnerability inventory and triage, remediation enrichment workflows, compliance reporting, risk analysis, and patch prioritization
 
 ### Zero Trust Assessment Module
 

@@ -478,3 +478,25 @@ property_name:[operator]'value'
 • Critical ExPRT rated vulnerabilities: cve.exprt_rating:'CRITICAL'
 • CISA KEV vulnerabilities: cve.is_cisa_kev:true
 """
+
+REMEDIATIONS_USAGE_GUIDE = """
+# Spotlight Remediations Usage Guide
+
+Use remediation tools to retrieve remediation records by remediation ID:
+
+- `falcon_get_remediation_details` (operation: `getRemediations`)
+- `falcon_get_remediation_details_v2` (operation: `getRemediationsV2`)
+
+## How to get remediation IDs
+
+- Query or search vulnerabilities first:
+  - `falcon_query_vulnerability_ids`
+  - `falcon_search_vulnerabilities`
+- Extract remediation IDs from vulnerability fields such as:
+  - `apps.remediation.ids`
+
+## Notes
+
+- Both remediation endpoints are read-only.
+- Provide one or more remediation IDs in `ids`.
+"""
