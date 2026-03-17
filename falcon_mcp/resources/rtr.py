@@ -146,6 +146,7 @@ Use this guide to build the `filter` parameter for:
 
 - `falcon_search_rtr_admin_scripts`
 - `falcon_search_rtr_admin_put_files`
+- `falcon_search_rtr_falcon_scripts`
 
 ## Filter Fields
 
@@ -168,7 +169,7 @@ Use either `field.asc` / `field.desc` or `field|asc` / `field|desc`.
 
 ## Notes
 
-- Field support can vary slightly between scripts and put-files.
+- Field support can vary slightly between custom scripts, Falcon scripts, and put-files.
 - Validate filters in a test environment before production use.
 """
 

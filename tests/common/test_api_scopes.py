@@ -205,7 +205,91 @@ class TestApiScopes(unittest.TestCase):
             ["Workflow:write"],
         )
         self.assertEqual(
+            get_required_scopes("RTR_AggregateSessions"),
+            ["Real Time Response:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("BatchActiveResponderCmd"),
+            ["Real Time Response:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("BatchGetCmd"),
+            ["Real Time Response:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("BatchGetCmdStatus"),
+            ["Real Time Response:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("BatchInitSessions"),
+            ["Real Time Response:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("BatchRefreshSessions"),
+            ["Real Time Response:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("RTR_ExecuteActiveResponderCommand"),
+            ["Real Time Response:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("RTR_CheckActiveResponderCommandStatus"),
+            ["Real Time Response:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("RTR_GetExtractedFileContents"),
+            ["Real Time Response:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("RTR_ListFilesV2"),
+            ["Real Time Response:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("RTR_DeleteFileV2"),
+            ["Real Time Response:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("RTR_ListQueuedSessions"),
+            ["Real Time Response:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("RTR_PulseSession"),
+            ["Real Time Response:read"],
+        )
+        self.assertEqual(
             get_required_scopes("RTR_ExecuteAdminCommand"),
+            ["Real Time Response Admin:write"],
+        )
+        self.assertEqual(
+            get_required_scopes("RTR_GetFalconScripts"),
+            ["Real Time Response Admin:write"],
+        )
+        self.assertEqual(
+            get_required_scopes("RTR_ListFalconScripts"),
+            ["Real Time Response Admin:write"],
+        )
+        self.assertEqual(
+            get_required_scopes("RTR_GetPutFileContents"),
+            ["Real Time Response Admin:write"],
+        )
+        self.assertEqual(
+            get_required_scopes("RTR_GetPut_FilesV2"),
+            ["Real Time Response Admin:write"],
+        )
+        self.assertEqual(
+            get_required_scopes("RTR_CreatePut_FilesV2"),
+            ["Real Time Response Admin:write"],
+        )
+        self.assertEqual(
+            get_required_scopes("RTR_GetScriptsV2"),
+            ["Real Time Response Admin:write"],
+        )
+        self.assertEqual(
+            get_required_scopes("RTR_CreateScriptsV2"),
+            ["Real Time Response Admin:write"],
+        )
+        self.assertEqual(
+            get_required_scopes("RTR_UpdateScriptsV2"),
             ["Real Time Response Admin:write"],
         )
         self.assertEqual(
@@ -382,8 +466,29 @@ class TestApiScopes(unittest.TestCase):
             ("performFirewallPoliciesAction", ["Firewall Policies:write"]),
             ("WorkflowDefinitionsCombined", ["Workflow:read"]),
             ("WorkflowExecute", ["Workflow:write"]),
+            ("RTR_AggregateSessions", ["Real Time Response:read"]),
+            ("BatchActiveResponderCmd", ["Real Time Response:read"]),
+            ("BatchGetCmd", ["Real Time Response:read"]),
+            ("BatchGetCmdStatus", ["Real Time Response:read"]),
+            ("BatchInitSessions", ["Real Time Response:read"]),
+            ("BatchRefreshSessions", ["Real Time Response:read"]),
+            ("RTR_ExecuteActiveResponderCommand", ["Real Time Response:read"]),
+            ("RTR_CheckActiveResponderCommandStatus", ["Real Time Response:read"]),
+            ("RTR_GetExtractedFileContents", ["Real Time Response:read"]),
+            ("RTR_ListFilesV2", ["Real Time Response:read"]),
+            ("RTR_DeleteFileV2", ["Real Time Response:read"]),
+            ("RTR_ListQueuedSessions", ["Real Time Response:read"]),
+            ("RTR_PulseSession", ["Real Time Response:read"]),
             ("RTR_ExecuteCommand", ["Real Time Response:read"]),
             ("RTR_ExecuteAdminCommand", ["Real Time Response Admin:write"]),
+            ("RTR_GetFalconScripts", ["Real Time Response Admin:write"]),
+            ("RTR_ListFalconScripts", ["Real Time Response Admin:write"]),
+            ("RTR_GetPutFileContents", ["Real Time Response Admin:write"]),
+            ("RTR_GetPut_FilesV2", ["Real Time Response Admin:write"]),
+            ("RTR_CreatePut_FilesV2", ["Real Time Response Admin:write"]),
+            ("RTR_GetScriptsV2", ["Real Time Response Admin:write"]),
+            ("RTR_CreateScriptsV2", ["Real Time Response Admin:write"]),
+            ("RTR_UpdateScriptsV2", ["Real Time Response Admin:write"]),
             ("RTRAuditSessions", ["Real Time Response Audit:read"]),
             ("aggregateUsersV1", ["User Management:read"]),
             ("queryUserV1", ["User Management:read"]),
@@ -855,6 +960,22 @@ class TestApiScopes(unittest.TestCase):
                 "StopSearchV1",
             ],
             "rtr": [
+                "RTR_AggregateSessions",
+                "BatchActiveResponderCmd",
+                "BatchCmd",
+                "BatchGetCmdStatus",
+                "BatchGetCmd",
+                "BatchInitSessions",
+                "BatchRefreshSessions",
+                "RTR_CheckActiveResponderCommandStatus",
+                "RTR_ExecuteActiveResponderCommand",
+                "RTR_GetExtractedFileContents",
+                "RTR_ListFiles",
+                "RTR_DeleteFile",
+                "RTR_ListFilesV2",
+                "RTR_DeleteFileV2",
+                "RTR_ListQueuedSessions",
+                "RTR_PulseSession",
                 "RTR_ListAllSessions",
                 "RTR_ListSessions",
                 "RTR_InitSession",
@@ -864,8 +985,21 @@ class TestApiScopes(unittest.TestCase):
                 "RTR_DeleteQueuedSession",
                 "RTR_ListScripts",
                 "RTR_GetScripts",
+                "RTR_GetFalconScripts",
+                "RTR_GetPutFileContents",
                 "RTR_ListPut_Files",
                 "RTR_GetPut_Files",
+                "RTR_CreatePut_Files",
+                "RTR_DeletePut_Files",
+                "RTR_GetPut_FilesV2",
+                "RTR_CreatePut_FilesV2",
+                "RTR_CreateScripts",
+                "RTR_UpdateScripts",
+                "RTR_DeleteScripts",
+                "RTR_GetScriptsV2",
+                "RTR_CreateScriptsV2",
+                "RTR_UpdateScriptsV2",
+                "RTR_ListFalconScripts",
                 "RTR_ExecuteAdminCommand",
                 "RTR_CheckAdminCommandStatus",
                 "BatchAdminCmd",

@@ -852,18 +852,45 @@ Provides full Quarantine service collection coverage:
 
 Provides unified tools for RTR core, RTR admin, and RTR audit workflows:
 
-- `falcon_search_rtr_sessions`: Search RTR sessions using FQL and return full session details
-- `falcon_init_rtr_session`: Initialize a single-host RTR session
-- `falcon_execute_rtr_command`: Execute an RTR read-only command on a host session
-- `falcon_check_rtr_command_status`: Check status for an RTR command request
-- `falcon_search_rtr_admin_scripts`: Search RTR admin scripts and return full script details
-- `falcon_search_rtr_admin_put_files`: Search RTR admin put-files and return full put-file details
-- `falcon_execute_rtr_admin_command`: Execute an RTR admin command on a host session
-- `falcon_execute_rtr_admin_batch_command`: Execute an RTR admin command across a batch session
-- `falcon_check_rtr_admin_command_status`: Check status for an RTR admin command request
-- `falcon_delete_rtr_session`: Delete an RTR session by session ID
-- `falcon_delete_rtr_queued_session`: Delete a queued RTR session by session and request ID
-- `falcon_search_rtr_audit_sessions`: Search RTR audit sessions with optional command metadata
+- **RTR Core**:
+  - `falcon_search_rtr_sessions`: Search RTR sessions and return full session details
+  - `falcon_aggregate_rtr_sessions`: Aggregate RTR session data
+  - `falcon_search_rtr_queued_sessions`: Retrieve queued session metadata by session IDs
+  - `falcon_init_rtr_session`: Initialize a single-host RTR session
+  - `falcon_pulse_rtr_session`: Refresh a single-host RTR session timeout
+  - `falcon_execute_rtr_command`: Execute an RTR read-only command
+  - `falcon_check_rtr_command_status`: Check RTR command status
+  - `falcon_execute_rtr_active_responder_command`: Execute an active-responder command
+  - `falcon_check_rtr_active_responder_command_status`: Check active-responder command status
+  - `falcon_batch_init_rtr_sessions`: Initialize RTR sessions in batch
+  - `falcon_batch_refresh_rtr_sessions`: Refresh RTR batch session state
+  - `falcon_execute_rtr_batch_command`: Execute read-only RTR command in batch
+  - `falcon_execute_rtr_batch_active_responder_command`: Execute active-responder command in batch
+  - `falcon_execute_rtr_batch_get_command`: Execute batch file retrieval command
+  - `falcon_check_rtr_batch_get_command_status`: Check batch get command status
+  - `falcon_get_rtr_extracted_file_contents`: Retrieve extracted file contents
+  - `falcon_list_rtr_files_v1` / `falcon_list_rtr_files_v2`: List session files
+  - `falcon_delete_rtr_file_v1` / `falcon_delete_rtr_file_v2`: Delete session files
+  - `falcon_delete_rtr_session`: Delete RTR session by session ID
+  - `falcon_delete_rtr_queued_session`: Delete queued RTR request by session and request ID
+- **RTR Admin**:
+  - `falcon_search_rtr_admin_scripts`: Search custom RTR scripts
+  - `falcon_search_rtr_falcon_scripts`: Search Falcon-provided RTR scripts
+  - `falcon_get_rtr_falcon_script_details`: Retrieve Falcon script details by ID
+  - `falcon_search_rtr_admin_put_files`: Search RTR put-files
+  - `falcon_get_rtr_put_file_contents`: Retrieve put-file contents by ID
+  - `falcon_get_rtr_admin_put_file_details_v2`: Retrieve put-file metadata by ID (v2)
+  - `falcon_create_rtr_admin_put_file_v1` / `falcon_create_rtr_admin_put_file_v2`: Create put-files
+  - `falcon_delete_rtr_admin_put_file`: Delete put-file by ID
+  - `falcon_get_rtr_admin_script_details_v2`: Retrieve custom script metadata by ID (v2)
+  - `falcon_create_rtr_admin_script_v1` / `falcon_create_rtr_admin_script_v2`: Create custom scripts
+  - `falcon_update_rtr_admin_script_v1` / `falcon_update_rtr_admin_script_v2`: Update custom scripts
+  - `falcon_delete_rtr_admin_script`: Delete custom script by ID
+  - `falcon_execute_rtr_admin_command`: Execute admin command on a single host
+  - `falcon_execute_rtr_admin_batch_command`: Execute admin command in batch
+  - `falcon_check_rtr_admin_command_status`: Check admin command status
+- **RTR Audit**:
+  - `falcon_search_rtr_audit_sessions`: Search RTR audit sessions with optional command metadata
 
 **Resources**:
 

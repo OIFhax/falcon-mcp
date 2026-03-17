@@ -81,6 +81,29 @@ class TestRTRIntegration(BaseIntegrationTest):
         self._skip_if_scope_missing(result, "search_rtr_admin_scripts")
         self.assert_no_error(result, context="search_rtr_admin_scripts operation name validation")
 
+    def test_search_rtr_falcon_scripts_operation_names(self):
+        """Validate Falcon script search operation names by running a minimal search."""
+        result = self.call_method(
+            self.module.search_rtr_falcon_scripts,
+            filter=None,
+            limit=1,
+            offset=0,
+            sort=None,
+        )
+
+        self._skip_if_scope_missing(result, "search_rtr_falcon_scripts")
+        self.assert_no_error(result, context="search_rtr_falcon_scripts operation name validation")
+
+    def test_aggregate_rtr_sessions_operation_name(self):
+        """Validate RTR aggregate operation name with a minimal aggregate body."""
+        result = self.call_method(
+            self.module.aggregate_rtr_sessions,
+            body=[{"field": "user_id", "type": "terms", "size": 1}],
+        )
+
+        self._skip_if_scope_missing(result, "aggregate_rtr_sessions")
+        self.assert_no_error(result, context="aggregate_rtr_sessions operation name validation")
+
     def test_search_rtr_audit_sessions_operation_name(self):
         """Validate RTR audit operation name by running a minimal audit search."""
         result = self.call_method(
