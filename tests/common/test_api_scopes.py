@@ -120,6 +120,10 @@ class TestApiScopes(unittest.TestCase):
             ["Quarantined Files:read"],
         )
         self.assertEqual(
+            get_required_scopes("report_executions_retry"),
+            ["Scheduled Reports:read"],
+        )
+        self.assertEqual(
             get_required_scopes("tokens_query"),
             ["Installation Tokens:read"],
         )
@@ -290,6 +294,7 @@ class TestApiScopes(unittest.TestCase):
             ("getCombinedAssessmentsQuery", ["Zero Trust Assessment:read"]),
             ("GetSensorInstallersByQueryV2", ["Sensor Download:read"]),
             ("QueryQuarantineFiles", ["Quarantined Files:read"]),
+            ("report_executions_retry", ["Scheduled Reports:read"]),
             ("tokens_query", ["Installation Tokens:read"]),
             ("queryCombinedPreventionPolicies", ["Prevention Policies:read"]),
             ("performPreventionPoliciesAction", ["Prevention Policies:write"]),
@@ -478,7 +483,8 @@ class TestApiScopes(unittest.TestCase):
             "sensor_usage": ["GetSensorUsageWeekly"],
             "scheduled_reports": [
                 "scheduled_reports_query", "scheduled_reports_get", "scheduled_reports_launch",
-                "report_executions_query", "report_executions_get", "report_executions_download_get"
+                "report_executions_query", "report_executions_get", "report_executions_download_get",
+                "report_executions_retry",
             ],
             "sensor_download": [
                 "GetCombinedSensorInstallersByQuery",

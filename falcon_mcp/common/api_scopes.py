@@ -299,6 +299,7 @@ API_SCOPE_REQUIREMENTS = {
     "report_executions_query": ["Scheduled Reports:read"],
     "report_executions_get": ["Scheduled Reports:read"],
     "report_executions_download_get": ["Scheduled Reports:read"],
+    "report_executions_retry": ["Scheduled Reports:read"],
     # NGSIEM operations
     "GetDashboardTemplate": ["NGSIEM:read"],
     "CreateDashboardFromTemplate": ["NGSIEM:write"],

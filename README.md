@@ -832,17 +832,22 @@ Provides tools for accessing and analyzing CrowdStrike Falcon sensor usage data:
 
 Provides tools for accessing and managing CrowdStrike Falcon scheduled reports and scheduled searches:
 
-- `falcon_search_scheduled_reports`: Search for scheduled reports and searches in your CrowdStrike environment
-- `falcon_launch_scheduled_report`: Launch a scheduled report on demand outside of its recurring schedule
-- `falcon_search_report_executions`: Search for report executions to track status and results
-- `falcon_download_report_execution`: Download generated report files
+- `falcon_search_scheduled_reports`: Search scheduled reports and return full report details
+- `falcon_query_scheduled_report_ids`: Query scheduled report IDs with FQL
+- `falcon_get_scheduled_report_details`: Retrieve scheduled report details by ID
+- `falcon_launch_scheduled_report`: Launch scheduled reports on demand (`confirm_execution=true` required)
+- `falcon_search_report_executions`: Search report executions and return full execution details
+- `falcon_query_report_execution_ids`: Query report execution IDs with FQL
+- `falcon_get_report_execution_details`: Retrieve report execution details by ID
+- `falcon_retry_report_execution`: Retry failed/eligible report executions (`confirm_execution=true` required)
+- `falcon_download_report_execution`: Download generated report execution files
 
 **Resources**:
 
 - `falcon://scheduled-reports/search/fql-guide`: Comprehensive FQL documentation for searching scheduled report entities
 - `falcon://scheduled-reports/executions/search/fql-guide`: Comprehensive FQL documentation for searching report executions
 
-**Use Cases**: Automated report management, report execution monitoring, scheduled search analysis, report download automation
+**Use Cases**: Scheduled report lifecycle automation, execution monitoring and retries, scheduled search operations, and report download workflows
 
 ### Sensor Download Module
 
