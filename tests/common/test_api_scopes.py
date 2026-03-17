@@ -61,8 +61,16 @@ class TestApiScopes(unittest.TestCase):
     def test_get_required_scopes(self):
         """Test get_required_scopes function."""
         # Test with known operations
+        self.assertEqual(get_required_scopes("GetQueriesAlertsV1"), ["Alerts:read"])
         self.assertEqual(get_required_scopes("GetQueriesAlertsV2"), ["Alerts:read"])
+        self.assertEqual(get_required_scopes("PostCombinedAlertsV1"), ["Alerts:read"])
+        self.assertEqual(get_required_scopes("PostAggregatesAlertsV1"), ["Alerts:read"])
+        self.assertEqual(get_required_scopes("PostAggregatesAlertsV2"), ["Alerts:read"])
+        self.assertEqual(get_required_scopes("PostEntitiesAlertsV1"), ["Alerts:read"])
         self.assertEqual(get_required_scopes("PostEntitiesAlertsV2"), ["Alerts:read"])
+        self.assertEqual(get_required_scopes("PatchEntitiesAlertsV1"), ["Alerts:write"])
+        self.assertEqual(get_required_scopes("PatchEntitiesAlertsV2"), ["Alerts:write"])
+        self.assertEqual(get_required_scopes("PatchEntitiesAlertsV3"), ["Alerts:write"])
         self.assertEqual(get_required_scopes("QueryIncidents"), ["Incidents:read"])
         self.assertEqual(get_required_scopes("RTR_ListAllSessions"), ["Real Time Response:read"])
         self.assertEqual(get_required_scopes("queryHostGroups"), ["Host Groups:read"])
@@ -267,7 +275,16 @@ class TestApiScopes(unittest.TestCase):
         """Test that get_required_scopes integrates properly with error handling."""
         # Test with multiple known operations to ensure consistency
         test_cases = [
+            ("GetQueriesAlertsV1", ["Alerts:read"]),
             ("GetQueriesAlertsV2", ["Alerts:read"]),
+            ("PostCombinedAlertsV1", ["Alerts:read"]),
+            ("PostAggregatesAlertsV1", ["Alerts:read"]),
+            ("PostAggregatesAlertsV2", ["Alerts:read"]),
+            ("PostEntitiesAlertsV1", ["Alerts:read"]),
+            ("PostEntitiesAlertsV2", ["Alerts:read"]),
+            ("PatchEntitiesAlertsV1", ["Alerts:write"]),
+            ("PatchEntitiesAlertsV2", ["Alerts:write"]),
+            ("PatchEntitiesAlertsV3", ["Alerts:write"]),
             ("QueryIncidents", ["Incidents:read"]),
             ("QueryIntelActorEntities", ["Actors (Falcon Intelligence):read"]),
             ("queryHostGroups", ["Host Groups:read"]),
@@ -362,7 +379,7 @@ class TestApiScopes(unittest.TestCase):
 
         # Validate that most resources use consistent permission patterns
         read_only_resources = [
-            "Alerts", "Hosts", "Incidents", "Vulnerabilities",
+            "Hosts", "Incidents", "Vulnerabilities",
             "Assets", "Sensor Usage", "Scheduled Reports",
             "Real Time Response", "Real Time Response Audit", "CAO Hunting",
             "Zero Trust Assessment", "Sensor Download",
@@ -377,6 +394,7 @@ class TestApiScopes(unittest.TestCase):
                 )
 
         read_write_resources = [
+            "Alerts",
             "Host Groups",
             "Host Migration",
             "IT Automation",

@@ -104,7 +104,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Cloud Security** | `Falcon Container Image:read` | Find and analyze kubernetes containers inventory and container imges vulnerabilities |
 | **Core** | _No additional scopes_ | Basic connectivity and system information |
 | **Custom IOA** | `Custom IOA Rules:read`<br>`Custom IOA Rules:write` | Create and manage Custom IOA behavioral detection rules and rule groups |
-| **Detections** | `Alerts:read` | Find and analyze detections to understand malicious activity |
+| **Detections** | `Alerts:read`<br>`Alerts:write` | Full detections coverage for query/search/details, aggregation, and controlled detection update actions |
 | **Discover** | `Assets:read` | Search and analyze application inventory across your environment |
 | **Exposure Management** | `Exposure Management:read`<br>`Exposure Management:write` | Search external assets and perform controlled asset inventory/triage updates |
 | **Hosts** | `Hosts:read`<br>`Host Groups:read`<br>`Host Groups:write`<br>`Host Migration:read`<br>`Host Migration:write` | Search hosts, manage host groups, and orchestrate migration workflows |
@@ -221,18 +221,33 @@ Provides tools for managing Custom IOA (Indicators of Attack) behavioral detecti
 
 ### Detections Module
 
-**API Scopes Required**: `Alerts:read`
+**API Scopes Required**:
 
-Provides tools for accessing and analyzing CrowdStrike Falcon detections:
+- `Alerts:read`
+- `Alerts:write`
 
-- `falcon_search_detections`: Find and analyze detections to understand malicious activity in your environment
-- `falcon_get_detection_details`: Get comprehensive detection details for specific detection IDs to understand security threats
+Provides full Alerts/detections operation coverage:
+
+- `falcon_search_detections`: Two-step v2 detection search (query IDs then fetch full details)
+- `falcon_search_detections_combined`: Combined detections search using cursor-style pagination
+- `falcon_query_detection_ids_v1`: Query detection IDs with the v1 query operation
+- `falcon_query_detection_ids_v2`: Query detection IDs with the v2 query operation
+- `falcon_get_detection_details`: Backward-compatible v2 details lookup by composite IDs
+- `falcon_get_detection_details_v1`: Retrieve detection details by legacy detection IDs
+- `falcon_get_detection_details_v2`: Retrieve detection details by composite IDs with `include_hidden`
+- `falcon_aggregate_detections_v1`: Run detections aggregate queries with v1 operation
+- `falcon_aggregate_detections_v2`: Run detections aggregate queries with v2 operation
+- `falcon_update_detections_v1`: Apply detection actions with v1 update operation (requires `confirm_execution=true`)
+- `falcon_update_detections_v2`: Apply detection actions with v2 update operation (requires `confirm_execution=true`)
+- `falcon_update_detections_v3`: Apply detection actions with v3 update operation (requires `confirm_execution=true`)
 
 **Resources**:
 
 - `falcon://detections/search/fql-guide`: Comprehensive FQL documentation and examples for detection searches
+- `falcon://detections/aggregation/guide`: Aggregation body examples and usage guidance
+- `falcon://detections/update-actions/guide`: Update action parameter and safety guidance
 
-**Use Cases**: Threat hunting, security analysis, incident response, malware investigation
+**Use Cases**: Threat hunting, security analysis, incident response, detection triage automation, assignment/status lifecycle workflows
 
 ### Discover Module
 

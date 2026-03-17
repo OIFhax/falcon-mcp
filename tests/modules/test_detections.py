@@ -1,10 +1,9 @@
-"""
-Tests for the Detections module.
-"""
+"""Tests for the Detections module."""
 
 import unittest
 
-from falcon_mcp.modules.detections import DetectionsModule
+from falcon_mcp.modules.base import READ_ONLY_ANNOTATIONS
+from falcon_mcp.modules.detections import DetectionsModule, WRITE_ANNOTATIONS
 from tests.modules.utils.test_modules import TestModules
 
 
@@ -19,7 +18,17 @@ class TestDetectionsModule(TestModules):
         """Test registering tools with the server."""
         expected_tools = [
             "falcon_search_detections",
+            "falcon_search_detections_combined",
+            "falcon_query_detection_ids_v1",
+            "falcon_query_detection_ids_v2",
             "falcon_get_detection_details",
+            "falcon_get_detection_details_v1",
+            "falcon_get_detection_details_v2",
+            "falcon_aggregate_detections_v1",
+            "falcon_aggregate_detections_v2",
+            "falcon_update_detections_v1",
+            "falcon_update_detections_v2",
+            "falcon_update_detections_v3",
         ]
         self.assert_tools_registered(expected_tools)
 
@@ -27,234 +36,265 @@ class TestDetectionsModule(TestModules):
         """Test registering resources with the server."""
         expected_resources = [
             "falcon_search_detections_fql_guide",
+            "falcon_detections_aggregation_guide",
+            "falcon_detections_update_actions_guide",
         ]
         self.assert_resources_registered(expected_resources)
 
-    def test_search_detections(self):
-        """Test searching for detections - details returns empty (not FQL-related)."""
-        # Setup mock responses for both API calls
+    def test_tool_annotations(self):
+        """Test tools are registered with expected annotations."""
+        self.module.register_tools(self.mock_server)
+        self.assert_tool_annotations("falcon_search_detections", READ_ONLY_ANNOTATIONS)
+        self.assert_tool_annotations("falcon_update_detections_v3", WRITE_ANNOTATIONS)
+
+    def test_search_detections_success(self):
+        """Test search_detections runs query + details flow with v2 operations."""
         query_response = {
             "status_code": 200,
-            "body": {"resources": ["detection1", "detection2"]},
-        }
-        details_response = {
-            "status_code": 200,
-            "body": {"resources": []},  # Empty resources for PostEntitiesAlertsV2
-        }
-        self.mock_client.command.side_effect = [query_response, details_response]
-
-        # Call search_detections
-        result = self.module.search_detections(
-            filter="test query", limit=10, include_hidden=True
-        )
-
-        # Verify client commands were called correctly
-        self.assertEqual(self.mock_client.command.call_count, 2)
-
-        # Check that the first call was to GetQueriesAlertsV2 with the right filter and limit
-        first_call = self.mock_client.command.call_args_list[0]
-        self.assertEqual(first_call[0][0], "GetQueriesAlertsV2")
-        self.assertEqual(first_call[1]["parameters"]["filter"], "test query")
-        self.assertEqual(first_call[1]["parameters"]["limit"], 10)
-        self.mock_client.command.assert_any_call(
-            "PostEntitiesAlertsV2",
-            body={
-                "composite_ids": ["detection1", "detection2"],
-                "include_hidden": True,
-            },
-        )
-
-        # Verify result is raw empty list (not FQL-wrapped - query succeeded)
-        self.assertEqual(result, [])
-
-    def test_search_detections_with_details(self):
-        """Test searching for detections with details - success returns raw list."""
-        # Setup mock responses
-        query_response = {
-            "status_code": 200,
-            "body": {"resources": ["detection1", "detection2"]},
+            "body": {"resources": ["composite-1", "composite-2"]},
         }
         details_response = {
             "status_code": 200,
             "body": {
                 "resources": [
-                    {"id": "detection1", "name": "Test Detection 1"},
-                    {"id": "detection2", "name": "Test Detection 2"},
+                    {"composite_id": "composite-1"},
+                    {"composite_id": "composite-2"},
                 ]
             },
         }
         self.mock_client.command.side_effect = [query_response, details_response]
 
-        # Call search_detections
         result = self.module.search_detections(
-            filter="test query", limit=10, include_hidden=True
+            filter="status:'new'",
+            limit=10,
+            offset=0,
+            q=None,
+            sort="severity.desc",
+            include_hidden=True,
         )
 
-        # Verify client commands were called correctly
         self.assertEqual(self.mock_client.command.call_count, 2)
-
-        # Check that the first call was to GetQueriesAlertsV2 with the right filter and limit
         first_call = self.mock_client.command.call_args_list[0]
+        second_call = self.mock_client.command.call_args_list[1]
+
         self.assertEqual(first_call[0][0], "GetQueriesAlertsV2")
-        self.assertEqual(first_call[1]["parameters"]["filter"], "test query")
+        self.assertEqual(first_call[1]["parameters"]["filter"], "status:'new'")
         self.assertEqual(first_call[1]["parameters"]["limit"], 10)
-        self.mock_client.command.assert_any_call(
-            "PostEntitiesAlertsV2",
-            body={
-                "composite_ids": ["detection1", "detection2"],
-                "include_hidden": True,
-            },
-        )
+        self.assertTrue(first_call[1]["parameters"]["include_hidden"])
 
-        # Verify result is raw list of detections (no wrapping)
-        self.assertIsInstance(result, list)
+        self.assertEqual(second_call[0][0], "PostEntitiesAlertsV2")
+        self.assertEqual(second_call[1]["parameters"], {"include_hidden": True})
+        self.assertEqual(second_call[1]["body"], {"composite_ids": ["composite-1", "composite-2"]})
+
         self.assertEqual(len(result), 2)
-        self.assertEqual(result[0]["id"], "detection1")
-        self.assertEqual(result[1]["id"], "detection2")
+        self.assertEqual(result[0]["composite_id"], "composite-1")
 
-    def test_search_detections_error(self):
-        """Test searching for detections with API error returns FQL guide."""
-        # Setup mock response with error
-        mock_response = {
+    def test_query_detection_ids_v2_error_returns_fql_guide(self):
+        """Test v2 ID query returns FQL guide wrapping on API error."""
+        self.mock_client.command.return_value = {
             "status_code": 400,
-            "body": {"errors": [{"message": "Invalid query"}]},
+            "body": {"errors": [{"message": "Invalid filter"}]},
         }
-        self.mock_client.command.return_value = mock_response
 
-        # Call search_detections
-        result = self.module.search_detections(filter="invalid query")
+        result = self.module.query_detection_ids_v2(filter="bad filter")
 
-        # Verify result contains error AND fql_guide
         self.assertIsInstance(result, dict)
         self.assertIn("results", result)
         self.assertIn("fql_guide", result)
-        self.assertIn("hint", result)
+        self.assertEqual(len(result["results"]), 1)
+        self.assertIn("error", result["results"][0])
 
-    def test_get_detection_details(self):
-        """Test getting detection details."""
-        # Setup mock response
-        mock_response = {
+    def test_query_detection_ids_v1_success(self):
+        """Test v1 ID query operation name and parameter mapping."""
+        self.mock_client.command.return_value = {
             "status_code": 200,
-            "body": {"resources": [{"id": "detection1", "name": "Test Detection 1"}]},
+            "body": {"resources": ["det-1", "det-2"]},
         }
-        self.mock_client.command.return_value = mock_response
 
-        # Call get_detection_details
-        result = self.module.get_detection_details(["detection1"], include_hidden=True)
+        result = self.module.query_detection_ids_v1(
+            filter="status:'new'",
+            limit=2,
+            offset=0,
+            q="host",
+            sort="created_timestamp|desc",
+        )
 
-        # Verify client command was called correctly
         self.mock_client.command.assert_called_once_with(
-            "PostEntitiesAlertsV2",
-            body={"composite_ids": ["detection1"], "include_hidden": True},
-        )
-
-        # Verify result - handle_api_response returns a list of resources
-        expected_result = [{"id": "detection1", "name": "Test Detection 1"}]
-        self.assertEqual(result, expected_result)
-
-    def test_get_detection_details_not_found(self):
-        """Test getting detection details for non-existent detection."""
-        # Setup mock response with empty resources
-        mock_response = {"status_code": 200, "body": {"resources": []}}
-        self.mock_client.command.return_value = mock_response
-
-        # Call get_detection_details
-        result = self.module.get_detection_details(["nonexistent"])
-
-        # For empty resources, handle_api_response returns the default_result (empty list)
-        # We should check that the result is empty
-        self.assertEqual(result, [])
-
-    def test_search_detections_include_hidden_false(self):
-        """Test searching for detections with include_hidden=False."""
-        # Setup mock responses for both API calls
-        query_response = {
-            "status_code": 200,
-            "body": {"resources": ["detection1", "detection2"]},
-        }
-        details_response = {
-            "status_code": 200,
-            "body": {"resources": [{"id": "detection1", "name": "Test Detection 1"}]},
-        }
-        self.mock_client.command.side_effect = [query_response, details_response]
-
-        # Call search_detections with include_hidden=False
-        result = self.module.search_detections(
-            filter="test query", include_hidden=False
-        )
-
-        # Verify client commands were called correctly
-        self.assertEqual(self.mock_client.command.call_count, 2)
-
-        # Check that the second call includes include_hidden=False
-        self.mock_client.command.assert_any_call(
-            "PostEntitiesAlertsV2",
-            body={
-                "composite_ids": ["detection1", "detection2"],
-                "include_hidden": False,
+            "GetQueriesAlertsV1",
+            parameters={
+                "filter": "status:'new'",
+                "limit": 2,
+                "offset": 0,
+                "q": "host",
+                "sort": "created_timestamp|desc",
             },
         )
+        self.assertEqual(result, ["det-1", "det-2"])
 
-        # Verify result is raw list (success = no wrapping)
-        self.assertIsInstance(result, list)
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]["id"], "detection1")
-
-    def test_get_detection_details_include_hidden_false(self):
-        """Test getting detection details with include_hidden=False."""
-        # Setup mock response
-        mock_response = {
+    def test_search_detections_combined_success(self):
+        """Test PostCombinedAlertsV1 wiring."""
+        self.mock_client.command.return_value = {
             "status_code": 200,
-            "body": {"resources": [{"id": "detection1", "name": "Test Detection 1"}]},
+            "body": {"resources": [{"composite_id": "composite-1"}]},
         }
-        self.mock_client.command.return_value = mock_response
 
-        # Call get_detection_details with include_hidden=False
-        result = self.module.get_detection_details(["detection1"], include_hidden=False)
+        result = self.module.search_detections_combined(
+            filter="severity_name:'High'",
+            limit=50,
+            after="next-cursor",
+            sort="created_timestamp|desc",
+        )
 
-        # Verify client command was called correctly with include_hidden=False
+        self.mock_client.command.assert_called_once_with(
+            "PostCombinedAlertsV1",
+            body={
+                "filter": "severity_name:'High'",
+                "limit": 50,
+                "after": "next-cursor",
+                "sort": "created_timestamp|desc",
+            },
+        )
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["composite_id"], "composite-1")
+
+    def test_get_detection_details_validation_and_success(self):
+        """Test get_detection_details aliases to v2 validation and success path."""
+        validation_result = self.module.get_detection_details(ids=None, include_hidden=True)
+        self.assertEqual(len(validation_result), 1)
+        self.assertIn("error", validation_result[0])
+        self.mock_client.command.assert_not_called()
+
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"composite_id": "composite-1"}]},
+        }
+        success_result = self.module.get_detection_details(
+            ids=["composite-1"],
+            include_hidden=False,
+        )
+
         self.mock_client.command.assert_called_once_with(
             "PostEntitiesAlertsV2",
-            body={"composite_ids": ["detection1"], "include_hidden": False},
+            parameters={"include_hidden": False},
+            body={"composite_ids": ["composite-1"]},
+        )
+        self.assertEqual(len(success_result), 1)
+        self.assertEqual(success_result[0]["composite_id"], "composite-1")
+
+    def test_get_detection_details_v1_success(self):
+        """Test PostEntitiesAlertsV1 details retrieval."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "det-legacy-1"}]},
+        }
+
+        result = self.module.get_detection_details_v1(ids=["det-legacy-1"])
+
+        self.mock_client.command.assert_called_once_with(
+            "PostEntitiesAlertsV1",
+            body={"ids": ["det-legacy-1"]},
+        )
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["id"], "det-legacy-1")
+
+    def test_aggregate_detections_v2_validation_and_success(self):
+        """Test v2 aggregation validates body and passes include_hidden query param."""
+        validation_result = self.module.aggregate_detections_v2(body=None, include_hidden=True)
+        self.assertEqual(len(validation_result), 1)
+        self.assertIn("error", validation_result[0])
+        self.mock_client.command.assert_not_called()
+
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"name": "severity_name", "buckets": []}]},
+        }
+
+        payload = [{"type": "terms", "field": "severity_name", "size": 10}]
+        result = self.module.aggregate_detections_v2(body=payload, include_hidden=False)
+
+        self.mock_client.command.assert_called_once_with(
+            "PostAggregatesAlertsV2",
+            parameters={"include_hidden": False},
+            body=payload,
+        )
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["name"], "severity_name")
+
+    def test_update_detections_requires_confirmation(self):
+        """Test update operations require confirm_execution=true."""
+        result = self.module.update_detections_v3(
+            confirm_execution=False,
+            composite_ids=["composite-1"],
+            update_status="in_progress",
         )
 
-        # Verify result
-        expected_result = [{"id": "detection1", "name": "Test Detection 1"}]
-        self.assertEqual(result, expected_result)
+        self.assertEqual(len(result), 1)
+        self.assertIn("error", result[0])
+        self.mock_client.command.assert_not_called()
 
+    def test_update_detections_v3_builds_action_parameters(self):
+        """Test v3 update body generation from convenience action fields."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"updated": True}]},
+        }
 
-    def test_format_fql_error_response_empty_results(self):
-        """Test that empty results include FQL guide for refinement."""
-        from falcon_mcp.resources.detections import SEARCH_DETECTIONS_FQL_DOCUMENTATION
-
-        result = self.module._format_fql_error_response(
-            error_or_empty=[],
-            filter_used="status:'nonexistent'",
-            fql_documentation=SEARCH_DETECTIONS_FQL_DOCUMENTATION
+        result = self.module.update_detections_v3(
+            confirm_execution=True,
+            composite_ids=["composite-1"],
+            update_status="in_progress",
+            append_comment="Triaging",
+            include_hidden=True,
         )
 
-        self.assertEqual(result["results"], [])
-        self.assertEqual(result["filter_used"], "status:'nonexistent'")
-        self.assertIn("fql_guide", result)
-        self.assertEqual(result["fql_guide"], SEARCH_DETECTIONS_FQL_DOCUMENTATION)
-        self.assertIn("hint", result)
-        self.assertIn("No results matched", result["hint"])
+        self.mock_client.command.assert_called_once_with(
+            "PatchEntitiesAlertsV3",
+            parameters={"include_hidden": True},
+            body={
+                "composite_ids": ["composite-1"],
+                "action_parameters": [
+                    {"name": "update_status", "value": "in_progress"},
+                    {"name": "append_comment", "value": "Triaging"},
+                ],
+            },
+        )
+        self.assertEqual(len(result), 1)
+        self.assertTrue(result[0]["updated"])
 
-    def test_format_fql_error_response_error(self):
-        """Test that error responses include FQL guide."""
-        from falcon_mcp.resources.detections import SEARCH_DETECTIONS_FQL_DOCUMENTATION
+    def test_update_detections_v2_accepts_full_body_override(self):
+        """Test v2 update supports full body override and bypasses action field building."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"updated": True}]},
+        }
 
-        error_result = {"error": "Invalid filter syntax", "details": "..."}
-        result = self.module._format_fql_error_response(
-            error_or_empty=[error_result],
-            filter_used="bad filter",
-            fql_documentation=SEARCH_DETECTIONS_FQL_DOCUMENTATION
+        custom_body = {
+            "ids": ["det-legacy-1"],
+            "action_parameters": [{"name": "add_tag", "value": "manual-review"}],
+        }
+        result = self.module.update_detections_v2(
+            confirm_execution=True,
+            ids=None,
+            body=custom_body,
         )
 
-        self.assertEqual(result["results"], [error_result])
-        self.assertIn("fql_guide", result)
-        self.assertEqual(result["fql_guide"], SEARCH_DETECTIONS_FQL_DOCUMENTATION)
-        self.assertIn("error", result["hint"].lower())
+        self.mock_client.command.assert_called_once_with(
+            "PatchEntitiesAlertsV2",
+            body=custom_body,
+        )
+        self.assertEqual(len(result), 1)
+        self.assertTrue(result[0]["updated"])
+
+    def test_update_detections_requires_action(self):
+        """Test update returns validation error when no action is provided."""
+        result = self.module.update_detections_v1(
+            confirm_execution=True,
+            ids=["det-legacy-1"],
+        )
+
+        self.assertEqual(len(result), 1)
+        self.assertIn("error", result[0])
+        self.mock_client.command.assert_not_called()
 
 
 if __name__ == "__main__":

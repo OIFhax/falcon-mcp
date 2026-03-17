@@ -1014,3 +1014,58 @@ assigned_to_name:!'*'+severity_name:!'Informational'
 # All unassigned alerts except informational (numeric approach)
 assigned_to_name:!'*'+severity:>=20
 """
+
+DETECTIONS_AGGREGATION_GUIDE = """
+# Detections Aggregation Guide
+
+Use `falcon_aggregate_detections_v1` or `falcon_aggregate_detections_v2` with a list payload.
+Each list item is an aggregation request object.
+
+## Minimal aggregation payload
+
+[
+  {
+    "type": "terms",
+    "field": "severity_name",
+    "size": 10
+  }
+]
+
+## Common fields
+
+- `field`: field to aggregate on (for example `severity_name`, `status`, `product`)
+- `type`: aggregation type (`terms`, `date_range`, `range`, etc.)
+- `filter`: optional FQL filter to constrain matched detections
+- `sort`: optional aggregation sorting expression
+- `size`: maximum number of buckets returned
+
+Use v2 when you also need `include_hidden`.
+"""
+
+DETECTIONS_UPDATE_ACTIONS_GUIDE = """
+# Detections Update Actions Guide
+
+Use `falcon_update_detections_v1`, `falcon_update_detections_v2`, or `falcon_update_detections_v3`
+to apply alert actions. These tools require `confirm_execution=true`.
+
+## Supported action names
+
+- `update_status` (allowed values: `new`, `in_progress`, `reopened`, `closed`)
+- `add_tag`
+- `remove_tag`
+- `remove_tags_by_prefix`
+- `append_comment`
+- `assign_to_name`
+- `assign_to_user_id`
+- `assign_to_uuid`
+- `new_behavior_processed`
+- `show_in_ui` (`true` or `false`)
+- `unassign`
+
+## Request patterns
+
+1. Pass `action_parameters` directly as a list of `{name, value}`.
+2. Use convenience fields (`update_status`, `add_tag`, etc.) and let the tool build `action_parameters`.
+
+For v1/v2 use `ids`; for v3 use `composite_ids`.
+"""

@@ -12,8 +12,16 @@ logger = get_logger(__name__)
 # This can be expanded as more modules and operations are added
 API_SCOPE_REQUIREMENTS = {
     # Alerts operations (migrated from detections)
+    "GetQueriesAlertsV1": ["Alerts:read"],
     "GetQueriesAlertsV2": ["Alerts:read"],
+    "PostCombinedAlertsV1": ["Alerts:read"],
+    "PostAggregatesAlertsV1": ["Alerts:read"],
+    "PostAggregatesAlertsV2": ["Alerts:read"],
+    "PostEntitiesAlertsV1": ["Alerts:read"],
     "PostEntitiesAlertsV2": ["Alerts:read"],
+    "PatchEntitiesAlertsV1": ["Alerts:write"],
+    "PatchEntitiesAlertsV2": ["Alerts:write"],
+    "PatchEntitiesAlertsV3": ["Alerts:write"],
     # Hosts operations
     "QueryDevicesByFilter": ["Hosts:read"],
     "PostDeviceDetailsV2": ["Hosts:read"],
