@@ -99,9 +99,10 @@ Use either `field.asc` / `field.desc` or `field|asc` / `field|desc`.
 """
 
 IT_AUTOMATION_PHASE3_SAFETY_GUIDE = """
-# IT Automation Phase 3 Safety Guide
+# IT Automation Safety Guide
 
-Phase 3 tools can trigger broad and high-impact execution behavior across managed hosts.
+IT Automation tools can create/update/delete tasks, task groups, scheduled tasks,
+policies, and trigger broad host-side execution behavior.
 
 ## Safety Expectations
 
@@ -112,17 +113,13 @@ Phase 3 tools can trigger broad and high-impact execution behavior across manage
 
 ## Confirmation Guardrail
 
-The following tools require explicit `confirm_execution=true`:
-
-- `falcon_start_it_automation_task_execution`
-- `falcon_run_it_automation_live_query`
-- `falcon_cancel_it_automation_task_execution`
-- `falcon_rerun_it_automation_task_execution`
+All write and execution tools require explicit `confirm_execution=true`,
+including create/update/delete operations and execution controls.
 
 ## Recommended Workflow
 
-1. Search and inspect recent executions with read tools.
-2. Launch one scoped execution and verify host-level status.
-3. Retrieve execution results and validate expected behavior.
+1. Use read tools to discover target IDs and current state.
+2. Execute one scoped write action and validate the response.
+3. Re-query the affected entities and execution status/results.
 4. Expand rollout gradually with strict targeting and auditing.
 """

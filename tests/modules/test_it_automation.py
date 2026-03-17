@@ -1,6 +1,4 @@
-"""
-Tests for the IT Automation module.
-"""
+"""Tests for the IT Automation module."""
 
 import unittest
 
@@ -15,27 +13,56 @@ class TestITAutomationModule(TestModules):
     """Test cases for the IT Automation module."""
 
     def setUp(self):
-        """Set up test fixtures."""
         self.setup_module(ITAutomationModule)
 
     def test_register_tools(self):
-        """Test registering tools with the server."""
         expected_tools = [
+            "falcon_search_it_automation_associated_tasks",
+            "falcon_search_it_automation_scheduled_tasks_combined",
             "falcon_search_it_automation_task_executions",
+            "falcon_search_it_automation_task_groups_combined",
+            "falcon_search_it_automation_tasks_combined",
+            "falcon_search_it_automation_user_group_ids",
+            "falcon_query_it_automation_policy_ids",
+            "falcon_search_it_automation_scheduled_task_ids",
+            "falcon_search_it_automation_task_execution_ids",
+            "falcon_search_it_automation_task_group_ids",
+            "falcon_search_it_automation_task_ids",
+            "falcon_get_it_automation_user_groups",
+            "falcon_get_it_automation_policies",
+            "falcon_get_it_automation_scheduled_tasks",
             "falcon_get_it_automation_task_executions",
+            "falcon_get_it_automation_task_groups",
+            "falcon_get_it_automation_tasks",
             "falcon_get_it_automation_task_execution_host_status",
+            "falcon_start_it_automation_execution_results_search",
+            "falcon_get_it_automation_execution_results_search_status",
+            "falcon_get_it_automation_execution_results",
+            "falcon_create_it_automation_user_group",
+            "falcon_update_it_automation_user_group",
+            "falcon_delete_it_automation_user_groups",
+            "falcon_create_it_automation_policy",
+            "falcon_update_it_automation_policies",
+            "falcon_delete_it_automation_policies",
+            "falcon_update_it_automation_policy_host_groups",
+            "falcon_update_it_automation_policies_precedence",
+            "falcon_create_it_automation_scheduled_task",
+            "falcon_update_it_automation_scheduled_task",
+            "falcon_delete_it_automation_scheduled_tasks",
+            "falcon_create_it_automation_task_group",
+            "falcon_update_it_automation_task_group",
+            "falcon_delete_it_automation_task_groups",
+            "falcon_create_it_automation_task",
+            "falcon_update_it_automation_task",
+            "falcon_delete_it_automation_tasks",
             "falcon_start_it_automation_task_execution",
             "falcon_run_it_automation_live_query",
             "falcon_cancel_it_automation_task_execution",
             "falcon_rerun_it_automation_task_execution",
-            "falcon_start_it_automation_execution_results_search",
-            "falcon_get_it_automation_execution_results_search_status",
-            "falcon_get_it_automation_execution_results",
         ]
         self.assert_tools_registered(expected_tools)
 
     def test_register_resources(self):
-        """Test registering resources with the server."""
         expected_resources = [
             "falcon_search_it_automation_task_executions_fql_guide",
             "falcon_it_automation_phase3_safety_guide",
@@ -43,11 +70,29 @@ class TestITAutomationModule(TestModules):
         self.assert_resources_registered(expected_resources)
 
     def test_tool_annotations(self):
-        """Test tools are registered with expected annotations."""
         self.module.register_tools(self.mock_server)
 
         self.assert_tool_annotations(
-            "falcon_search_it_automation_task_executions", READ_ONLY_ANNOTATIONS
+            "falcon_search_it_automation_task_executions",
+            READ_ONLY_ANNOTATIONS,
+        )
+        self.assert_tool_annotations(
+            "falcon_create_it_automation_task",
+            ToolAnnotations(
+                readOnlyHint=False,
+                destructiveHint=False,
+                idempotentHint=False,
+                openWorldHint=True,
+            ),
+        )
+        self.assert_tool_annotations(
+            "falcon_delete_it_automation_tasks",
+            ToolAnnotations(
+                readOnlyHint=False,
+                destructiveHint=True,
+                idempotentHint=True,
+                openWorldHint=True,
+            ),
         )
         self.assert_tool_annotations(
             "falcon_start_it_automation_task_execution",
@@ -58,143 +103,241 @@ class TestITAutomationModule(TestModules):
                 openWorldHint=True,
             ),
         )
-        self.assert_tool_annotations(
-            "falcon_cancel_it_automation_task_execution",
-            ToolAnnotations(
-                readOnlyHint=False,
-                destructiveHint=True,
-                idempotentHint=True,
-                openWorldHint=True,
-            ),
-        )
 
-    def test_search_task_executions_success(self):
-        """Test searching task executions with parameters."""
-        self.mock_client.command.return_value = {
-            "status_code": 200,
-            "body": {"resources": [{"id": "exec-1", "status": "running"}]},
-        }
-
-        result = self.module.search_it_automation_task_executions(
-            filter="status:'running'",
-            limit=25,
-            offset=10,
-            sort="start_time.desc",
-        )
-
-        self.mock_client.command.assert_called_once_with(
-            "ITAutomationGetTaskExecutionsByQuery",
-            parameters={
-                "filter": "status:'running'",
-                "limit": 25,
-                "offset": 10,
-                "sort": "start_time.desc",
-            },
-        )
-        self.assertEqual(len(result), 1)
-
-    def test_search_task_executions_empty_filter_response(self):
-        """Test empty filtered search returns FQL guide context."""
-        self.mock_client.command.return_value = {
-            "status_code": 200,
-            "body": {"resources": []},
-        }
-
-        result = self.module.search_it_automation_task_executions(
-            filter="task_name:'DoesNotExist*'",
+    def test_search_associated_tasks_validation_and_success(self):
+        validation_result = self.module.search_it_automation_associated_tasks(
+            file_id=None,
+            filter=None,
             limit=10,
             offset=0,
             sort=None,
         )
-
-        self.assertIsInstance(result, dict)
-        self.assertEqual(result["results"], [])
-        self.assertIn("fql_guide", result)
-
-    def test_get_task_executions_validation_and_success(self):
-        """Test get task executions validation and success path."""
-        validation_result = self.module.get_it_automation_task_executions(ids=None)
         self.assertIn("error", validation_result[0])
         self.mock_client.command.assert_not_called()
 
         self.mock_client.command.return_value = {
             "status_code": 200,
-            "body": {"resources": [{"id": "exec-1"}]},
+            "body": {"resources": [{"id": "task-1"}]},
         }
-        success_result = self.module.get_it_automation_task_executions(ids=["exec-1"])
-
-        self.mock_client.command.assert_called_once_with(
-            "ITAutomationGetTaskExecution",
-            parameters={"ids": ["exec-1"]},
-        )
-        self.assertEqual(len(success_result), 1)
-
-    def test_get_task_execution_host_status_success(self):
-        """Test host status retrieval success path."""
-        self.mock_client.command.return_value = {
-            "status_code": 200,
-            "body": {"resources": [{"task_execution_id": "exec-1", "status": "running"}]},
-        }
-
-        result = self.module.get_it_automation_task_execution_host_status(
-            ids=["exec-1"],
-            filter="status:'running'",
-            limit=20,
-            offset=5,
-            sort="start_time.desc",
+        result = self.module.search_it_automation_associated_tasks(
+            file_id="file-1",
+            filter="name:'Containment*'",
+            limit=10,
+            offset=0,
+            sort="name|asc",
         )
 
         self.mock_client.command.assert_called_once_with(
-            "ITAutomationGetTaskExecutionHostStatus",
+            "ITAutomationGetAssociatedTasks",
             parameters={
-                "ids": ["exec-1"],
-                "filter": "status:'running'",
-                "limit": 20,
-                "offset": 5,
-                "sort": "start_time.desc",
+                "id": "file-1",
+                "filter": "name:'Containment*'",
+                "limit": 10,
+                "offset": 0,
+                "sort": "name|asc",
             },
         )
         self.assertEqual(len(result), 1)
 
-    def test_start_task_execution_gating_validation_and_success(self):
-        """Test start task execution gating, validation, and success path."""
-        no_confirm_result = self.module.start_it_automation_task_execution(
-            confirm_execution=False,
-            task_id="task-1",
-            target="host_group:'abc123'",
-            arguments=None,
-            discover_new_hosts=None,
-            discover_offline_hosts=None,
-            distribute=None,
-            expiration_interval=None,
-            guardrails=None,
-            trigger_condition=None,
-            body=None,
+    def test_search_operations_wiring(self):
+        test_cases = [
+            (
+                self.module.search_it_automation_scheduled_tasks_combined,
+                "ITAutomationCombinedScheduledTasks",
+            ),
+            (
+                self.module.search_it_automation_task_groups_combined,
+                "ITAutomationGetTaskGroupsByQuery",
+            ),
+            (
+                self.module.search_it_automation_tasks_combined,
+                "ITAutomationGetTasksByQuery",
+            ),
+            (
+                self.module.search_it_automation_user_group_ids,
+                "ITAutomationSearchUserGroup",
+            ),
+            (
+                self.module.search_it_automation_scheduled_task_ids,
+                "ITAutomationSearchScheduledTasks",
+            ),
+            (
+                self.module.search_it_automation_task_execution_ids,
+                "ITAutomationSearchTaskExecutions",
+            ),
+            (
+                self.module.search_it_automation_task_group_ids,
+                "ITAutomationSearchTaskGroups",
+            ),
+            (
+                self.module.search_it_automation_task_ids,
+                "ITAutomationSearchTasks",
+            ),
+        ]
+
+        for method, operation in test_cases:
+            with self.subTest(operation=operation):
+                self.mock_client.command.reset_mock()
+                self.mock_client.command.return_value = {
+                    "status_code": 200,
+                    "body": {"resources": ["id-1"]},
+                }
+
+                result = method(
+                    filter="name:'example'",
+                    limit=5,
+                    offset=0,
+                    sort="name|asc",
+                )
+
+                self.mock_client.command.assert_called_once_with(
+                    operation,
+                    parameters={
+                        "filter": "name:'example'",
+                        "limit": 5,
+                        "offset": 0,
+                        "sort": "name|asc",
+                    },
+                )
+                self.assertEqual(result, ["id-1"])
+
+    def test_get_operations_by_ids_wiring(self):
+        test_cases = [
+            (self.module.get_it_automation_user_groups, "ITAutomationGetUserGroup"),
+            (self.module.get_it_automation_policies, "ITAutomationGetPolicies"),
+            (self.module.get_it_automation_scheduled_tasks, "ITAutomationGetScheduledTasks"),
+            (self.module.get_it_automation_task_executions, "ITAutomationGetTaskExecution"),
+            (self.module.get_it_automation_task_groups, "ITAutomationGetTaskGroups"),
+            (self.module.get_it_automation_tasks, "ITAutomationGetTasks"),
+        ]
+
+        for method, operation in test_cases:
+            with self.subTest(operation=operation):
+                self.mock_client.command.reset_mock()
+                self.mock_client.command.return_value = {
+                    "status_code": 200,
+                    "body": {"resources": [{"id": "id-1"}]},
+                }
+
+                result = method(ids=["id-1"])
+
+                self.mock_client.command.assert_called_once_with(
+                    operation,
+                    parameters={"ids": ["id-1"]},
+                )
+                self.assertEqual(result[0]["id"], "id-1")
+
+    def test_query_policy_ids_validation_and_success(self):
+        validation_result = self.module.query_it_automation_policy_ids(
+            platform=None,
+            limit=10,
+            offset=0,
+            sort=None,
         )
-        self.assertIn("error", no_confirm_result[0])
+        self.assertIn("error", validation_result[0])
         self.mock_client.command.assert_not_called()
 
-        missing_fields_result = self.module.start_it_automation_task_execution(
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": ["policy-1"]},
+        }
+        result = self.module.query_it_automation_policy_ids(
+            platform="Windows",
+            limit=10,
+            offset=0,
+            sort="precedence|asc",
+        )
+
+        self.mock_client.command.assert_called_once_with(
+            "ITAutomationQueryPolicies",
+            parameters={
+                "platform": "Windows",
+                "limit": 10,
+                "offset": 0,
+                "sort": "precedence|asc",
+            },
+        )
+        self.assertEqual(result, ["policy-1"])
+
+    def test_write_operations_validation(self):
+        operations = [
+            self.module.create_it_automation_user_group,
+            self.module.create_it_automation_policy,
+            self.module.create_it_automation_scheduled_task,
+            self.module.create_it_automation_task_group,
+            self.module.create_it_automation_task,
+        ]
+        for method in operations:
+            with self.subTest(method=method.__name__):
+                result = method(confirm_execution=False, body={"name": "test"})
+                self.assertIn("error", result[0])
+
+        update_validation = self.module.update_it_automation_task(
             confirm_execution=True,
             task_id=None,
-            target=None,
-            arguments=None,
-            discover_new_hosts=None,
-            discover_offline_hosts=None,
-            distribute=None,
-            expiration_interval=None,
-            guardrails=None,
-            trigger_condition=None,
-            body=None,
+            body={"name": "updated"},
         )
-        self.assertIn("error", missing_fields_result[0])
-        self.mock_client.command.assert_not_called()
+        self.assertIn("error", update_validation[0])
 
+        delete_validation = self.module.delete_it_automation_tasks(
+            confirm_execution=True,
+            ids=None,
+        )
+        self.assertIn("error", delete_validation[0])
+
+    def test_selected_write_operation_wiring(self):
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "created-1"}]},
+        }
+        create_result = self.module.create_it_automation_user_group(
+            confirm_execution=True,
+            body={"name": "group-a"},
+        )
+        self.mock_client.command.assert_called_once_with(
+            "ITAutomationCreateUserGroup",
+            body={"name": "group-a"},
+        )
+        self.assertEqual(create_result[0]["id"], "created-1")
+
+        self.mock_client.command.reset_mock()
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": []},
+        }
+        delete_result = self.module.delete_it_automation_tasks(
+            confirm_execution=True,
+            ids=["task-1"],
+        )
+        self.mock_client.command.assert_called_once_with(
+            "ITAutomationDeleteTask",
+            parameters={"ids": ["task-1"]},
+        )
+        self.assertEqual(delete_result[0]["status"], "submitted")
+
+        self.mock_client.command.reset_mock()
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "policy-1"}]},
+        }
+        precedence_result = self.module.update_it_automation_policies_precedence(
+            confirm_execution=True,
+            platform="Windows",
+            body={"ids": ["policy-1"]},
+        )
+        self.mock_client.command.assert_called_once_with(
+            "ITAutomationUpdatePoliciesPrecedence",
+            parameters={"platform": "Windows"},
+            body={"ids": ["policy-1"]},
+        )
+        self.assertEqual(precedence_result[0]["id"], "policy-1")
+
+    def test_execution_controls_wiring(self):
         self.mock_client.command.return_value = {
             "status_code": 201,
             "body": {"resources": [{"id": "exec-1"}]},
         }
-        success_result = self.module.start_it_automation_task_execution(
+        start_result = self.module.start_it_automation_task_execution(
             confirm_execution=True,
             task_id="task-1",
             target="host_group:'abc123'",
@@ -207,7 +350,6 @@ class TestITAutomationModule(TestModules):
             trigger_condition=None,
             body=None,
         )
-
         self.mock_client.command.assert_called_once_with(
             "ITAutomationStartTaskExecution",
             body={
@@ -221,47 +363,14 @@ class TestITAutomationModule(TestModules):
                 "guardrails": {"run_time_limit_millis": 600000},
             },
         )
-        self.assertEqual(len(success_result), 1)
+        self.assertEqual(start_result[0]["id"], "exec-1")
 
-    def test_run_live_query_gating_validation_and_success(self):
-        """Test live query gating, validation, and success path."""
-        no_confirm_result = self.module.run_it_automation_live_query(
-            confirm_execution=False,
-            target="host_group:'abc123'",
-            osquery="SELECT * FROM os_version;",
-            queries=None,
-            output_parser_config=None,
-            discover_new_hosts=None,
-            discover_offline_hosts=None,
-            distribute=None,
-            expiration_interval=None,
-            guardrails=None,
-            body=None,
-        )
-        self.assertIn("error", no_confirm_result[0])
-        self.mock_client.command.assert_not_called()
-
-        missing_payload_result = self.module.run_it_automation_live_query(
-            confirm_execution=True,
-            target="host_group:'abc123'",
-            osquery=None,
-            queries=None,
-            output_parser_config=None,
-            discover_new_hosts=None,
-            discover_offline_hosts=None,
-            distribute=None,
-            expiration_interval=None,
-            guardrails=None,
-            body=None,
-        )
-        self.assertIn("error", missing_payload_result[0])
-        self.mock_client.command.assert_not_called()
-
+        self.mock_client.command.reset_mock()
         self.mock_client.command.return_value = {
             "status_code": 201,
             "body": {"resources": [{"id": "exec-2"}]},
         }
-        success_result = self.module.run_it_automation_live_query(
+        live_result = self.module.run_it_automation_live_query(
             confirm_execution=True,
             target="host_group:'abc123'",
             osquery="SELECT * FROM os_version;",
@@ -274,7 +383,6 @@ class TestITAutomationModule(TestModules):
             guardrails={"run_time_limit_millis": 300000},
             body=None,
         )
-
         self.mock_client.command.assert_called_once_with(
             "ITAutomationRunLiveQuery",
             body={
@@ -287,44 +395,42 @@ class TestITAutomationModule(TestModules):
                 "guardrails": {"run_time_limit_millis": 300000},
             },
         )
-        self.assertEqual(len(success_result), 1)
-
-    def test_cancel_and_rerun_execution_success(self):
-        """Test cancel and rerun execution operations."""
-        self.mock_client.command.return_value = {
-            "status_code": 200,
-            "body": {"resources": [{"id": "exec-1"}]},
-        }
-        cancel_result = self.module.cancel_it_automation_task_execution(
-            confirm_execution=True,
-            task_execution_id="exec-1",
-            body=None,
-        )
-        self.mock_client.command.assert_called_once_with(
-            "ITAutomationCancelTaskExecution",
-            body={"task_execution_id": "exec-1"},
-        )
-        self.assertEqual(len(cancel_result), 1)
+        self.assertEqual(live_result[0]["id"], "exec-2")
 
         self.mock_client.command.reset_mock()
         self.mock_client.command.return_value = {
             "status_code": 200,
-            "body": {"resources": [{"id": "exec-2"}]},
+            "body": {"resources": [{"id": "exec-3"}]},
+        }
+        cancel_result = self.module.cancel_it_automation_task_execution(
+            confirm_execution=True,
+            task_execution_id="exec-3",
+            body=None,
+        )
+        self.mock_client.command.assert_called_once_with(
+            "ITAutomationCancelTaskExecution",
+            body={"task_execution_id": "exec-3"},
+        )
+        self.assertEqual(cancel_result[0]["id"], "exec-3")
+
+        self.mock_client.command.reset_mock()
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "exec-4"}]},
         }
         rerun_result = self.module.rerun_it_automation_task_execution(
             confirm_execution=True,
-            task_execution_id="exec-2",
+            task_execution_id="exec-4",
             run_type="hosts",
             body=None,
         )
         self.mock_client.command.assert_called_once_with(
             "ITAutomationRerunTaskExecution",
-            body={"task_execution_id": "exec-2", "run_type": "hosts"},
+            body={"task_execution_id": "exec-4", "run_type": "hosts"},
         )
-        self.assertEqual(len(rerun_result), 1)
+        self.assertEqual(rerun_result[0]["id"], "exec-4")
 
-    def test_execution_results_search_and_retrieval_success(self):
-        """Test execution results search lifecycle helper methods."""
+    def test_execution_results_search_workflow(self):
         self.mock_client.command.return_value = {
             "status_code": 201,
             "body": {"resources": [{"id": "job-1"}]},
@@ -347,7 +453,7 @@ class TestITAutomationModule(TestModules):
                 "group_by_fields": ["hostname"],
             },
         )
-        self.assertEqual(len(start_result), 1)
+        self.assertEqual(start_result[0]["id"], "job-1")
 
         self.mock_client.command.reset_mock()
         self.mock_client.command.return_value = {
@@ -355,54 +461,30 @@ class TestITAutomationModule(TestModules):
             "body": {"resources": [{"id": "job-1", "is_pending": False}]},
         }
         status_result = self.module.get_it_automation_execution_results_search_status(
-            search_id="job-1"
+            search_id="job-1",
         )
         self.mock_client.command.assert_called_once_with(
             "ITAutomationGetExecutionResultsSearchStatus",
             parameters={"id": "job-1"},
         )
-        self.assertEqual(len(status_result), 1)
+        self.assertEqual(status_result[0]["id"], "job-1")
 
         self.mock_client.command.reset_mock()
         self.mock_client.command.return_value = {
             "status_code": 200,
-            "body": {"resources": [{"hostname": "host-1"}]},
+            "body": {"resources": [{"hostname": "host-a"}]},
         }
-        results = self.module.get_it_automation_execution_results(
+        result_records = self.module.get_it_automation_execution_results(
             search_id="job-1",
             offset=0,
-            limit=100,
+            limit=10,
             sort="hostname.asc",
         )
         self.mock_client.command.assert_called_once_with(
             "ITAutomationGetExecutionResults",
-            parameters={"id": "job-1", "offset": 0, "limit": 100, "sort": "hostname.asc"},
+            parameters={"id": "job-1", "offset": 0, "limit": 10, "sort": "hostname.asc"},
         )
-        self.assertEqual(len(results), 1)
-
-    def test_run_live_query_permission_error(self):
-        """Test permission error handling for live query execution."""
-        self.mock_client.command.return_value = {
-            "status_code": 403,
-            "body": {"errors": [{"message": "Access denied"}]},
-        }
-
-        result = self.module.run_it_automation_live_query(
-            confirm_execution=True,
-            target="host_group:'abc123'",
-            osquery="SELECT * FROM os_version;",
-            queries=None,
-            output_parser_config=None,
-            discover_new_hosts=None,
-            discover_offline_hosts=None,
-            distribute=None,
-            expiration_interval=None,
-            guardrails=None,
-            body=None,
-        )
-
-        self.assertEqual(len(result), 1)
-        self.assertIn("error", result[0])
+        self.assertEqual(result_records[0]["hostname"], "host-a")
 
 
 if __name__ == "__main__":

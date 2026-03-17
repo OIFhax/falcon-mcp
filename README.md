@@ -118,7 +118,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Firewall Policies** | `Firewall Policies:read`<br>`Firewall Policies:write` | Search and manage firewall policies, policy actions, precedence, and policy member relationships |
 | **Sensor Update Policies** | `Sensor Update Policies:read`<br>`Sensor Update Policies:write` | Search and manage sensor update policies, builds, kernels, precedence, actions, and uninstall token reveal workflows |
 | **Workflows** | `Workflow:read`<br>`Workflow:write` | Search and manage workflow definitions, executions, human inputs, and system-definition lifecycle actions |
-| **IT Automation** | `IT Automation:read`<br>`IT Automation:write` | Execute high-impact task runs and live queries with execution status/result controls |
+| **IT Automation** | `IT Automation:read`<br>`IT Automation:write` | Full IT Automation coverage for search/query/get, policy/task lifecycle management, and high-impact execution controls |
 | **NGSIEM** | `NGSIEM:read`<br>`NGSIEM:write` | Full NGSIEM coverage for search jobs, dashboards, lookup files, parsers, and saved queries |
 | **Intel** | `Actors (Falcon Intelligence):read`<br>`Indicators (Falcon Intelligence):read`<br>`Reports (Falcon Intelligence):read` | Research threat actors, IOCs, and intelligence reports |
 | **IOC** | `IOC Management:read`<br>`IOC Management:write` | Search, create, and remove custom IOCs using IOC Service Collection endpoints |
@@ -642,23 +642,31 @@ Provides full Falcon Workflows service collection coverage:
 - `IT Automation:read`
 - `IT Automation:write`
 
-Provides Phase 3 IT Automation execution tools:
+Provides full IT Automation service collection coverage:
 
-- `falcon_search_it_automation_task_executions`: Search task execution records
-- `falcon_get_it_automation_task_executions`: Retrieve task execution records by ID
-- `falcon_get_it_automation_task_execution_host_status`: Retrieve host-level execution status
-- `falcon_start_it_automation_task_execution`: Start execution of an existing IT Automation task (`confirm_execution=true` required)
-- `falcon_run_it_automation_live_query`: Run live query execution (`confirm_execution=true` required)
-- `falcon_cancel_it_automation_task_execution`: Cancel an active task execution (`confirm_execution=true` required)
-- `falcon_rerun_it_automation_task_execution`: Rerun a task execution (`confirm_execution=true` required)
-- `falcon_start_it_automation_execution_results_search`: Start async execution results search
-- `falcon_get_it_automation_execution_results_search_status`: Poll async search status
-- `falcon_get_it_automation_execution_results`: Retrieve execution results from search jobs
+- Search/query operations for:
+  - tasks (`falcon_search_it_automation_tasks_combined`, `falcon_search_it_automation_task_ids`)
+  - task groups (`falcon_search_it_automation_task_groups_combined`, `falcon_search_it_automation_task_group_ids`)
+  - scheduled tasks (`falcon_search_it_automation_scheduled_tasks_combined`, `falcon_search_it_automation_scheduled_task_ids`)
+  - executions (`falcon_search_it_automation_task_executions`, `falcon_search_it_automation_task_execution_ids`)
+  - user groups and policies (`falcon_search_it_automation_user_group_ids`, `falcon_query_it_automation_policy_ids`)
+  - file associations (`falcon_search_it_automation_associated_tasks`)
+- Entity retrieval tools for tasks, task groups, scheduled tasks, user groups, policies, execution details, and host status
+- Execution-results workflow tools:
+  - `falcon_start_it_automation_execution_results_search`
+  - `falcon_get_it_automation_execution_results_search_status`
+  - `falcon_get_it_automation_execution_results`
+- Write lifecycle tools for create/update/delete operations across user groups, policies, tasks, task groups, and scheduled tasks (`confirm_execution=true` required)
+- High-impact execution controls:
+  - `falcon_start_it_automation_task_execution` (`confirm_execution=true` required)
+  - `falcon_run_it_automation_live_query` (`confirm_execution=true` required)
+  - `falcon_cancel_it_automation_task_execution` (`confirm_execution=true` required)
+  - `falcon_rerun_it_automation_task_execution` (`confirm_execution=true` required)
 
 **Resources**:
 
 - `falcon://it-automation/task-executions/fql-guide`: FQL documentation and examples for task execution searches
-- `falcon://it-automation/phase3/safety-guide`: Safety and execution guidance for high-impact tools
+- `falcon://it-automation/phase3/safety-guide`: Safety and execution guidance for IT Automation write and execution tools
 
 **Use Cases**: Controlled remote response actions, live query operations, execution monitoring, and execution result retrieval
 

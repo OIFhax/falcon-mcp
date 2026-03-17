@@ -87,7 +87,23 @@ class TestApiScopes(unittest.TestCase):
             ["IT Automation:read"],
         )
         self.assertEqual(
+            get_required_scopes("ITAutomationGetTasksByQuery"),
+            ["IT Automation:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("ITAutomationGetPolicies"),
+            ["IT Automation:read"],
+        )
+        self.assertEqual(
             get_required_scopes("ITAutomationRunLiveQuery"),
+            ["IT Automation:write"],
+        )
+        self.assertEqual(
+            get_required_scopes("ITAutomationCreateTask"),
+            ["IT Automation:write"],
+        )
+        self.assertEqual(
+            get_required_scopes("ITAutomationDeleteTaskGroups"),
             ["IT Automation:write"],
         )
         self.assertEqual(get_required_scopes("queryIOAExclusionsV1"), ["IOA Exclusions:read"])
@@ -329,7 +345,11 @@ class TestApiScopes(unittest.TestCase):
             ("GetMigrationIDsV1", ["Host Migration:read"]),
             ("CreateMigrationV1", ["Host Migration:write"]),
             ("ITAutomationGetTaskExecution", ["IT Automation:read"]),
+            ("ITAutomationGetTasksByQuery", ["IT Automation:read"]),
+            ("ITAutomationGetPolicies", ["IT Automation:read"]),
             ("ITAutomationRunLiveQuery", ["IT Automation:write"]),
+            ("ITAutomationCreateTask", ["IT Automation:write"]),
+            ("ITAutomationDeleteTaskGroups", ["IT Automation:write"]),
             ("queryIOAExclusionsV1", ["IOA Exclusions:read"]),
             ("createIOAExclusionsV1", ["IOA Exclusions:write"]),
             ("query_rules", ["Firewall Management:read"]),
@@ -490,12 +510,44 @@ class TestApiScopes(unittest.TestCase):
                 "HostMigrationsActionsV1",
             ],
             "it_automation": [
+                "ITAutomationGetAssociatedTasks",
+                "ITAutomationCombinedScheduledTasks",
                 "ITAutomationGetTaskExecutionsByQuery",
+                "ITAutomationGetTaskGroupsByQuery",
+                "ITAutomationGetTasksByQuery",
+                "ITAutomationGetUserGroup",
+                "ITAutomationCreateUserGroup",
+                "ITAutomationUpdateUserGroup",
+                "ITAutomationDeleteUserGroup",
+                "ITAutomationUpdatePolicyHostGroups",
+                "ITAutomationUpdatePoliciesPrecedence",
+                "ITAutomationGetPolicies",
+                "ITAutomationCreatePolicy",
+                "ITAutomationUpdatePolicies",
+                "ITAutomationDeletePolicy",
+                "ITAutomationGetScheduledTasks",
+                "ITAutomationCreateScheduledTask",
+                "ITAutomationUpdateScheduledTask",
+                "ITAutomationDeleteScheduledTasks",
                 "ITAutomationGetTaskExecution",
                 "ITAutomationGetTaskExecutionHostStatus",
                 "ITAutomationStartExecutionResultsSearch",
                 "ITAutomationGetExecutionResultsSearchStatus",
                 "ITAutomationGetExecutionResults",
+                "ITAutomationGetTaskGroups",
+                "ITAutomationCreateTaskGroup",
+                "ITAutomationUpdateTaskGroup",
+                "ITAutomationDeleteTaskGroups",
+                "ITAutomationGetTasks",
+                "ITAutomationCreateTask",
+                "ITAutomationUpdateTask",
+                "ITAutomationDeleteTask",
+                "ITAutomationSearchUserGroup",
+                "ITAutomationQueryPolicies",
+                "ITAutomationSearchScheduledTasks",
+                "ITAutomationSearchTaskExecutions",
+                "ITAutomationSearchTaskGroups",
+                "ITAutomationSearchTasks",
                 "ITAutomationStartTaskExecution",
                 "ITAutomationRunLiveQuery",
                 "ITAutomationCancelTaskExecution",
