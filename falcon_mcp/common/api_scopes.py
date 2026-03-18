@@ -239,6 +239,12 @@ API_SCOPE_REQUIREMENTS = {
     # Event Streams operations
     "listAvailableStreamsOAuth2": ["event-streams:read"],
     "refreshActiveStreamSession": ["event-streams:read"],
+    # Falcon Data Replicator operations
+    "fdrschema_combined_event_get": ["falcon-data-replicator:read"],
+    "fdrschema_entities_event_get": ["falcon-data-replicator:read"],
+    "fdrschema_queries_event_get": ["falcon-data-replicator:read"],
+    "fdrschema_entities_field_get": ["falcon-data-replicator:read"],
+    "fdrschema_queries_field_get": ["falcon-data-replicator:read"],
     # CAO Hunting operations
     "AggregateHuntingGuides": ["CAO Hunting:read"],
     "AggregateIntelligenceQueries": ["CAO Hunting:read"],

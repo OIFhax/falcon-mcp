@@ -26,6 +26,7 @@
   - [Discover Module](#discover-module)
   - [Exposure Management Module](#exposure-management-module)
   - [Event Streams Module](#event-streams-module)
+  - [FDR Module](#fdr-module)
   - [Hosts Module](#hosts-module)
   - [Identity Protection Module](#identity-protection-module)
   - [User Management Module](#user-management-module)
@@ -109,6 +110,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Discover** | `Assets:read` | Full Discover coverage for applications, hosts, accounts, IoT hosts, and login entities (query/get/combined workflows) |
 | **Exposure Management** | `Exposure Management:read`<br>`Exposure Management:write` | Search external assets and perform controlled asset inventory/triage updates |
 | **Event Streams** | `event-streams:read` | Discover available Falcon event streams and refresh active partition sessions for an existing consumer |
+| **FDR** | `falcon-data-replicator:read` | Retrieve Falcon Data Replicator schema metadata for events and fields |
 | **Hosts** | `Hosts:read`<br>`Host Groups:read`<br>`Host Groups:write`<br>`Host Migration:read`<br>`Host Migration:write` | Search hosts, manage host groups, and orchestrate migration workflows |
 | **Identity Protection** | `Identity Protection Entities:read`<br>`Identity Protection Timeline:read`<br>`Identity Protection Detections:read`<br>`Identity Protection Assessment:read`<br>`Identity Protection GraphQL:write` | Comprehensive entity investigation and identity protection analysis |
 | **User Management** | `User Management:read`<br>`User Management:write` | Full User Management coverage for aggregation, user/role discovery, grants, and controlled user/role actions |
@@ -320,6 +322,23 @@ Provides tools for Event Streams discovery and session maintenance:
 - `falcon://event-streams/usage-guide`: Guidance for `app_id` rules, stream formats, and refresh behavior
 
 **Use Cases**: Discovering Firehose connection details for downstream consumers, validating stream configuration, and refreshing active stream consumers outside MCP
+
+### FDR Module
+
+**API Scopes Required**: `falcon-data-replicator:read`
+
+Provides tools for Falcon Data Replicator schema discovery:
+
+- `falcon_get_fdr_combined_schema`: Retrieve the combined FDR schema summary
+- `falcon_query_fdr_event_schema_ids`, `falcon_get_fdr_event_schema_details`, `falcon_search_fdr_event_schemas`
+- `falcon_query_fdr_field_schema_ids`, `falcon_get_fdr_field_schema_details`, `falcon_search_fdr_field_schemas`
+
+**Resources**:
+
+- `falcon://fdr/events/fql-guide`: FQL guidance for event schema query/search tools
+- `falcon://fdr/fields/fql-guide`: FQL guidance for field schema query/search tools
+
+**Use Cases**: Building downstream FDR parsers, schema-aware enrichment, event catalog discovery, and field reference lookups
 
 ### Hosts Module
 
