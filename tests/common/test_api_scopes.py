@@ -125,6 +125,14 @@ class TestApiScopes(unittest.TestCase):
             ["Exposure Management:write"],
         )
         self.assertEqual(
+            get_required_scopes("listAvailableStreamsOAuth2"),
+            ["event-streams:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("refreshActiveStreamSession"),
+            ["event-streams:read"],
+        )
+        self.assertEqual(
             get_required_scopes("SearchHuntingGuides"),
             ["CAO Hunting:read"],
         )
@@ -446,6 +454,8 @@ class TestApiScopes(unittest.TestCase):
             ("getRemediationsV2", ["Vulnerabilities:read"]),
             ("query_external_assets_v2", ["Exposure Management:read"]),
             ("delete_external_assets", ["Exposure Management:write"]),
+            ("listAvailableStreamsOAuth2", ["event-streams:read"]),
+            ("refreshActiveStreamSession", ["event-streams:read"]),
             ("SearchHuntingGuides", ["CAO Hunting:read"]),
             ("GetArchiveExport", ["CAO Hunting:read"]),
             ("getAssessmentV1", ["Zero Trust Assessment:read"]),
@@ -548,7 +558,7 @@ class TestApiScopes(unittest.TestCase):
             "Hosts", "Vulnerabilities",
             "Assets", "Sensor Usage", "Scheduled Reports",
             "Real Time Response", "Real Time Response Audit", "CAO Hunting",
-            "Zero Trust Assessment", "Sensor Download",
+            "Zero Trust Assessment", "Sensor Download", "event-streams",
         ]
 
         for resource in read_only_resources:
@@ -728,6 +738,10 @@ class TestApiScopes(unittest.TestCase):
                 "post_external_assets_inventory_v1",
                 "patch_external_assets",
                 "delete_external_assets",
+            ],
+            "event_streams": [
+                "listAvailableStreamsOAuth2",
+                "refreshActiveStreamSession",
             ],
             "cao_hunting": [
                 "AggregateHuntingGuides",

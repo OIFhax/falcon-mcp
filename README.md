@@ -25,6 +25,7 @@
   - [Detections Module](#detections-module)
   - [Discover Module](#discover-module)
   - [Exposure Management Module](#exposure-management-module)
+  - [Event Streams Module](#event-streams-module)
   - [Hosts Module](#hosts-module)
   - [Identity Protection Module](#identity-protection-module)
   - [User Management Module](#user-management-module)
@@ -107,6 +108,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Detections** | `Alerts:read`<br>`Alerts:write` | Full detections coverage for query/search/details, aggregation, and controlled detection update actions |
 | **Discover** | `Assets:read` | Full Discover coverage for applications, hosts, accounts, IoT hosts, and login entities (query/get/combined workflows) |
 | **Exposure Management** | `Exposure Management:read`<br>`Exposure Management:write` | Search external assets and perform controlled asset inventory/triage updates |
+| **Event Streams** | `event-streams:read` | Discover available Falcon event streams and refresh active partition sessions for an existing consumer |
 | **Hosts** | `Hosts:read`<br>`Host Groups:read`<br>`Host Groups:write`<br>`Host Migration:read`<br>`Host Migration:write` | Search hosts, manage host groups, and orchestrate migration workflows |
 | **Identity Protection** | `Identity Protection Entities:read`<br>`Identity Protection Timeline:read`<br>`Identity Protection Detections:read`<br>`Identity Protection Assessment:read`<br>`Identity Protection GraphQL:write` | Comprehensive entity investigation and identity protection analysis |
 | **User Management** | `User Management:read`<br>`User Management:write` | Full User Management coverage for aggregation, user/role discovery, grants, and controlled user/role actions |
@@ -303,6 +305,21 @@ Provides tools for external asset exposure management:
 - `falcon://exposure-management/safety-guide`: Safety and operational guidance for write operations
 
 **Use Cases**: External attack-surface inventory, triage workflow automation, asset criticality governance
+
+### Event Streams Module
+
+**API Scopes Required**: `event-streams:read`
+
+Provides tools for Event Streams discovery and session maintenance:
+
+- `falcon_list_event_streams`: Discover stream partitions, session tokens, and refresh URLs for a consumer `app_id`
+- `falcon_refresh_event_stream_session`: Refresh an already-active event stream partition session
+
+**Resources**:
+
+- `falcon://event-streams/usage-guide`: Guidance for `app_id` rules, stream formats, and refresh behavior
+
+**Use Cases**: Discovering Firehose connection details for downstream consumers, validating stream configuration, and refreshing active stream consumers outside MCP
 
 ### Hosts Module
 

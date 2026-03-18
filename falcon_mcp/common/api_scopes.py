@@ -236,6 +236,9 @@ API_SCOPE_REQUIREMENTS = {
     "post_external_assets_inventory_v1": ["Exposure Management:write"],
     "patch_external_assets": ["Exposure Management:write"],
     "delete_external_assets": ["Exposure Management:write"],
+    # Event Streams operations
+    "listAvailableStreamsOAuth2": ["event-streams:read"],
+    "refreshActiveStreamSession": ["event-streams:read"],
     # CAO Hunting operations
     "AggregateHuntingGuides": ["CAO Hunting:read"],
     "AggregateIntelligenceQueries": ["CAO Hunting:read"],
