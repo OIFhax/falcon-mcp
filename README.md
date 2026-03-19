@@ -20,6 +20,7 @@
 - [Available Modules, Tools \& Resources](#available-modules-tools--resources)
   - [Cloud Security Module](#cloud-security-module)
   - [CAO Hunting Module](#cao-hunting-module)
+  - [Case Management Module](#case-management-module)
   - [API Integrations Module](#api-integrations-module)
   - [Certificate Based Exclusions Module](#certificate-based-exclusions-module)
   - [Core Functionality (Built into Server)](#core-functionality-built-into-server)
@@ -120,6 +121,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | Module | Required API Scopes | Purpose |
 | - | - | - |
 | **CAO Hunting** | `CAO Hunting:read` | Search hunting guides and intelligence queries, run aggregations, and request archive exports |
+| **Case Management** | `case-templates:read`<br>`case-templates:write` | Full Case Management coverage for cases, case files, templates, SLAs, notification groups, tags, and evidence workflows |
 | **API Integrations** | `api-integrations:read`<br>`api-integrations:write` | Search plugin configurations and execute API Integration commands with guarded write controls |
 | **Certificate Based Exclusions** | `ml-exclusions:read`<br>`ml-exclusions:write` | Search and manage certificate based exclusions and retrieve file signing information |
 | **Cloud Security** | `Falcon Container Image:read` | Search Kubernetes container inventory and run full container vulnerability analytics |
@@ -232,6 +234,28 @@ Provides read-only tools for CAO hunting workflows:
 - `falcon://cao-hunting/archive-export/guide`: Archive export parameter guidance
 
 **Use Cases**: Threat-hunt content discovery, query analysis, language-specific export workflows, CAO content reporting
+
+### Case Management Module
+
+**API Scopes Required**:
+
+- `case-templates:read`
+- `case-templates:write`
+
+Provides full Falcon Case Management coverage. Every FalconPy operation is exposed using the tool pattern `falcon_case_management_<operation_id>`.
+
+- Case file operations for aggregate/query/get/update, upload, single-file download, bulk download, delete, and RTR retrieval
+- Notification group operations for aggregate/query/get/create/update/delete across v1 and v2 endpoints
+- SLA and template lifecycle operations, including template snapshots, export, and import
+- Case operations for query/get, patch/replace, case tags, and alert/event evidence
+- Upload/import tools expect `file_name` and `file_data_base64`; binary download/export tools support optional inline base64 via `include_binary_base64=true`
+
+**Resources**:
+
+- `falcon://case-management/usage-guide`: Workflow guidance for Case Management query, upload, and export patterns
+- `falcon://case-management/safety-guide`: Operational guardrails for Case Management write, delete, upload, import, and RTR retrieval tools
+
+**Use Cases**: Case record triage, case file management, template and SLA administration, notification-group lifecycle control, and controlled case evidence workflows
 
 ### API Integrations Module
 
