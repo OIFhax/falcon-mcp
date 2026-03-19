@@ -250,6 +250,12 @@ API_SCOPE_REQUIREMENTS = {
     "FetchFilesDownloadInfoV2": ["infrastructure-as-code:read"],
     "DownloadFile": ["infrastructure-as-code:read"],
     "EnumerateFile": ["infrastructure-as-code:read"],
+    # Drift Indicators operations
+    "GetDriftIndicatorsValuesByDate": ["drift-indicators:read"],
+    "ReadDriftIndicatorsCount": ["drift-indicators:read"],
+    "SearchAndReadDriftIndicatorEntities": ["drift-indicators:read"],
+    "ReadDriftIndicatorEntities": ["drift-indicators:read"],
+    "SearchDriftIndicators": ["drift-indicators:read"],
     # CAO Hunting operations
     "AggregateHuntingGuides": ["CAO Hunting:read"],
     "AggregateIntelligenceQueries": ["CAO Hunting:read"],
@@ -276,6 +282,18 @@ API_SCOPE_REQUIREMENTS = {
     "ReadVulnerabilityCountByActivelyExploited": ["Falcon Container Image:read"],
     "ReadVulnerabilitiesByImageCount": ["Falcon Container Image:read"],
     "ReadVulnerabilitiesPublicationDate": ["Falcon Container Image:read"],
+    # Content Update Policies operations
+    "queryCombinedContentUpdatePolicyMembers": ["Content Update Policies:read"],
+    "queryCombinedContentUpdatePolicies": ["Content Update Policies:read"],
+    "performContentUpdatePoliciesAction": ["Content Update Policies:write"],
+    "setContentUpdatePoliciesPrecedence": ["Content Update Policies:write"],
+    "getContentUpdatePolicies": ["Content Update Policies:read"],
+    "createContentUpdatePolicies": ["Content Update Policies:write"],
+    "updateContentUpdatePolicies": ["Content Update Policies:write"],
+    "deleteContentUpdatePolicies": ["Content Update Policies:write"],
+    "queryContentUpdatePolicyMembers": ["Content Update Policies:read"],
+    "queryPinnableContentVersions": ["Content Update Policies:read"],
+    "queryContentUpdatePolicies": ["Content Update Policies:read"],
     # Identity Protection operations
     "api_preempt_proxy_post_graphql": [
         "Identity Protection Entities:read",

@@ -169,6 +169,26 @@ class TestApiScopes(unittest.TestCase):
             ["infrastructure-as-code:read"],
         )
         self.assertEqual(
+            get_required_scopes("GetDriftIndicatorsValuesByDate"),
+            ["drift-indicators:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("ReadDriftIndicatorsCount"),
+            ["drift-indicators:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("SearchAndReadDriftIndicatorEntities"),
+            ["drift-indicators:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("ReadDriftIndicatorEntities"),
+            ["drift-indicators:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("SearchDriftIndicators"),
+            ["drift-indicators:read"],
+        )
+        self.assertEqual(
             get_required_scopes("SearchHuntingGuides"),
             ["CAO Hunting:read"],
         )
@@ -183,6 +203,14 @@ class TestApiScopes(unittest.TestCase):
         self.assertEqual(
             get_required_scopes("getCombinedAssessmentsQuery"),
             ["Zero Trust Assessment:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("queryCombinedContentUpdatePolicies"),
+            ["Content Update Policies:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("performContentUpdatePoliciesAction"),
+            ["Content Update Policies:write"],
         )
         self.assertEqual(
             get_required_scopes("GetSensorInstallersByQueryV2"),
@@ -501,10 +529,17 @@ class TestApiScopes(unittest.TestCase):
             ("FetchFilesDownloadInfoV2", ["infrastructure-as-code:read"]),
             ("DownloadFile", ["infrastructure-as-code:read"]),
             ("EnumerateFile", ["infrastructure-as-code:read"]),
+            ("GetDriftIndicatorsValuesByDate", ["drift-indicators:read"]),
+            ("ReadDriftIndicatorsCount", ["drift-indicators:read"]),
+            ("SearchAndReadDriftIndicatorEntities", ["drift-indicators:read"]),
+            ("ReadDriftIndicatorEntities", ["drift-indicators:read"]),
+            ("SearchDriftIndicators", ["drift-indicators:read"]),
             ("SearchHuntingGuides", ["CAO Hunting:read"]),
             ("GetArchiveExport", ["CAO Hunting:read"]),
             ("getAssessmentV1", ["Zero Trust Assessment:read"]),
             ("getCombinedAssessmentsQuery", ["Zero Trust Assessment:read"]),
+            ("queryCombinedContentUpdatePolicies", ["Content Update Policies:read"]),
+            ("performContentUpdatePoliciesAction", ["Content Update Policies:write"]),
             ("GetSensorInstallersByQueryV2", ["Sensor Download:read"]),
             ("QueryQuarantineFiles", ["Quarantined Files:read"]),
             ("report_executions_retry", ["Scheduled Reports:read"]),
@@ -605,6 +640,7 @@ class TestApiScopes(unittest.TestCase):
             "Real Time Response", "Real Time Response Audit", "CAO Hunting",
             "Zero Trust Assessment", "Sensor Download", "event-streams",
             "falcon-data-replicator", "infrastructure-as-code",
+            "drift-indicators",
         ]
 
         for resource in read_only_resources:
@@ -634,6 +670,7 @@ class TestApiScopes(unittest.TestCase):
             "Sensor Update Policies",
             "Device Control Policies",
             "Firewall Policies",
+            "Content Update Policies",
             "Workflow",
         ]
 
@@ -801,6 +838,26 @@ class TestApiScopes(unittest.TestCase):
                 "FetchFilesDownloadInfoV2",
                 "DownloadFile",
                 "EnumerateFile",
+            ],
+            "drift_indicators": [
+                "GetDriftIndicatorsValuesByDate",
+                "ReadDriftIndicatorsCount",
+                "SearchAndReadDriftIndicatorEntities",
+                "ReadDriftIndicatorEntities",
+                "SearchDriftIndicators",
+            ],
+            "content_update_policies": [
+                "queryCombinedContentUpdatePolicyMembers",
+                "queryCombinedContentUpdatePolicies",
+                "performContentUpdatePoliciesAction",
+                "setContentUpdatePoliciesPrecedence",
+                "getContentUpdatePolicies",
+                "createContentUpdatePolicies",
+                "updateContentUpdatePolicies",
+                "deleteContentUpdatePolicies",
+                "queryContentUpdatePolicyMembers",
+                "queryPinnableContentVersions",
+                "queryContentUpdatePolicies",
             ],
             "cao_hunting": [
                 "AggregateHuntingGuides",

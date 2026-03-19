@@ -21,10 +21,12 @@
   - [Cloud Security Module](#cloud-security-module)
   - [CAO Hunting Module](#cao-hunting-module)
   - [Core Functionality (Built into Server)](#core-functionality-built-into-server)
+  - [Content Update Policies Module](#content-update-policies-module)
   - [Custom IOA Module](#custom-ioa-module)
   - [Detections Module](#detections-module)
   - [Discover Module](#discover-module)
   - [Downloads Module](#downloads-module)
+  - [Drift Indicators Module](#drift-indicators-module)
   - [Exposure Management Module](#exposure-management-module)
   - [Event Streams Module](#event-streams-module)
   - [FDR Module](#fdr-module)
@@ -106,10 +108,12 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **CAO Hunting** | `CAO Hunting:read` | Search hunting guides and intelligence queries, run aggregations, and request archive exports |
 | **Cloud Security** | `Falcon Container Image:read` | Search Kubernetes container inventory and run full container vulnerability analytics |
 | **Core** | _No additional scopes_ | Basic connectivity and system information |
+| **Content Update Policies** | `Content Update Policies:read`<br>`Content Update Policies:write` | Search and manage content update policies, policy members, actions, precedence, and pinnable content versions |
 | **Custom IOA** | `Custom IOA Rules:read`<br>`Custom IOA Rules:write` | Create and manage Custom IOA behavioral detection rules and rule groups |
 | **Detections** | `Alerts:read`<br>`Alerts:write` | Full detections coverage for query/search/details, aggregation, and controlled detection update actions |
 | **Discover** | `Assets:read` | Full Discover coverage for applications, hosts, accounts, IoT hosts, and login entities (query/get/combined workflows) |
 | **Downloads** | `infrastructure-as-code:read` | Enumerate downloadable artifacts and request pre-signed download URLs |
+| **Drift Indicators** | `drift-indicators:read` | Count, query, and retrieve drift indicator entities across cloud workloads |
 | **Exposure Management** | `Exposure Management:read`<br>`Exposure Management:write` | Search external assets and perform controlled asset inventory/triage updates |
 | **Event Streams** | `event-streams:read` | Discover available Falcon event streams and refresh active partition sessions for an existing consumer |
 | **FDR** | `falcon-data-replicator:read` | Retrieve Falcon Data Replicator schema metadata for events and fields |
@@ -212,6 +216,41 @@ The server provides core tools for interacting with the Falcon API:
     > These modules are determined by the `--modules` [flag](#module-configuration) when starting the server. If no modules are specified, all available modules are enabled.
 - `falcon_list_modules`: Lists all available modules in the falcon-mcp server
 
+### Content Update Policies Module
+
+**API Scopes Required**:
+
+- `Content Update Policies:read`
+- `Content Update Policies:write`
+
+Provides full Content Update Policies service collection coverage:
+
+- Policy search and retrieval:
+  - `falcon_search_content_update_policies`
+  - `falcon_query_content_update_policy_ids`
+  - `falcon_get_content_update_policy_details`
+- Policy member workflows:
+  - `falcon_search_content_update_policy_members`
+  - `falcon_query_content_update_policy_member_ids`
+- Content version discovery:
+  - `falcon_query_content_update_pinnable_versions`
+- Policy lifecycle and execution controls:
+  - `falcon_create_content_update_policies`
+  - `falcon_update_content_update_policies`
+  - `falcon_delete_content_update_policies`
+  - `falcon_perform_content_update_policies_action`
+  - `falcon_set_content_update_policies_precedence`
+  - All write tools above require `confirm_execution=true`
+
+**Resources**:
+
+- `falcon://content-update-policies/policies/fql-guide`: FQL documentation for content update policy search and ID query tools
+- `falcon://content-update-policies/members/fql-guide`: FQL documentation for content update policy member search and ID query tools
+- `falcon://content-update-policies/pinnable-versions/guide`: Valid content categories and sorting guidance for pinnable version queries
+- `falcon://content-update-policies/safety-guide`: Operational guardrails for content update policy write operations
+
+**Use Cases**: Content rollout governance, pinned-content verification, policy assignment analysis, and safe override / precedence orchestration
+
 ### Custom IOA Module
 
 **API Scopes Required**:
@@ -304,6 +343,24 @@ Provides tools for download artifact discovery and URL retrieval:
 - `falcon://downloads/files/usage-guide`: Usage notes for legacy enumerate and direct download URL tools
 
 **Use Cases**: Artifact catalog discovery, automated tooling bootstrap, download URL retrieval, and version-aware package lookup
+
+### Drift Indicators Module
+
+**API Scopes Required**: `drift-indicators:read`
+
+Provides tools for Drift Indicators analytics and entity retrieval:
+
+- `falcon_get_drift_indicator_values_by_date`: Return drift indicator counts grouped by date
+- `falcon_get_drift_indicator_count`: Return the total drift indicator count for a filter
+- `falcon_query_drift_indicator_ids`: Query drift indicator IDs
+- `falcon_get_drift_indicator_details`: Retrieve drift indicator entities by ID
+- `falcon_search_drift_indicator_entities`: Search and return full drift indicator entities
+
+**Resources**:
+
+- `falcon://drift-indicators/fql-guide`: Shared FQL guidance for count, query, and combined search tools
+
+**Use Cases**: Cloud workload drift triage, indicator trend analysis, prevented-vs-observed review, and Kubernetes/container drift investigations
 
 ### Exposure Management Module
 
