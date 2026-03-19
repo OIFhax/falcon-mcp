@@ -25,6 +25,7 @@
   - [Content Update Policies Module](#content-update-policies-module)
   - [Custom IOA Module](#custom-ioa-module)
   - [Detections Module](#detections-module)
+  - [Delivery Settings Module](#delivery-settings-module)
   - [Discover Module](#discover-module)
   - [Downloads Module](#downloads-module)
   - [Drift Indicators Module](#drift-indicators-module)
@@ -115,6 +116,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Content Update Policies** | `Content Update Policies:read`<br>`Content Update Policies:write` | Search and manage content update policies, policy members, actions, precedence, and pinnable content versions |
 | **Custom IOA** | `Custom IOA Rules:read`<br>`Custom IOA Rules:write` | Create and manage Custom IOA behavioral detection rules and rule groups |
 | **Detections** | `Alerts:read`<br>`Alerts:write` | Full detections coverage for query/search/details, aggregation, and controlled detection update actions |
+| **Delivery Settings** | `delivery-settings:read`<br>`delivery-settings:write` | Inspect and update Falcon delivery settings with guarded write execution |
 | **Discover** | `Assets:read` | Full Discover coverage for applications, hosts, accounts, IoT hosts, and login entities (query/get/combined workflows) |
 | **Downloads** | `infrastructure-as-code:read` | Enumerate downloadable artifacts and request pre-signed download URLs |
 | **Drift Indicators** | `drift-indicators:read` | Count, query, and retrieve drift indicator entities across cloud workloads |
@@ -336,6 +338,25 @@ Provides full Alerts/detections operation coverage:
 - `falcon://detections/update-actions/guide`: Update action parameter and safety guidance
 
 **Use Cases**: Threat hunting, security analysis, incident response, detection triage automation, assignment/status lifecycle workflows
+
+### Delivery Settings Module
+
+**API Scopes Required**:
+
+- `delivery-settings:read`
+- `delivery-settings:write`
+
+Provides tools for Falcon Delivery Settings operations:
+
+- `falcon_get_delivery_settings`: Retrieve the current delivery settings configuration
+- `falcon_create_delivery_settings`: Create or update delivery settings (requires `confirm_execution=true`)
+
+**Resources**:
+
+- `falcon://delivery-settings/usage-guide`: Payload guidance for retrieving and updating delivery settings
+- `falcon://delivery-settings/safety-guide`: Operational guardrails for delivery settings writes
+
+**Use Cases**: Delivery configuration review, controlled settings updates, and tenant configuration automation
 
 ### Discover Module
 

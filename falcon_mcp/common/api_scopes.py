@@ -269,6 +269,9 @@ API_SCOPE_REQUIREMENTS = {
     "FetchFilesDownloadInfoV2": ["infrastructure-as-code:read"],
     "DownloadFile": ["infrastructure-as-code:read"],
     "EnumerateFile": ["infrastructure-as-code:read"],
+    # Delivery Settings operations
+    "GetDeliverySettings": ["delivery-settings:read"],
+    "PostDeliverySettings": ["delivery-settings:write"],
     # Drift Indicators operations
     "GetDriftIndicatorsValuesByDate": ["drift-indicators:read"],
     "ReadDriftIndicatorsCount": ["drift-indicators:read"],
