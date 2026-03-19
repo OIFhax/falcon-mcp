@@ -290,6 +290,11 @@ API_SCOPE_REQUIREMENTS = {
     "GetCombinedPluginConfigs": ["api-integrations:read"],
     "ExecuteCommandProxy": ["api-integrations:write"],
     "ExecuteCommand": ["api-integrations:write"],
+    # Quick Scan operations
+    "GetScansAggregates": ["quick-scan:read"],
+    "GetScans": ["quick-scan:read"],
+    "ScanSamples": ["quick-scan:write"],
+    "QuerySubmissionsMixin0": ["quick-scan:read"],
     # Drift Indicators operations
     "GetDriftIndicatorsValuesByDate": ["drift-indicators:read"],
     "ReadDriftIndicatorsCount": ["drift-indicators:read"],

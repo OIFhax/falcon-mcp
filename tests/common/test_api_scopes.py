@@ -264,6 +264,22 @@ class TestApiScopes(unittest.TestCase):
             ["api-integrations:write"],
         )
         self.assertEqual(
+            get_required_scopes("GetScansAggregates"),
+            ["quick-scan:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("GetScans"),
+            ["quick-scan:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("ScanSamples"),
+            ["quick-scan:write"],
+        )
+        self.assertEqual(
+            get_required_scopes("QuerySubmissionsMixin0"),
+            ["quick-scan:read"],
+        )
+        self.assertEqual(
             get_required_scopes("GetDriftIndicatorsValuesByDate"),
             ["drift-indicators:read"],
         )
@@ -656,6 +672,10 @@ class TestApiScopes(unittest.TestCase):
             ("GetCombinedPluginConfigs", ["api-integrations:read"]),
             ("ExecuteCommandProxy", ["api-integrations:write"]),
             ("ExecuteCommand", ["api-integrations:write"]),
+            ("GetScansAggregates", ["quick-scan:read"]),
+            ("GetScans", ["quick-scan:read"]),
+            ("ScanSamples", ["quick-scan:write"]),
+            ("QuerySubmissionsMixin0", ["quick-scan:read"]),
             ("GetDriftIndicatorsValuesByDate", ["drift-indicators:read"]),
             ("ReadDriftIndicatorsCount", ["drift-indicators:read"]),
             ("SearchAndReadDriftIndicatorEntities", ["drift-indicators:read"]),
@@ -993,6 +1013,12 @@ class TestApiScopes(unittest.TestCase):
                 "GetCombinedPluginConfigs",
                 "ExecuteCommandProxy",
                 "ExecuteCommand",
+            ],
+            "quick_scan": [
+                "GetScansAggregates",
+                "GetScans",
+                "ScanSamples",
+                "QuerySubmissionsMixin0",
             ],
             "drift_indicators": [
                 "GetDriftIndicatorsValuesByDate",

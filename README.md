@@ -56,6 +56,7 @@
   - [Sensor Visibility Exclusions Module](#sensor-visibility-exclusions-module)
   - [Firewall Management Module](#firewall-management-module)
   - [Quarantine Module](#quarantine-module)
+  - [Quick Scan Module](#quick-scan-module)
   - [Real Time Response Module](#real-time-response-module)
   - [Scheduled Reports Module](#scheduled-reports-module)
   - [Sensor Download Module](#sensor-download-module)
@@ -151,6 +152,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Sensor Visibility Exclusions** | `sensor-visibility-exclusions:read`<br>`sensor-visibility-exclusions:write` | Search and manage sensor visibility exclusions with guarded write operations |
 | **Firewall Management** | `Firewall Management:read`<br>`Firewall Management:write` | Full firewall management coverage for rules, rule groups, policy containers, events, fields, platforms, and network locations |
 | **Quarantine** | `Quarantined Files:read`<br>`Quarantined Files:write` | Search and aggregate quarantined files, estimate update impact, and apply quarantine actions |
+| **Quick Scan** | `quick-scan:read`<br>`quick-scan:write` | Search and aggregate scan submissions, retrieve scan details, and submit hashes for quick scanning |
 | **Real Time Response** | `Real Time Response:read`<br>`Real Time Response Admin:write`<br>`Real Time Response Audit:read` | Unified RTR module covering session workflows, admin command/script operations, and audit session search |
 | **Scheduled Reports** | `Scheduled Reports:read` | Get details about scheduled reports and searches, run reports on demand, and download report files |
 | **Sensor Download** | `Sensor Download:read` | Query installer catalogs, retrieve metadata and CCID values, and download installer binaries |
@@ -1138,6 +1140,28 @@ Provides full Quarantine service collection coverage:
 - `falcon://quarantine/files/safety-guide`: Operational guardrails for quarantine update operations
 
 **Use Cases**: Quarantine triage, release/delete workflow automation, impact estimation before actions, quarantine state analytics
+
+### Quick Scan Module
+
+**API Scopes Required**:
+
+- `quick-scan:read`
+- `quick-scan:write`
+
+Provides Quick Scan tools for query, detail, aggregation, and submission workflows:
+
+- `falcon_search_quick_scans`: Query submission IDs and return full scan details
+- `falcon_query_quick_scan_ids`: Query Quick Scan submission IDs only
+- `falcon_get_quick_scans`: Retrieve Quick Scan records by ID
+- `falcon_aggregate_quick_scans`: Run aggregate queries across scan history
+- `falcon_scan_quick_samples`: Submit sample hashes for Quick Scan (requires `confirm_execution=true`)
+
+**Resources**:
+
+- `falcon://quick-scan/fql-guide`: FQL guidance for Quick Scan history queries
+- `falcon://quick-scan/safety-guide`: Operational guardrails for sample submission workflows
+
+**Use Cases**: Scan history review, scan-status lookup, aggregate reporting, and guarded sample submission workflows
 
 ### Real Time Response Module
 
