@@ -20,6 +20,7 @@
 - [Available Modules, Tools \& Resources](#available-modules-tools--resources)
   - [Cloud Security Module](#cloud-security-module)
   - [CAO Hunting Module](#cao-hunting-module)
+  - [API Integrations Module](#api-integrations-module)
   - [Certificate Based Exclusions Module](#certificate-based-exclusions-module)
   - [Core Functionality (Built into Server)](#core-functionality-built-into-server)
   - [Content Update Policies Module](#content-update-policies-module)
@@ -113,6 +114,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | Module | Required API Scopes | Purpose |
 | - | - | - |
 | **CAO Hunting** | `CAO Hunting:read` | Search hunting guides and intelligence queries, run aggregations, and request archive exports |
+| **API Integrations** | `api-integrations:read`<br>`api-integrations:write` | Search plugin configurations and execute API Integration commands with guarded write controls |
 | **Certificate Based Exclusions** | `ml-exclusions:read`<br>`ml-exclusions:write` | Search and manage certificate based exclusions and retrieve file signing information |
 | **Cloud Security** | `Falcon Container Image:read` | Search Kubernetes container inventory and run full container vulnerability analytics |
 | **Core** | _No additional scopes_ | Basic connectivity and system information |
@@ -218,6 +220,26 @@ Provides read-only tools for CAO hunting workflows:
 - `falcon://cao-hunting/archive-export/guide`: Archive export parameter guidance
 
 **Use Cases**: Threat-hunt content discovery, query analysis, language-specific export workflows, CAO content reporting
+
+### API Integrations Module
+
+**API Scopes Required**:
+
+- `api-integrations:read`
+- `api-integrations:write`
+
+Provides Falcon API Integrations tools:
+
+- `falcon_search_api_integration_plugin_configs`: Search plugin configuration records
+- `falcon_execute_api_integration_command`: Execute a plugin command (requires `confirm_execution=true`)
+- `falcon_execute_api_integration_command_proxy`: Execute a proxy-style plugin command (requires `confirm_execution=true`)
+
+**Resources**:
+
+- `falcon://api-integrations/plugin-configs/fql-guide`: FQL guidance for plugin configuration searches
+- `falcon://api-integrations/safety-guide`: Operational guardrails for plugin execution tools
+
+**Use Cases**: Plugin configuration discovery, controlled downstream command execution, and external integration orchestration
 
 ### Certificate Based Exclusions Module
 

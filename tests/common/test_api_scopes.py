@@ -252,6 +252,18 @@ class TestApiScopes(unittest.TestCase):
             ["indicator-graph:read"],
         )
         self.assertEqual(
+            get_required_scopes("GetCombinedPluginConfigs"),
+            ["api-integrations:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("ExecuteCommandProxy"),
+            ["api-integrations:write"],
+        )
+        self.assertEqual(
+            get_required_scopes("ExecuteCommand"),
+            ["api-integrations:write"],
+        )
+        self.assertEqual(
             get_required_scopes("GetDriftIndicatorsValuesByDate"),
             ["drift-indicators:read"],
         )
@@ -641,6 +653,9 @@ class TestApiScopes(unittest.TestCase):
             ("DownloadFeedArchive", ["indicator-graph:read"]),
             ("ListFeedTypes", ["indicator-graph:read"]),
             ("QueryFeedArchives", ["indicator-graph:read"]),
+            ("GetCombinedPluginConfigs", ["api-integrations:read"]),
+            ("ExecuteCommandProxy", ["api-integrations:write"]),
+            ("ExecuteCommand", ["api-integrations:write"]),
             ("GetDriftIndicatorsValuesByDate", ["drift-indicators:read"]),
             ("ReadDriftIndicatorsCount", ["drift-indicators:read"]),
             ("SearchAndReadDriftIndicatorEntities", ["drift-indicators:read"]),
@@ -973,6 +988,11 @@ class TestApiScopes(unittest.TestCase):
                 "DownloadFeedArchive",
                 "ListFeedTypes",
                 "QueryFeedArchives",
+            ],
+            "api_integrations": [
+                "GetCombinedPluginConfigs",
+                "ExecuteCommandProxy",
+                "ExecuteCommand",
             ],
             "drift_indicators": [
                 "GetDriftIndicatorsValuesByDate",

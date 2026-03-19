@@ -286,6 +286,10 @@ API_SCOPE_REQUIREMENTS = {
     "DownloadFeedArchive": ["indicator-graph:read"],
     "ListFeedTypes": ["indicator-graph:read"],
     "QueryFeedArchives": ["indicator-graph:read"],
+    # API Integrations operations
+    "GetCombinedPluginConfigs": ["api-integrations:read"],
+    "ExecuteCommandProxy": ["api-integrations:write"],
+    "ExecuteCommand": ["api-integrations:write"],
     # Drift Indicators operations
     "GetDriftIndicatorsValuesByDate": ["drift-indicators:read"],
     "ReadDriftIndicatorsCount": ["drift-indicators:read"],
