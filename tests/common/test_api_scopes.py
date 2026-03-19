@@ -240,6 +240,18 @@ class TestApiScopes(unittest.TestCase):
             ["deployment-coordinator:read"],
         )
         self.assertEqual(
+            get_required_scopes("DownloadFeedArchive"),
+            ["indicator-graph:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("ListFeedTypes"),
+            ["indicator-graph:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("QueryFeedArchives"),
+            ["indicator-graph:read"],
+        )
+        self.assertEqual(
             get_required_scopes("GetDriftIndicatorsValuesByDate"),
             ["drift-indicators:read"],
         )
@@ -626,6 +638,9 @@ class TestApiScopes(unittest.TestCase):
             ("GetEntityIDsByQueryPOST", ["deployment-coordinator:read"]),
             ("GetEntityIDsByQueryPOSTV2", ["deployments:read"]),
             ("QueryReleaseNotesV1", ["deployment-coordinator:read"]),
+            ("DownloadFeedArchive", ["indicator-graph:read"]),
+            ("ListFeedTypes", ["indicator-graph:read"]),
+            ("QueryFeedArchives", ["indicator-graph:read"]),
             ("GetDriftIndicatorsValuesByDate", ["drift-indicators:read"]),
             ("ReadDriftIndicatorsCount", ["drift-indicators:read"]),
             ("SearchAndReadDriftIndicatorEntities", ["drift-indicators:read"]),
@@ -953,6 +968,11 @@ class TestApiScopes(unittest.TestCase):
                 "GetEntityIDsByQueryPOST",
                 "GetEntityIDsByQueryPOSTV2",
                 "QueryReleaseNotesV1",
+            ],
+            "intelligence_feeds": [
+                "DownloadFeedArchive",
+                "ListFeedTypes",
+                "QueryFeedArchives",
             ],
             "drift_indicators": [
                 "GetDriftIndicatorsValuesByDate",

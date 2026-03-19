@@ -282,6 +282,10 @@ API_SCOPE_REQUIREMENTS = {
     "GetEntityIDsByQueryPOST": ["deployment-coordinator:read"],
     "GetEntityIDsByQueryPOSTV2": ["deployments:read"],
     "QueryReleaseNotesV1": ["deployment-coordinator:read"],
+    # Intelligence Feeds operations
+    "DownloadFeedArchive": ["indicator-graph:read"],
+    "ListFeedTypes": ["indicator-graph:read"],
+    "QueryFeedArchives": ["indicator-graph:read"],
     # Drift Indicators operations
     "GetDriftIndicatorsValuesByDate": ["drift-indicators:read"],
     "ReadDriftIndicatorsCount": ["drift-indicators:read"],

@@ -48,6 +48,7 @@
   - [IT Automation Module](#it-automation-module)
   - [NGSIEM Module](#ngsiem-module)
   - [Intel Module](#intel-module)
+  - [Intelligence Feeds Module](#intelligence-feeds-module)
   - [ML Exclusions Module](#ml-exclusions-module)
   - [IOC Module](#ioc-module)
   - [IOA Exclusions Module](#ioa-exclusions-module)
@@ -141,6 +142,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **IT Automation** | `IT Automation:read`<br>`IT Automation:write` | Full IT Automation coverage for search/query/get, policy/task lifecycle management, and high-impact execution controls |
 | **NGSIEM** | `NGSIEM:read`<br>`NGSIEM:write` | Full NGSIEM coverage for search jobs, dashboards, lookup files, parsers, and saved queries |
 | **Intel** | `Actors (Falcon Intelligence):read`<br>`Indicators (Falcon Intelligence):read`<br>`Reports (Falcon Intelligence):read` | Research threat actors, IOCs, and intelligence reports |
+| **Intelligence Feeds** | `indicator-graph:read` | List accessible feeds, query archive items, and request archive downloads |
 | **ML Exclusions** | `ml-exclusions:read`<br>`ml-exclusions:write` | Search and manage machine learning exclusions with guarded write operations |
 | **IOC** | `IOC Management:read`<br>`IOC Management:write` | Search, create, and remove custom IOCs using IOC Service Collection endpoints |
 | **IOA Exclusions** | `IOA Exclusions:read`<br>`IOA Exclusions:write` | Search, create, update, and delete IOA exclusions |
@@ -946,6 +948,24 @@ Provides full FalconPy Intel service collection coverage:
 - `falcon://intel/reports/fql-guide`: Comprehensive FQL documentation and examples for intelligence report searches
 
 **Use Cases**: Threat intelligence research, adversary tracking, IOC analysis, threat landscape assessment, MITRE ATT&CK framework analysis
+
+### Intelligence Feeds Module
+
+**API Scopes Required**:
+
+- `indicator-graph:read`
+
+Provides read-only intelligence feed tools:
+
+- `falcon_list_intelligence_feeds`: List feed types accessible to the current tenant
+- `falcon_query_intelligence_feed_archives`: Query accessible feed archive items
+- `falcon_download_intelligence_feed_archive`: Request an archive download by feed item ID
+
+**Resources**:
+
+- `falcon://intelligence-feeds/usage-guide`: Usage guidance for feed discovery and archive download workflows
+
+**Use Cases**: Feed discovery, archive inventory, indicator-feed retrieval workflows, and downstream archive processing
 
 ### ML Exclusions Module
 
