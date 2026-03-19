@@ -50,6 +50,7 @@
   - [NGSIEM Module](#ngsiem-module)
   - [Intel Module](#intel-module)
   - [Intelligence Feeds Module](#intelligence-feeds-module)
+  - [MalQuery Module](#malquery-module)
   - [ML Exclusions Module](#ml-exclusions-module)
   - [IOC Module](#ioc-module)
   - [IOA Exclusions Module](#ioa-exclusions-module)
@@ -147,6 +148,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **NGSIEM** | `NGSIEM:read`<br>`NGSIEM:write` | Full NGSIEM coverage for search jobs, dashboards, lookup files, parsers, and saved queries |
 | **Intel** | `Actors (Falcon Intelligence):read`<br>`Indicators (Falcon Intelligence):read`<br>`Reports (Falcon Intelligence):read` | Research threat actors, IOCs, and intelligence reports |
 | **Intelligence Feeds** | `indicator-graph:read` | List accessible feeds, query archive items, and request archive downloads |
+| **MalQuery** | `malquery:read`<br>`malquery:write` | Run corpus searches and hunts, inspect request status and metadata, and retrieve MalQuery downloads |
 | **ML Exclusions** | `ml-exclusions:read`<br>`ml-exclusions:write` | Search and manage machine learning exclusions with guarded write operations |
 | **IOC** | `IOC Management:read`<br>`IOC Management:write` | Search, create, and remove custom IOCs using IOC Service Collection endpoints |
 | **IOA Exclusions** | `IOA Exclusions:read`<br>`IOA Exclusions:write` | Search, create, update, and delete IOA exclusions |
@@ -992,6 +994,32 @@ Provides read-only intelligence feed tools:
 - `falcon://intelligence-feeds/usage-guide`: Usage guidance for feed discovery and archive download workflows
 
 **Use Cases**: Feed discovery, archive inventory, indicator-feed retrieval workflows, and downstream archive processing
+
+### MalQuery Module
+
+**API Scopes Required**:
+
+- `malquery:read`
+- `malquery:write`
+
+Provides MalQuery tools for quotas, search, request tracking, metadata, and downloads:
+
+- `falcon_get_malquery_quotas`: Retrieve MalQuery search and download quotas
+- `falcon_fuzzy_search_malquery`: Run a fuzzy MalQuery search (requires `confirm_execution=true`)
+- `falcon_exact_search_malquery`: Run an exact MalQuery search (requires `confirm_execution=true`)
+- `falcon_hunt_malquery`: Schedule a YARA-based MalQuery hunt (requires `confirm_execution=true`)
+- `falcon_get_malquery_request`: Retrieve asynchronous request status by ID
+- `falcon_get_malquery_metadata`: Retrieve metadata for indexed SHA256 values
+- `falcon_get_malquery_samples_archive`: Retrieve the archive for a completed multi-download request
+- `falcon_schedule_malquery_samples_multidownload`: Schedule sample hashes for multi-download (requires `confirm_execution=true`)
+- `falcon_download_malquery_sample`: Download a single indexed sample by SHA256
+
+**Resources**:
+
+- `falcon://malquery/usage-guide`: Workflow guidance for search, polling, and download operations
+- `falcon://malquery/safety-guide`: Operational guardrails for MalQuery write tools
+
+**Use Cases**: Malware corpus search, YARA hunting, sample metadata lookup, request polling, and guarded malware retrieval workflows
 
 ### ML Exclusions Module
 

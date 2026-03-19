@@ -304,6 +304,42 @@ class TestApiScopes(unittest.TestCase):
             ["threatgraph:read"],
         )
         self.assertEqual(
+            get_required_scopes("GetMalQueryQuotasV1"),
+            ["malquery:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("PostMalQueryFuzzySearchV1"),
+            ["malquery:write"],
+        )
+        self.assertEqual(
+            get_required_scopes("GetMalQueryDownloadV1"),
+            ["malquery:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("GetMalQueryMetadataV1"),
+            ["malquery:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("GetMalQueryRequestV1"),
+            ["malquery:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("GetMalQueryEntitiesSamplesFetchV1"),
+            ["malquery:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("PostMalQueryEntitiesSamplesMultidownloadV1"),
+            ["malquery:write"],
+        )
+        self.assertEqual(
+            get_required_scopes("PostMalQueryExactSearchV1"),
+            ["malquery:write"],
+        )
+        self.assertEqual(
+            get_required_scopes("PostMalQueryHuntV1"),
+            ["malquery:write"],
+        )
+        self.assertEqual(
             get_required_scopes("GetDriftIndicatorsValuesByDate"),
             ["drift-indicators:read"],
         )
@@ -706,6 +742,15 @@ class TestApiScopes(unittest.TestCase):
             ("entities_vertices_get", ["threatgraph:read"]),
             ("entities_vertices_getv2", ["threatgraph:read"]),
             ("queries_edgetypes_get", ["threatgraph:read"]),
+            ("GetMalQueryQuotasV1", ["malquery:read"]),
+            ("PostMalQueryFuzzySearchV1", ["malquery:write"]),
+            ("GetMalQueryDownloadV1", ["malquery:read"]),
+            ("GetMalQueryMetadataV1", ["malquery:read"]),
+            ("GetMalQueryRequestV1", ["malquery:read"]),
+            ("GetMalQueryEntitiesSamplesFetchV1", ["malquery:read"]),
+            ("PostMalQueryEntitiesSamplesMultidownloadV1", ["malquery:write"]),
+            ("PostMalQueryExactSearchV1", ["malquery:write"]),
+            ("PostMalQueryHuntV1", ["malquery:write"]),
             ("GetDriftIndicatorsValuesByDate", ["drift-indicators:read"]),
             ("ReadDriftIndicatorsCount", ["drift-indicators:read"]),
             ("SearchAndReadDriftIndicatorEntities", ["drift-indicators:read"]),
@@ -1057,6 +1102,17 @@ class TestApiScopes(unittest.TestCase):
                 "entities_vertices_get",
                 "entities_vertices_getv2",
                 "queries_edgetypes_get",
+            ],
+            "malquery": [
+                "GetMalQueryQuotasV1",
+                "PostMalQueryFuzzySearchV1",
+                "GetMalQueryDownloadV1",
+                "GetMalQueryMetadataV1",
+                "GetMalQueryRequestV1",
+                "GetMalQueryEntitiesSamplesFetchV1",
+                "PostMalQueryEntitiesSamplesMultidownloadV1",
+                "PostMalQueryExactSearchV1",
+                "PostMalQueryHuntV1",
             ],
             "drift_indicators": [
                 "GetDriftIndicatorsValuesByDate",

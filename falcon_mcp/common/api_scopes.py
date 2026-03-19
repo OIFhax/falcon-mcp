@@ -302,6 +302,16 @@ API_SCOPE_REQUIREMENTS = {
     "entities_vertices_get": ["threatgraph:read"],
     "entities_vertices_getv2": ["threatgraph:read"],
     "queries_edgetypes_get": ["threatgraph:read"],
+    # MalQuery operations
+    "GetMalQueryQuotasV1": ["malquery:read"],
+    "PostMalQueryFuzzySearchV1": ["malquery:write"],
+    "GetMalQueryDownloadV1": ["malquery:read"],
+    "GetMalQueryMetadataV1": ["malquery:read"],
+    "GetMalQueryRequestV1": ["malquery:read"],
+    "GetMalQueryEntitiesSamplesFetchV1": ["malquery:read"],
+    "PostMalQueryEntitiesSamplesMultidownloadV1": ["malquery:write"],
+    "PostMalQueryExactSearchV1": ["malquery:write"],
+    "PostMalQueryHuntV1": ["malquery:write"],
     # Drift Indicators operations
     "GetDriftIndicatorsValuesByDate": ["drift-indicators:read"],
     "ReadDriftIndicatorsCount": ["drift-indicators:read"],
