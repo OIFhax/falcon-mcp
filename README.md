@@ -63,6 +63,7 @@
   - [Sensor Usage Module](#sensor-usage-module)
   - [Serverless Module](#serverless-module)
   - [Spotlight Module](#spotlight-module)
+  - [ThreatGraph Module](#threatgraph-module)
   - [Zero Trust Assessment Module](#zero-trust-assessment-module)
 - [Installation \& Setup](#installation--setup)
   - [Prerequisites](#prerequisites)
@@ -159,6 +160,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Sensor Usage** | `Sensor Usage:read` | Access and analyze sensor usage data |
 | **Serverless** | `Falcon Container Image:read` | Search for vulnerabilities in serverless functions across cloud service providers |
 | **Spotlight** | `Vulnerabilities:read` | Manage and analyze vulnerability data and security assessments |
+| **ThreatGraph** | `threatgraph:read` | Pivot across ThreatGraph vertices, edges, summaries, and indicator sightings |
 | **Zero Trust Assessment** | `Zero Trust Assessment:read` | Search host Zero Trust scores and retrieve tenant-wide audit metrics |
 
 ## Available Modules, Tools & Resources
@@ -1313,6 +1315,27 @@ Provides tools for accessing and managing CrowdStrike Spotlight vulnerabilities:
 - `falcon://spotlight/remediations/usage-guide`: Guidance for resolving and using remediation IDs with remediation detail tools
 
 **Use Cases**: Vulnerability inventory and triage, remediation enrichment workflows, compliance reporting, risk analysis, and patch prioritization
+
+### ThreatGraph Module
+
+**API Scopes Required**:
+
+- `threatgraph:read`
+
+Provides read-only ThreatGraph pivot tools:
+
+- `falcon_get_threatgraph_edge_types`: List all available edge types
+- `falcon_get_threatgraph_edges`: Retrieve edges for a vertex and edge type
+- `falcon_get_threatgraph_ran_on`: Find indicator sightings in the environment
+- `falcon_get_threatgraph_summary`: Retrieve summary data for vertex IDs
+- `falcon_get_threatgraph_vertices_v1`: Retrieve vertex metadata with the v1 endpoint
+- `falcon_get_threatgraph_vertices_v2`: Retrieve vertex metadata with the v2 endpoint
+
+**Resources**:
+
+- `falcon://threatgraph/usage-guide`: Workflow guidance for ThreatGraph pivots
+
+**Use Cases**: Graph pivoting, vertex enrichment, indicator sighting lookups, and relationship analysis
 
 ### Zero Trust Assessment Module
 

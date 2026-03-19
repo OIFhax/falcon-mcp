@@ -280,6 +280,30 @@ class TestApiScopes(unittest.TestCase):
             ["quick-scan:read"],
         )
         self.assertEqual(
+            get_required_scopes("combined_edges_get"),
+            ["threatgraph:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("combined_ran_on_get"),
+            ["threatgraph:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("combined_summary_get"),
+            ["threatgraph:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("entities_vertices_get"),
+            ["threatgraph:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("entities_vertices_getv2"),
+            ["threatgraph:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("queries_edgetypes_get"),
+            ["threatgraph:read"],
+        )
+        self.assertEqual(
             get_required_scopes("GetDriftIndicatorsValuesByDate"),
             ["drift-indicators:read"],
         )
@@ -676,6 +700,12 @@ class TestApiScopes(unittest.TestCase):
             ("GetScans", ["quick-scan:read"]),
             ("ScanSamples", ["quick-scan:write"]),
             ("QuerySubmissionsMixin0", ["quick-scan:read"]),
+            ("combined_edges_get", ["threatgraph:read"]),
+            ("combined_ran_on_get", ["threatgraph:read"]),
+            ("combined_summary_get", ["threatgraph:read"]),
+            ("entities_vertices_get", ["threatgraph:read"]),
+            ("entities_vertices_getv2", ["threatgraph:read"]),
+            ("queries_edgetypes_get", ["threatgraph:read"]),
             ("GetDriftIndicatorsValuesByDate", ["drift-indicators:read"]),
             ("ReadDriftIndicatorsCount", ["drift-indicators:read"]),
             ("SearchAndReadDriftIndicatorEntities", ["drift-indicators:read"]),
@@ -1019,6 +1049,14 @@ class TestApiScopes(unittest.TestCase):
                 "GetScans",
                 "ScanSamples",
                 "QuerySubmissionsMixin0",
+            ],
+            "threatgraph": [
+                "combined_edges_get",
+                "combined_ran_on_get",
+                "combined_summary_get",
+                "entities_vertices_get",
+                "entities_vertices_getv2",
+                "queries_edgetypes_get",
             ],
             "drift_indicators": [
                 "GetDriftIndicatorsValuesByDate",

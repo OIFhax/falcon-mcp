@@ -295,6 +295,13 @@ API_SCOPE_REQUIREMENTS = {
     "GetScans": ["quick-scan:read"],
     "ScanSamples": ["quick-scan:write"],
     "QuerySubmissionsMixin0": ["quick-scan:read"],
+    # ThreatGraph operations
+    "combined_edges_get": ["threatgraph:read"],
+    "combined_ran_on_get": ["threatgraph:read"],
+    "combined_summary_get": ["threatgraph:read"],
+    "entities_vertices_get": ["threatgraph:read"],
+    "entities_vertices_getv2": ["threatgraph:read"],
+    "queries_edgetypes_get": ["threatgraph:read"],
     # Drift Indicators operations
     "GetDriftIndicatorsValuesByDate": ["drift-indicators:read"],
     "ReadDriftIndicatorsCount": ["drift-indicators:read"],
