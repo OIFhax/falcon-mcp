@@ -275,6 +275,13 @@ API_SCOPE_REQUIREMENTS = {
     # Device Content operations
     "entities_states_v1": ["device-content:read"],
     "queries_states_v1": ["device-content:read"],
+    # Deployments operations
+    "CombinedReleaseNotesV1": ["deployment-coordinator:read"],
+    "CombinedReleasesV1Mixin0": ["deployment-coordinator:read"],
+    "GetDeploymentsExternalV1": ["deployment-coordinator:read"],
+    "GetEntityIDsByQueryPOST": ["deployment-coordinator:read"],
+    "GetEntityIDsByQueryPOSTV2": ["deployments:read"],
+    "QueryReleaseNotesV1": ["deployment-coordinator:read"],
     # Drift Indicators operations
     "GetDriftIndicatorsValuesByDate": ["drift-indicators:read"],
     "ReadDriftIndicatorsCount": ["drift-indicators:read"],

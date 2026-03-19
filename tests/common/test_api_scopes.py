@@ -216,6 +216,30 @@ class TestApiScopes(unittest.TestCase):
             ["device-content:read"],
         )
         self.assertEqual(
+            get_required_scopes("CombinedReleaseNotesV1"),
+            ["deployment-coordinator:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("CombinedReleasesV1Mixin0"),
+            ["deployment-coordinator:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("GetDeploymentsExternalV1"),
+            ["deployment-coordinator:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("GetEntityIDsByQueryPOST"),
+            ["deployment-coordinator:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("GetEntityIDsByQueryPOSTV2"),
+            ["deployments:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("QueryReleaseNotesV1"),
+            ["deployment-coordinator:read"],
+        )
+        self.assertEqual(
             get_required_scopes("GetDriftIndicatorsValuesByDate"),
             ["drift-indicators:read"],
         )
@@ -596,6 +620,12 @@ class TestApiScopes(unittest.TestCase):
             ("PostDeliverySettings", ["delivery-settings:write"]),
             ("entities_states_v1", ["device-content:read"]),
             ("queries_states_v1", ["device-content:read"]),
+            ("CombinedReleaseNotesV1", ["deployment-coordinator:read"]),
+            ("CombinedReleasesV1Mixin0", ["deployment-coordinator:read"]),
+            ("GetDeploymentsExternalV1", ["deployment-coordinator:read"]),
+            ("GetEntityIDsByQueryPOST", ["deployment-coordinator:read"]),
+            ("GetEntityIDsByQueryPOSTV2", ["deployments:read"]),
+            ("QueryReleaseNotesV1", ["deployment-coordinator:read"]),
             ("GetDriftIndicatorsValuesByDate", ["drift-indicators:read"]),
             ("ReadDriftIndicatorsCount", ["drift-indicators:read"]),
             ("SearchAndReadDriftIndicatorEntities", ["drift-indicators:read"]),
@@ -915,6 +945,14 @@ class TestApiScopes(unittest.TestCase):
             "device_content": [
                 "entities_states_v1",
                 "queries_states_v1",
+            ],
+            "deployments": [
+                "CombinedReleaseNotesV1",
+                "CombinedReleasesV1Mixin0",
+                "GetDeploymentsExternalV1",
+                "GetEntityIDsByQueryPOST",
+                "GetEntityIDsByQueryPOSTV2",
+                "QueryReleaseNotesV1",
             ],
             "drift_indicators": [
                 "GetDriftIndicatorsValuesByDate",

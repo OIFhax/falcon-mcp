@@ -26,6 +26,7 @@
   - [Custom IOA Module](#custom-ioa-module)
   - [Detections Module](#detections-module)
   - [Delivery Settings Module](#delivery-settings-module)
+  - [Deployments Module](#deployments-module)
   - [Device Content Module](#device-content-module)
   - [Discover Module](#discover-module)
   - [Downloads Module](#downloads-module)
@@ -118,6 +119,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Custom IOA** | `Custom IOA Rules:read`<br>`Custom IOA Rules:write` | Create and manage Custom IOA behavioral detection rules and rule groups |
 | **Detections** | `Alerts:read`<br>`Alerts:write` | Full detections coverage for query/search/details, aggregation, and controlled detection update actions |
 | **Delivery Settings** | `delivery-settings:read`<br>`delivery-settings:write` | Inspect and update Falcon delivery settings with guarded write execution |
+| **Deployments** | `deployment-coordinator:read`<br>`deployments:read` | Search releases and release notes and retrieve deployment details by ID |
 | **Device Content** | `device-content:read` | Search and retrieve device content state records |
 | **Discover** | `Assets:read` | Full Discover coverage for applications, hosts, accounts, IoT hosts, and login entities (query/get/combined workflows) |
 | **Downloads** | `infrastructure-as-code:read` | Enumerate downloadable artifacts and request pre-signed download URLs |
@@ -359,6 +361,28 @@ Provides tools for Falcon Delivery Settings operations:
 - `falcon://delivery-settings/safety-guide`: Operational guardrails for delivery settings writes
 
 **Use Cases**: Delivery configuration review, controlled settings updates, and tenant configuration automation
+
+### Deployments Module
+
+**API Scopes Required**:
+
+- `deployment-coordinator:read`
+- `deployments:read`
+
+Provides read-only release and release-note tools:
+
+- `falcon_search_deployment_releases`: Search release records and return combined details
+- `falcon_get_deployment_details`: Retrieve deployment records by release ID
+- `falcon_search_release_notes`: Search release notes and return combined details
+- `falcon_query_release_note_ids`: Query release note IDs only
+- `falcon_get_release_notes_v1`: Retrieve release notes by ID with the legacy detail endpoint
+- `falcon_get_release_notes_v2`: Retrieve release notes by ID with the v2 detail endpoint
+
+**Resources**:
+
+- `falcon://deployments/fql-guide`: FQL guidance for release and release-note filters
+
+**Use Cases**: Release visibility, deployment detail review, release-note lookup workflows, and release metadata automation
 
 ### Device Content Module
 
