@@ -26,6 +26,7 @@
   - [Custom IOA Module](#custom-ioa-module)
   - [Detections Module](#detections-module)
   - [Delivery Settings Module](#delivery-settings-module)
+  - [Device Content Module](#device-content-module)
   - [Discover Module](#discover-module)
   - [Downloads Module](#downloads-module)
   - [Drift Indicators Module](#drift-indicators-module)
@@ -117,6 +118,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Custom IOA** | `Custom IOA Rules:read`<br>`Custom IOA Rules:write` | Create and manage Custom IOA behavioral detection rules and rule groups |
 | **Detections** | `Alerts:read`<br>`Alerts:write` | Full detections coverage for query/search/details, aggregation, and controlled detection update actions |
 | **Delivery Settings** | `delivery-settings:read`<br>`delivery-settings:write` | Inspect and update Falcon delivery settings with guarded write execution |
+| **Device Content** | `device-content:read` | Search and retrieve device content state records |
 | **Discover** | `Assets:read` | Full Discover coverage for applications, hosts, accounts, IoT hosts, and login entities (query/get/combined workflows) |
 | **Downloads** | `infrastructure-as-code:read` | Enumerate downloadable artifacts and request pre-signed download URLs |
 | **Drift Indicators** | `drift-indicators:read` | Count, query, and retrieve drift indicator entities across cloud workloads |
@@ -357,6 +359,24 @@ Provides tools for Falcon Delivery Settings operations:
 - `falcon://delivery-settings/safety-guide`: Operational guardrails for delivery settings writes
 
 **Use Cases**: Delivery configuration review, controlled settings updates, and tenant configuration automation
+
+### Device Content Module
+
+**API Scopes Required**:
+
+- `device-content:read`
+
+Provides read-only Device Content tools:
+
+- `falcon_search_device_content_states`: Query Device Content state IDs and return full details
+- `falcon_query_device_content_state_ids`: Query Device Content state IDs only
+- `falcon_get_device_content_states`: Retrieve Device Content states by ID
+
+**Resources**:
+
+- `falcon://device-content/states/fql-guide`: FQL guidance for Device Content state queries
+
+**Use Cases**: Host content state review, content readiness analysis, and Device Content inventory lookups
 
 ### Discover Module
 

@@ -272,6 +272,9 @@ API_SCOPE_REQUIREMENTS = {
     # Delivery Settings operations
     "GetDeliverySettings": ["delivery-settings:read"],
     "PostDeliverySettings": ["delivery-settings:write"],
+    # Device Content operations
+    "entities_states_v1": ["device-content:read"],
+    "queries_states_v1": ["device-content:read"],
     # Drift Indicators operations
     "GetDriftIndicatorsValuesByDate": ["drift-indicators:read"],
     "ReadDriftIndicatorsCount": ["drift-indicators:read"],

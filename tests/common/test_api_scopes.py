@@ -208,6 +208,14 @@ class TestApiScopes(unittest.TestCase):
             ["delivery-settings:write"],
         )
         self.assertEqual(
+            get_required_scopes("entities_states_v1"),
+            ["device-content:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("queries_states_v1"),
+            ["device-content:read"],
+        )
+        self.assertEqual(
             get_required_scopes("GetDriftIndicatorsValuesByDate"),
             ["drift-indicators:read"],
         )
@@ -586,6 +594,8 @@ class TestApiScopes(unittest.TestCase):
             ("EnumerateFile", ["infrastructure-as-code:read"]),
             ("GetDeliverySettings", ["delivery-settings:read"]),
             ("PostDeliverySettings", ["delivery-settings:write"]),
+            ("entities_states_v1", ["device-content:read"]),
+            ("queries_states_v1", ["device-content:read"]),
             ("GetDriftIndicatorsValuesByDate", ["drift-indicators:read"]),
             ("ReadDriftIndicatorsCount", ["drift-indicators:read"]),
             ("SearchAndReadDriftIndicatorEntities", ["drift-indicators:read"]),
@@ -901,6 +911,10 @@ class TestApiScopes(unittest.TestCase):
             "delivery_settings": [
                 "GetDeliverySettings",
                 "PostDeliverySettings",
+            ],
+            "device_content": [
+                "entities_states_v1",
+                "queries_states_v1",
             ],
             "drift_indicators": [
                 "GetDriftIndicatorsValuesByDate",
