@@ -24,6 +24,7 @@
   - [Certificate Based Exclusions Module](#certificate-based-exclusions-module)
   - [Core Functionality (Built into Server)](#core-functionality-built-into-server)
   - [Content Update Policies Module](#content-update-policies-module)
+  - [Correlation Rules Module](#correlation-rules-module)
   - [Custom IOA Module](#custom-ioa-module)
   - [Detections Module](#detections-module)
   - [Delivery Settings Module](#delivery-settings-module)
@@ -122,6 +123,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Cloud Security** | `Falcon Container Image:read` | Search Kubernetes container inventory and run full container vulnerability analytics |
 | **Core** | _No additional scopes_ | Basic connectivity and system information |
 | **Content Update Policies** | `Content Update Policies:read`<br>`Content Update Policies:write` | Search and manage content update policies, policy members, actions, precedence, and pinnable content versions |
+| **Correlation Rules** | `correlation-rules:read`<br>`correlation-rules:write` | Search, aggregate, and manage correlation rules and version lifecycle workflows |
 | **Custom IOA** | `Custom IOA Rules:read`<br>`Custom IOA Rules:write` | Create and manage Custom IOA behavioral detection rules and rule groups |
 | **Detections** | `Alerts:read`<br>`Alerts:write` | Full detections coverage for query/search/details, aggregation, and controlled detection update actions |
 | **Delivery Settings** | `delivery-settings:read`<br>`delivery-settings:write` | Inspect and update Falcon delivery settings with guarded write execution |
@@ -317,6 +319,34 @@ Provides full Content Update Policies service collection coverage:
 - `falcon://content-update-policies/safety-guide`: Operational guardrails for content update policy write operations
 
 **Use Cases**: Content rollout governance, pinned-content verification, policy assignment analysis, and safe override / precedence orchestration
+
+### Correlation Rules Module
+
+**API Scopes Required**:
+
+- `correlation-rules:read`
+- `correlation-rules:write`
+
+Provides full Correlation Rules coverage:
+
+- Search/query:
+  - `falcon_search_correlation_rules_v1`, `falcon_search_correlation_rules_v2`
+  - `falcon_query_correlation_rule_ids`, `falcon_query_correlation_rule_version_ids`
+- Retrieval and aggregation:
+  - `falcon_get_correlation_rules`, `falcon_get_correlation_rule_versions`
+  - `falcon_get_latest_correlation_rule_versions`, `falcon_aggregate_correlation_rule_versions`
+- Rule lifecycle:
+  - `falcon_create_correlation_rule`, `falcon_update_correlation_rule`, `falcon_delete_correlation_rules`
+- Version lifecycle:
+  - `falcon_export_correlation_rule_versions`, `falcon_import_correlation_rule`
+  - `falcon_publish_correlation_rule_version`, `falcon_delete_correlation_rule_versions`
+
+**Resources**:
+
+- `falcon://correlation-rules/fql-guide`: FQL guidance for Correlation Rules searches
+- `falcon://correlation-rules/safety-guide`: Operational guardrails for Correlation Rules write workflows
+
+**Use Cases**: Rule inventory review, version management, controlled rule publishing, export/import workflows, and detection content maintenance
 
 ### Custom IOA Module
 

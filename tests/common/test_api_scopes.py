@@ -340,6 +340,66 @@ class TestApiScopes(unittest.TestCase):
             ["malquery:write"],
         )
         self.assertEqual(
+            get_required_scopes("aggregates_rule_versions_post_v1"),
+            ["correlation-rules:write"],
+        )
+        self.assertEqual(
+            get_required_scopes("combined_rules_get_v1"),
+            ["correlation-rules:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("combined_rules_get_v2"),
+            ["correlation-rules:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("entities_latest_rules_get_v1"),
+            ["correlation-rules:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("entities_rule_versions_export_post_v1"),
+            ["correlation-rules:write"],
+        )
+        self.assertEqual(
+            get_required_scopes("entities_rule_versions_import_post_v1"),
+            ["correlation-rules:write"],
+        )
+        self.assertEqual(
+            get_required_scopes("entities_rule_versions_publish_patch_v1"),
+            ["correlation-rules:write"],
+        )
+        self.assertEqual(
+            get_required_scopes("entities_rule_versions_delete_v1"),
+            ["correlation-rules:write"],
+        )
+        self.assertEqual(
+            get_required_scopes("entities_rules_get_v1"),
+            ["correlation-rules:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("entities_rules_post_v1"),
+            ["correlation-rules:write"],
+        )
+        self.assertEqual(
+            get_required_scopes("entities_rules_patch_v1"),
+            ["correlation-rules:write"],
+        )
+        self.assertEqual(
+            get_required_scopes("entities_rules_delete_v1"),
+            ["correlation-rules:write"],
+        )
+        self.assertEqual(
+            get_required_scopes("entities_rules_get_v2"),
+            ["correlation-rules:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("queries_rules_get_v1"),
+            ["correlation-rules:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("queries_rules_get_v2"),
+            ["correlation-rules:read"],
+        )
+        self.assertEqual(
             get_required_scopes("GetDriftIndicatorsValuesByDate"),
             ["drift-indicators:read"],
         )
@@ -751,6 +811,21 @@ class TestApiScopes(unittest.TestCase):
             ("PostMalQueryEntitiesSamplesMultidownloadV1", ["malquery:write"]),
             ("PostMalQueryExactSearchV1", ["malquery:write"]),
             ("PostMalQueryHuntV1", ["malquery:write"]),
+            ("aggregates_rule_versions_post_v1", ["correlation-rules:write"]),
+            ("combined_rules_get_v1", ["correlation-rules:read"]),
+            ("combined_rules_get_v2", ["correlation-rules:read"]),
+            ("entities_latest_rules_get_v1", ["correlation-rules:read"]),
+            ("entities_rule_versions_export_post_v1", ["correlation-rules:write"]),
+            ("entities_rule_versions_import_post_v1", ["correlation-rules:write"]),
+            ("entities_rule_versions_publish_patch_v1", ["correlation-rules:write"]),
+            ("entities_rule_versions_delete_v1", ["correlation-rules:write"]),
+            ("entities_rules_get_v1", ["correlation-rules:read"]),
+            ("entities_rules_post_v1", ["correlation-rules:write"]),
+            ("entities_rules_patch_v1", ["correlation-rules:write"]),
+            ("entities_rules_delete_v1", ["correlation-rules:write"]),
+            ("entities_rules_get_v2", ["correlation-rules:read"]),
+            ("queries_rules_get_v1", ["correlation-rules:read"]),
+            ("queries_rules_get_v2", ["correlation-rules:read"]),
             ("GetDriftIndicatorsValuesByDate", ["drift-indicators:read"]),
             ("ReadDriftIndicatorsCount", ["drift-indicators:read"]),
             ("SearchAndReadDriftIndicatorEntities", ["drift-indicators:read"]),
@@ -1113,6 +1188,23 @@ class TestApiScopes(unittest.TestCase):
                 "PostMalQueryEntitiesSamplesMultidownloadV1",
                 "PostMalQueryExactSearchV1",
                 "PostMalQueryHuntV1",
+            ],
+            "correlation_rules": [
+                "aggregates_rule_versions_post_v1",
+                "combined_rules_get_v1",
+                "combined_rules_get_v2",
+                "entities_latest_rules_get_v1",
+                "entities_rule_versions_export_post_v1",
+                "entities_rule_versions_import_post_v1",
+                "entities_rule_versions_publish_patch_v1",
+                "entities_rule_versions_delete_v1",
+                "entities_rules_get_v1",
+                "entities_rules_post_v1",
+                "entities_rules_patch_v1",
+                "entities_rules_delete_v1",
+                "entities_rules_get_v2",
+                "queries_rules_get_v1",
+                "queries_rules_get_v2",
             ],
             "drift_indicators": [
                 "GetDriftIndicatorsValuesByDate",
