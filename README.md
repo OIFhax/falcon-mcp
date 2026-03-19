@@ -20,6 +20,7 @@
 - [Available Modules, Tools \& Resources](#available-modules-tools--resources)
   - [Cloud Security Module](#cloud-security-module)
   - [CAO Hunting Module](#cao-hunting-module)
+  - [Certificate Based Exclusions Module](#certificate-based-exclusions-module)
   - [Core Functionality (Built into Server)](#core-functionality-built-into-server)
   - [Content Update Policies Module](#content-update-policies-module)
   - [Custom IOA Module](#custom-ioa-module)
@@ -108,6 +109,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | Module | Required API Scopes | Purpose |
 | - | - | - |
 | **CAO Hunting** | `CAO Hunting:read` | Search hunting guides and intelligence queries, run aggregations, and request archive exports |
+| **Certificate Based Exclusions** | `ml-exclusions:read`<br>`ml-exclusions:write` | Search and manage certificate based exclusions and retrieve file signing information |
 | **Cloud Security** | `Falcon Container Image:read` | Search Kubernetes container inventory and run full container vulnerability analytics |
 | **Core** | _No additional scopes_ | Basic connectivity and system information |
 | **Content Update Policies** | `Content Update Policies:read`<br>`Content Update Policies:write` | Search and manage content update policies, policy members, actions, precedence, and pinnable content versions |
@@ -208,6 +210,31 @@ Provides read-only tools for CAO hunting workflows:
 - `falcon://cao-hunting/archive-export/guide`: Archive export parameter guidance
 
 **Use Cases**: Threat-hunt content discovery, query analysis, language-specific export workflows, CAO content reporting
+
+### Certificate Based Exclusions Module
+
+**API Scopes Required**:
+
+- `ml-exclusions:read`
+- `ml-exclusions:write`
+
+Provides tools for Falcon certificate based exclusion workflows:
+
+- `falcon_search_certificate_based_exclusions`: Search certificate based exclusions and return full exclusion details
+- `falcon_query_certificate_based_exclusion_ids`: Query certificate based exclusion IDs
+- `falcon_get_certificate_based_exclusion_details`: Retrieve certificate based exclusion records by ID
+- `falcon_get_certificate_signing_info`: Retrieve certificate signing information for a file SHA256
+- `falcon_create_certificate_based_exclusions`: Create certificate based exclusions (requires `confirm_execution=true`)
+- `falcon_update_certificate_based_exclusions`: Update certificate based exclusions (requires `confirm_execution=true`)
+- `falcon_delete_certificate_based_exclusions`: Delete certificate based exclusions by ID (requires `confirm_execution=true`)
+
+**Resources**:
+
+- `falcon://certificate-based-exclusions/search/fql-guide`: FQL documentation for certificate based exclusion search tools
+- `falcon://certificate-based-exclusions/certificates/guide`: Guidance for certificate signing lookups by SHA256
+- `falcon://certificate-based-exclusions/safety-guide`: Operational guardrails for certificate based exclusion write operations
+
+**Use Cases**: Signed software allowlisting, certificate-driven suppression workflows, certificate lookup for exclusion design, and guarded cleanup of obsolete certificate exclusions
 
 ### Core Functionality (Built into Server)
 

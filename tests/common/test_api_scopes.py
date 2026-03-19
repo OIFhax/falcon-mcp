@@ -131,6 +131,12 @@ class TestApiScopes(unittest.TestCase):
             get_required_scopes("querySensorVisibilityExclusionsV1"),
             ["sensor-visibility-exclusions:read"],
         )
+        self.assertEqual(get_required_scopes("cb_exclusions_get_v1"), ["ml-exclusions:read"])
+        self.assertEqual(get_required_scopes("cb_exclusions_create_v1"), ["ml-exclusions:write"])
+        self.assertEqual(get_required_scopes("cb_exclusions_delete_v1"), ["ml-exclusions:write"])
+        self.assertEqual(get_required_scopes("cb_exclusions_update_v1"), ["ml-exclusions:write"])
+        self.assertEqual(get_required_scopes("certificates_get_v1"), ["ml-exclusions:read"])
+        self.assertEqual(get_required_scopes("cb_exclusions_query_v1"), ["ml-exclusions:read"])
         self.assertEqual(get_required_scopes("queryIOAExclusionsV1"), ["IOA Exclusions:read"])
         self.assertEqual(get_required_scopes("createIOAExclusionsV1"), ["IOA Exclusions:write"])
         self.assertEqual(get_required_scopes("query_rules"), ["Firewall Management:read"])
@@ -541,6 +547,12 @@ class TestApiScopes(unittest.TestCase):
             ("deleteSensorVisibilityExclusionsV1", ["sensor-visibility-exclusions:write"]),
             ("updateSensorVisibilityExclusionsV1", ["sensor-visibility-exclusions:write"]),
             ("querySensorVisibilityExclusionsV1", ["sensor-visibility-exclusions:read"]),
+            ("cb_exclusions_get_v1", ["ml-exclusions:read"]),
+            ("cb_exclusions_create_v1", ["ml-exclusions:write"]),
+            ("cb_exclusions_delete_v1", ["ml-exclusions:write"]),
+            ("cb_exclusions_update_v1", ["ml-exclusions:write"]),
+            ("certificates_get_v1", ["ml-exclusions:read"]),
+            ("cb_exclusions_query_v1", ["ml-exclusions:read"]),
             ("queryIOAExclusionsV1", ["IOA Exclusions:read"]),
             ("createIOAExclusionsV1", ["IOA Exclusions:write"]),
             ("query_rules", ["Firewall Management:read"]),
@@ -1073,6 +1085,14 @@ class TestApiScopes(unittest.TestCase):
                 "deleteSensorVisibilityExclusionsV1",
                 "updateSensorVisibilityExclusionsV1",
                 "querySensorVisibilityExclusionsV1",
+            ],
+            "certificate_based_exclusions": [
+                "cb_exclusions_get_v1",
+                "cb_exclusions_create_v1",
+                "cb_exclusions_delete_v1",
+                "cb_exclusions_update_v1",
+                "certificates_get_v1",
+                "cb_exclusions_query_v1",
             ],
             "firewall": [
                 "aggregate_events",
