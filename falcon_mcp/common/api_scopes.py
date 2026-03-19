@@ -122,6 +122,12 @@ API_SCOPE_REQUIREMENTS = {
     "indicator_get_v1": ["IOC Management:read"],
     "indicator_create_v1": ["IOC Management:write"],
     "indicator_delete_v1": ["IOC Management:write"],
+    # ML Exclusions operations
+    "getMLExclusionsV1": ["ml-exclusions:read"],
+    "createMLExclusionsV1": ["ml-exclusions:write"],
+    "deleteMLExclusionsV1": ["ml-exclusions:write"],
+    "updateMLExclusionsV1": ["ml-exclusions:write"],
+    "queryMLExclusionsV1": ["ml-exclusions:read"],
     # IOA Exclusions operations
     "queryIOAExclusionsV1": ["IOA Exclusions:read"],
     "getIOAExclusionsV1": ["IOA Exclusions:read"],

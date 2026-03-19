@@ -44,6 +44,7 @@
   - [IT Automation Module](#it-automation-module)
   - [NGSIEM Module](#ngsiem-module)
   - [Intel Module](#intel-module)
+  - [ML Exclusions Module](#ml-exclusions-module)
   - [IOC Module](#ioc-module)
   - [IOA Exclusions Module](#ioa-exclusions-module)
   - [Firewall Management Module](#firewall-management-module)
@@ -131,6 +132,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **IT Automation** | `IT Automation:read`<br>`IT Automation:write` | Full IT Automation coverage for search/query/get, policy/task lifecycle management, and high-impact execution controls |
 | **NGSIEM** | `NGSIEM:read`<br>`NGSIEM:write` | Full NGSIEM coverage for search jobs, dashboards, lookup files, parsers, and saved queries |
 | **Intel** | `Actors (Falcon Intelligence):read`<br>`Indicators (Falcon Intelligence):read`<br>`Reports (Falcon Intelligence):read` | Research threat actors, IOCs, and intelligence reports |
+| **ML Exclusions** | `ml-exclusions:read`<br>`ml-exclusions:write` | Search and manage machine learning exclusions with guarded write operations |
 | **IOC** | `IOC Management:read`<br>`IOC Management:write` | Search, create, and remove custom IOCs using IOC Service Collection endpoints |
 | **IOA Exclusions** | `IOA Exclusions:read`<br>`IOA Exclusions:write` | Search, create, update, and delete IOA exclusions |
 | **Firewall Management** | `Firewall Management:read`<br>`Firewall Management:write` | Full firewall management coverage for rules, rule groups, policy containers, events, fields, platforms, and network locations |
@@ -850,6 +852,29 @@ Provides full FalconPy Intel service collection coverage:
 - `falcon://intel/reports/fql-guide`: Comprehensive FQL documentation and examples for intelligence report searches
 
 **Use Cases**: Threat intelligence research, adversary tracking, IOC analysis, threat landscape assessment, MITRE ATT&CK framework analysis
+
+### ML Exclusions Module
+
+**API Scopes Required**:
+
+- `ml-exclusions:read`
+- `ml-exclusions:write`
+
+Provides tools for Falcon ML exclusion workflows:
+
+- `falcon_search_ml_exclusions`: Search ML exclusions and return full exclusion details
+- `falcon_query_ml_exclusion_ids`: Query ML exclusion IDs
+- `falcon_get_ml_exclusion_details`: Retrieve ML exclusion records by ID
+- `falcon_create_ml_exclusions`: Create ML exclusions (requires `confirm_execution=true`)
+- `falcon_update_ml_exclusions`: Update ML exclusions (requires `confirm_execution=true`)
+- `falcon_delete_ml_exclusions`: Delete ML exclusions by ID (requires `confirm_execution=true`)
+
+**Resources**:
+
+- `falcon://ml-exclusions/search/fql-guide`: FQL documentation and examples for ML exclusion search tools
+- `falcon://ml-exclusions/safety-guide`: Operational guardrails for ML exclusion write operations
+
+**Use Cases**: Suppression tuning for known-safe binaries or paths, exclusion review, fleet-wide ML exception governance, and guarded cleanup of obsolete exclusions
 
 ### IOC Module
 

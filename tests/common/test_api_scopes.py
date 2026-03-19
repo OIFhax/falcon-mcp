@@ -106,6 +106,11 @@ class TestApiScopes(unittest.TestCase):
             get_required_scopes("ITAutomationDeleteTaskGroups"),
             ["IT Automation:write"],
         )
+        self.assertEqual(get_required_scopes("getMLExclusionsV1"), ["ml-exclusions:read"])
+        self.assertEqual(get_required_scopes("createMLExclusionsV1"), ["ml-exclusions:write"])
+        self.assertEqual(get_required_scopes("deleteMLExclusionsV1"), ["ml-exclusions:write"])
+        self.assertEqual(get_required_scopes("updateMLExclusionsV1"), ["ml-exclusions:write"])
+        self.assertEqual(get_required_scopes("queryMLExclusionsV1"), ["ml-exclusions:read"])
         self.assertEqual(get_required_scopes("queryIOAExclusionsV1"), ["IOA Exclusions:read"])
         self.assertEqual(get_required_scopes("createIOAExclusionsV1"), ["IOA Exclusions:write"])
         self.assertEqual(get_required_scopes("query_rules"), ["Firewall Management:read"])
@@ -506,6 +511,11 @@ class TestApiScopes(unittest.TestCase):
             ("ITAutomationRunLiveQuery", ["IT Automation:write"]),
             ("ITAutomationCreateTask", ["IT Automation:write"]),
             ("ITAutomationDeleteTaskGroups", ["IT Automation:write"]),
+            ("getMLExclusionsV1", ["ml-exclusions:read"]),
+            ("createMLExclusionsV1", ["ml-exclusions:write"]),
+            ("deleteMLExclusionsV1", ["ml-exclusions:write"]),
+            ("updateMLExclusionsV1", ["ml-exclusions:write"]),
+            ("queryMLExclusionsV1", ["ml-exclusions:read"]),
             ("queryIOAExclusionsV1", ["IOA Exclusions:read"]),
             ("createIOAExclusionsV1", ["IOA Exclusions:write"]),
             ("query_rules", ["Firewall Management:read"]),
@@ -658,6 +668,7 @@ class TestApiScopes(unittest.TestCase):
             "Host Migration",
             "IT Automation",
             "IOC Management",
+            "ml-exclusions",
             "IOA Exclusions",
             "Firewall Management",
             "Exposure Management",
@@ -1022,6 +1033,13 @@ class TestApiScopes(unittest.TestCase):
                 "createIOAExclusionsV1",
                 "updateIOAExclusionsV1",
                 "deleteIOAExclusionsV1",
+            ],
+            "ml_exclusions": [
+                "getMLExclusionsV1",
+                "createMLExclusionsV1",
+                "deleteMLExclusionsV1",
+                "updateMLExclusionsV1",
+                "queryMLExclusionsV1",
             ],
             "firewall": [
                 "aggregate_events",
