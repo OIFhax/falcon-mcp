@@ -153,6 +153,22 @@ class TestApiScopes(unittest.TestCase):
             ["falcon-data-replicator:read"],
         )
         self.assertEqual(
+            get_required_scopes("FetchFilesDownloadInfo"),
+            ["infrastructure-as-code:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("FetchFilesDownloadInfoV2"),
+            ["infrastructure-as-code:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("DownloadFile"),
+            ["infrastructure-as-code:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("EnumerateFile"),
+            ["infrastructure-as-code:read"],
+        )
+        self.assertEqual(
             get_required_scopes("SearchHuntingGuides"),
             ["CAO Hunting:read"],
         )
@@ -481,6 +497,10 @@ class TestApiScopes(unittest.TestCase):
             ("fdrschema_queries_event_get", ["falcon-data-replicator:read"]),
             ("fdrschema_entities_field_get", ["falcon-data-replicator:read"]),
             ("fdrschema_queries_field_get", ["falcon-data-replicator:read"]),
+            ("FetchFilesDownloadInfo", ["infrastructure-as-code:read"]),
+            ("FetchFilesDownloadInfoV2", ["infrastructure-as-code:read"]),
+            ("DownloadFile", ["infrastructure-as-code:read"]),
+            ("EnumerateFile", ["infrastructure-as-code:read"]),
             ("SearchHuntingGuides", ["CAO Hunting:read"]),
             ("GetArchiveExport", ["CAO Hunting:read"]),
             ("getAssessmentV1", ["Zero Trust Assessment:read"]),
@@ -584,7 +604,7 @@ class TestApiScopes(unittest.TestCase):
             "Assets", "Sensor Usage", "Scheduled Reports",
             "Real Time Response", "Real Time Response Audit", "CAO Hunting",
             "Zero Trust Assessment", "Sensor Download", "event-streams",
-            "falcon-data-replicator",
+            "falcon-data-replicator", "infrastructure-as-code",
         ]
 
         for resource in read_only_resources:
@@ -775,6 +795,12 @@ class TestApiScopes(unittest.TestCase):
                 "fdrschema_queries_event_get",
                 "fdrschema_entities_field_get",
                 "fdrschema_queries_field_get",
+            ],
+            "downloads": [
+                "FetchFilesDownloadInfo",
+                "FetchFilesDownloadInfoV2",
+                "DownloadFile",
+                "EnumerateFile",
             ],
             "cao_hunting": [
                 "AggregateHuntingGuides",

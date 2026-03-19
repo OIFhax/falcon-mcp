@@ -245,6 +245,11 @@ API_SCOPE_REQUIREMENTS = {
     "fdrschema_queries_event_get": ["falcon-data-replicator:read"],
     "fdrschema_entities_field_get": ["falcon-data-replicator:read"],
     "fdrschema_queries_field_get": ["falcon-data-replicator:read"],
+    # Downloads operations
+    "FetchFilesDownloadInfo": ["infrastructure-as-code:read"],
+    "FetchFilesDownloadInfoV2": ["infrastructure-as-code:read"],
+    "DownloadFile": ["infrastructure-as-code:read"],
+    "EnumerateFile": ["infrastructure-as-code:read"],
     # CAO Hunting operations
     "AggregateHuntingGuides": ["CAO Hunting:read"],
     "AggregateIntelligenceQueries": ["CAO Hunting:read"],

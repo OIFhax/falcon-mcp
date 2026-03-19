@@ -24,6 +24,7 @@
   - [Custom IOA Module](#custom-ioa-module)
   - [Detections Module](#detections-module)
   - [Discover Module](#discover-module)
+  - [Downloads Module](#downloads-module)
   - [Exposure Management Module](#exposure-management-module)
   - [Event Streams Module](#event-streams-module)
   - [FDR Module](#fdr-module)
@@ -108,6 +109,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Custom IOA** | `Custom IOA Rules:read`<br>`Custom IOA Rules:write` | Create and manage Custom IOA behavioral detection rules and rule groups |
 | **Detections** | `Alerts:read`<br>`Alerts:write` | Full detections coverage for query/search/details, aggregation, and controlled detection update actions |
 | **Discover** | `Assets:read` | Full Discover coverage for applications, hosts, accounts, IoT hosts, and login entities (query/get/combined workflows) |
+| **Downloads** | `infrastructure-as-code:read` | Enumerate downloadable artifacts and request pre-signed download URLs |
 | **Exposure Management** | `Exposure Management:read`<br>`Exposure Management:write` | Search external assets and perform controlled asset inventory/triage updates |
 | **Event Streams** | `event-streams:read` | Discover available Falcon event streams and refresh active partition sessions for an existing consumer |
 | **FDR** | `falcon-data-replicator:read` | Retrieve Falcon Data Replicator schema metadata for events and fields |
@@ -284,6 +286,24 @@ Provides full Discover read coverage:
 - `falcon://discover/hosts/fql-guide`: Comprehensive FQL documentation and examples for unmanaged assets searches
 
 **Use Cases**: Application inventory management, software asset management, unmanaged and managed host visibility, account/login telemetry analysis, IoT asset discovery workflows
+
+### Downloads Module
+
+**API Scopes Required**: `infrastructure-as-code:read`
+
+Provides tools for download artifact discovery and URL retrieval:
+
+- `falcon_enumerate_download_files`: Enumerate download artifacts using discrete legacy filters
+- `falcon_fetch_download_file_info`: Fetch download file metadata and pre-signed URLs using combined v1 FQL search
+- `falcon_fetch_download_file_info_v2`: Fetch download file metadata and pre-signed URLs using combined v2 FQL search
+- `falcon_get_download_file_url`: Retrieve a direct pre-signed URL for a specific file name and version
+
+**Resources**:
+
+- `falcon://downloads/files/fql-guide`: FQL guidance for combined downloads search tools
+- `falcon://downloads/files/usage-guide`: Usage notes for legacy enumerate and direct download URL tools
+
+**Use Cases**: Artifact catalog discovery, automated tooling bootstrap, download URL retrieval, and version-aware package lookup
 
 ### Exposure Management Module
 
