@@ -435,6 +435,41 @@ class TestApiScopes(unittest.TestCase):
             get_required_scopes("QueryCasesIdsByFilter"),
             ["message-center:read"],
         )
+        self.assertEqual(get_required_scopes("getChildrenV2"), ["flight-control:read"])
+        self.assertEqual(get_required_scopes("getChildren"), ["flight-control:read"])
+        self.assertEqual(get_required_scopes("getCIDGroupMembersByV1"), ["flight-control:read"])
+        self.assertEqual(get_required_scopes("addCIDGroupMembers"), ["flight-control:write"])
+        self.assertEqual(get_required_scopes("deleteCIDGroupMembersV1"), ["flight-control:write"])
+        self.assertEqual(get_required_scopes("getCIDGroupMembersBy"), ["flight-control:read"])
+        self.assertEqual(get_required_scopes("deleteCIDGroupMembers"), ["flight-control:write"])
+        self.assertEqual(get_required_scopes("getCIDGroupMembersByV2"), ["flight-control:read"])
+        self.assertEqual(get_required_scopes("deleteCIDGroupMembersV2"), ["flight-control:write"])
+        self.assertEqual(get_required_scopes("getCIDGroupByIdV1"), ["flight-control:read"])
+        self.assertEqual(get_required_scopes("createCIDGroups"), ["flight-control:write"])
+        self.assertEqual(get_required_scopes("deleteCIDGroups"), ["flight-control:write"])
+        self.assertEqual(get_required_scopes("updateCIDGroups"), ["flight-control:write"])
+        self.assertEqual(get_required_scopes("getCIDGroupById"), ["flight-control:read"])
+        self.assertEqual(get_required_scopes("getCIDGroupByIdV2"), ["flight-control:read"])
+        self.assertEqual(get_required_scopes("getRolesByID"), ["flight-control:read"])
+        self.assertEqual(get_required_scopes("addRole"), ["flight-control:write"])
+        self.assertEqual(get_required_scopes("deletedRoles"), ["flight-control:write"])
+        self.assertEqual(get_required_scopes("getUserGroupMembersByIDV1"), ["flight-control:read"])
+        self.assertEqual(get_required_scopes("addUserGroupMembers"), ["flight-control:write"])
+        self.assertEqual(get_required_scopes("deleteUserGroupMembers"), ["flight-control:write"])
+        self.assertEqual(get_required_scopes("getUserGroupMembersByID"), ["flight-control:read"])
+        self.assertEqual(get_required_scopes("getUserGroupMembersByIDV2"), ["flight-control:read"])
+        self.assertEqual(get_required_scopes("getUserGroupsByIDV1"), ["flight-control:read"])
+        self.assertEqual(get_required_scopes("createUserGroups"), ["flight-control:write"])
+        self.assertEqual(get_required_scopes("deleteUserGroups"), ["flight-control:write"])
+        self.assertEqual(get_required_scopes("updateUserGroups"), ["flight-control:write"])
+        self.assertEqual(get_required_scopes("getUserGroupsByID"), ["flight-control:read"])
+        self.assertEqual(get_required_scopes("getUserGroupsByIDV2"), ["flight-control:read"])
+        self.assertEqual(get_required_scopes("queryChildren"), ["flight-control:read"])
+        self.assertEqual(get_required_scopes("queryCIDGroupMembers"), ["flight-control:read"])
+        self.assertEqual(get_required_scopes("queryCIDGroups"), ["flight-control:read"])
+        self.assertEqual(get_required_scopes("queryRoles"), ["flight-control:read"])
+        self.assertEqual(get_required_scopes("queryUserGroupMembers"), ["flight-control:read"])
+        self.assertEqual(get_required_scopes("queryUserGroups"), ["flight-control:read"])
         self.assertEqual(
             get_required_scopes("GetDriftIndicatorsValuesByDate"),
             ["drift-indicators:read"],
@@ -871,6 +906,41 @@ class TestApiScopes(unittest.TestCase):
             ("GetCaseEntitiesByIDs", ["message-center:read"]),
             ("QueryActivityByCaseID", ["message-center:read"]),
             ("QueryCasesIdsByFilter", ["message-center:read"]),
+            ("getChildrenV2", ["flight-control:read"]),
+            ("getChildren", ["flight-control:read"]),
+            ("getCIDGroupMembersByV1", ["flight-control:read"]),
+            ("addCIDGroupMembers", ["flight-control:write"]),
+            ("deleteCIDGroupMembersV1", ["flight-control:write"]),
+            ("getCIDGroupMembersBy", ["flight-control:read"]),
+            ("deleteCIDGroupMembers", ["flight-control:write"]),
+            ("getCIDGroupMembersByV2", ["flight-control:read"]),
+            ("deleteCIDGroupMembersV2", ["flight-control:write"]),
+            ("getCIDGroupByIdV1", ["flight-control:read"]),
+            ("createCIDGroups", ["flight-control:write"]),
+            ("deleteCIDGroups", ["flight-control:write"]),
+            ("updateCIDGroups", ["flight-control:write"]),
+            ("getCIDGroupById", ["flight-control:read"]),
+            ("getCIDGroupByIdV2", ["flight-control:read"]),
+            ("getRolesByID", ["flight-control:read"]),
+            ("addRole", ["flight-control:write"]),
+            ("deletedRoles", ["flight-control:write"]),
+            ("getUserGroupMembersByIDV1", ["flight-control:read"]),
+            ("addUserGroupMembers", ["flight-control:write"]),
+            ("deleteUserGroupMembers", ["flight-control:write"]),
+            ("getUserGroupMembersByID", ["flight-control:read"]),
+            ("getUserGroupMembersByIDV2", ["flight-control:read"]),
+            ("getUserGroupsByIDV1", ["flight-control:read"]),
+            ("createUserGroups", ["flight-control:write"]),
+            ("deleteUserGroups", ["flight-control:write"]),
+            ("updateUserGroups", ["flight-control:write"]),
+            ("getUserGroupsByID", ["flight-control:read"]),
+            ("getUserGroupsByIDV2", ["flight-control:read"]),
+            ("queryChildren", ["flight-control:read"]),
+            ("queryCIDGroupMembers", ["flight-control:read"]),
+            ("queryCIDGroups", ["flight-control:read"]),
+            ("queryRoles", ["flight-control:read"]),
+            ("queryUserGroupMembers", ["flight-control:read"]),
+            ("queryUserGroups", ["flight-control:read"]),
             ("GetDriftIndicatorsValuesByDate", ["drift-indicators:read"]),
             ("ReadDriftIndicatorsCount", ["drift-indicators:read"]),
             ("SearchAndReadDriftIndicatorEntities", ["drift-indicators:read"]),
@@ -1261,6 +1331,43 @@ class TestApiScopes(unittest.TestCase):
                 "GetCaseEntitiesByIDs",
                 "QueryActivityByCaseID",
                 "QueryCasesIdsByFilter",
+            ],
+            "mssp": [
+                "getChildrenV2",
+                "getChildren",
+                "getCIDGroupMembersByV1",
+                "addCIDGroupMembers",
+                "deleteCIDGroupMembersV1",
+                "getCIDGroupMembersBy",
+                "deleteCIDGroupMembers",
+                "getCIDGroupMembersByV2",
+                "deleteCIDGroupMembersV2",
+                "getCIDGroupByIdV1",
+                "createCIDGroups",
+                "deleteCIDGroups",
+                "updateCIDGroups",
+                "getCIDGroupById",
+                "getCIDGroupByIdV2",
+                "getRolesByID",
+                "addRole",
+                "deletedRoles",
+                "getUserGroupMembersByIDV1",
+                "addUserGroupMembers",
+                "deleteUserGroupMembers",
+                "getUserGroupMembersByID",
+                "getUserGroupMembersByIDV2",
+                "getUserGroupsByIDV1",
+                "createUserGroups",
+                "deleteUserGroups",
+                "updateUserGroups",
+                "getUserGroupsByID",
+                "getUserGroupsByIDV2",
+                "queryChildren",
+                "queryCIDGroupMembers",
+                "queryCIDGroups",
+                "queryRoles",
+                "queryUserGroupMembers",
+                "queryUserGroups",
             ],
             "drift_indicators": [
                 "GetDriftIndicatorsValuesByDate",

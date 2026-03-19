@@ -53,6 +53,7 @@
   - [Intelligence Feeds Module](#intelligence-feeds-module)
   - [MalQuery Module](#malquery-module)
   - [Message Center Module](#message-center-module)
+  - [MSSP Module](#mssp-module)
   - [ML Exclusions Module](#ml-exclusions-module)
   - [IOC Module](#ioc-module)
   - [IOA Exclusions Module](#ioa-exclusions-module)
@@ -153,6 +154,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Intelligence Feeds** | `indicator-graph:read` | List accessible feeds, query archive items, and request archive downloads |
 | **MalQuery** | `malquery:read`<br>`malquery:write` | Run corpus searches and hunts, inspect request status and metadata, and retrieve MalQuery downloads |
 | **Message Center** | `message-center:read`<br>`message-center:write` | Query and retrieve cases and activities, create cases, and manage Message Center attachments |
+| **MSSP** | `flight-control:read`<br>`flight-control:write` | Query and manage Flight Control children, CID groups, roles, user groups, and memberships |
 | **ML Exclusions** | `ml-exclusions:read`<br>`ml-exclusions:write` | Search and manage machine learning exclusions with guarded write operations |
 | **IOC** | `IOC Management:read`<br>`IOC Management:write` | Search, create, and remove custom IOCs using IOC Service Collection endpoints |
 | **IOA Exclusions** | `IOA Exclusions:read`<br>`IOA Exclusions:write` | Search, create, update, and delete IOA exclusions |
@@ -1078,6 +1080,37 @@ Provides Message Center tools for case discovery, activity workflows, attachment
 - `falcon://message-center/safety-guide`: Operational guardrails for Message Center write tools
 
 **Use Cases**: Case lookup, activity review, guarded case creation, and attachment workflows
+
+### MSSP Module
+
+**API Scopes Required**:
+
+- `flight-control:read`
+- `flight-control:write`
+
+Provides full Flight Control coverage for:
+
+- Children:
+  - `falcon_query_mssp_children`, `falcon_get_mssp_children`, `falcon_get_mssp_children_v2`
+- CID groups and members:
+  - `falcon_query_mssp_cid_groups`, `falcon_get_mssp_cid_group_by_id`, `falcon_get_mssp_cid_group_by_id_v1`, `falcon_get_mssp_cid_group_by_id_v2`
+  - `falcon_create_mssp_cid_groups`, `falcon_update_mssp_cid_groups`, `falcon_delete_mssp_cid_groups`
+  - `falcon_query_mssp_cid_group_members`, `falcon_get_mssp_cid_group_members`, `falcon_get_mssp_cid_group_members_v1`, `falcon_get_mssp_cid_group_members_v2`
+  - `falcon_add_mssp_cid_group_members`, `falcon_delete_mssp_cid_group_members`, `falcon_delete_mssp_cid_group_members_v1`, `falcon_delete_mssp_cid_group_members_v2`
+- Roles:
+  - `falcon_query_mssp_roles`, `falcon_get_mssp_roles_by_id`, `falcon_add_mssp_role`, `falcon_delete_mssp_roles`
+- User groups and members:
+  - `falcon_query_mssp_user_groups`, `falcon_get_mssp_user_groups_by_id`, `falcon_get_mssp_user_groups_by_id_v1`, `falcon_get_mssp_user_groups_by_id_v2`
+  - `falcon_create_mssp_user_groups`, `falcon_update_mssp_user_groups`, `falcon_delete_mssp_user_groups`
+  - `falcon_query_mssp_user_group_members`, `falcon_get_mssp_user_group_members_by_id`, `falcon_get_mssp_user_group_members_by_id_v1`, `falcon_get_mssp_user_group_members_by_id_v2`
+  - `falcon_add_mssp_user_group_members`, `falcon_delete_mssp_user_group_members`
+
+**Resources**:
+
+- `falcon://mssp/usage-guide`: Workflow guidance for Flight Control discovery and lifecycle management
+- `falcon://mssp/safety-guide`: Operational guardrails for Flight Control write workflows
+
+**Use Cases**: MSSP hierarchy administration, CID group maintenance, user group lifecycle, and role/member management
 
 ### ML Exclusions Module
 
