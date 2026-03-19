@@ -128,6 +128,12 @@ API_SCOPE_REQUIREMENTS = {
     "deleteMLExclusionsV1": ["ml-exclusions:write"],
     "updateMLExclusionsV1": ["ml-exclusions:write"],
     "queryMLExclusionsV1": ["ml-exclusions:read"],
+    # Sensor Visibility Exclusions operations
+    "getSensorVisibilityExclusionsV1": ["sensor-visibility-exclusions:read"],
+    "createSVExclusionsV1": ["sensor-visibility-exclusions:write"],
+    "deleteSensorVisibilityExclusionsV1": ["sensor-visibility-exclusions:write"],
+    "updateSensorVisibilityExclusionsV1": ["sensor-visibility-exclusions:write"],
+    "querySensorVisibilityExclusionsV1": ["sensor-visibility-exclusions:read"],
     # IOA Exclusions operations
     "queryIOAExclusionsV1": ["IOA Exclusions:read"],
     "getIOAExclusionsV1": ["IOA Exclusions:read"],

@@ -111,6 +111,26 @@ class TestApiScopes(unittest.TestCase):
         self.assertEqual(get_required_scopes("deleteMLExclusionsV1"), ["ml-exclusions:write"])
         self.assertEqual(get_required_scopes("updateMLExclusionsV1"), ["ml-exclusions:write"])
         self.assertEqual(get_required_scopes("queryMLExclusionsV1"), ["ml-exclusions:read"])
+        self.assertEqual(
+            get_required_scopes("getSensorVisibilityExclusionsV1"),
+            ["sensor-visibility-exclusions:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("createSVExclusionsV1"),
+            ["sensor-visibility-exclusions:write"],
+        )
+        self.assertEqual(
+            get_required_scopes("deleteSensorVisibilityExclusionsV1"),
+            ["sensor-visibility-exclusions:write"],
+        )
+        self.assertEqual(
+            get_required_scopes("updateSensorVisibilityExclusionsV1"),
+            ["sensor-visibility-exclusions:write"],
+        )
+        self.assertEqual(
+            get_required_scopes("querySensorVisibilityExclusionsV1"),
+            ["sensor-visibility-exclusions:read"],
+        )
         self.assertEqual(get_required_scopes("queryIOAExclusionsV1"), ["IOA Exclusions:read"])
         self.assertEqual(get_required_scopes("createIOAExclusionsV1"), ["IOA Exclusions:write"])
         self.assertEqual(get_required_scopes("query_rules"), ["Firewall Management:read"])
@@ -516,6 +536,11 @@ class TestApiScopes(unittest.TestCase):
             ("deleteMLExclusionsV1", ["ml-exclusions:write"]),
             ("updateMLExclusionsV1", ["ml-exclusions:write"]),
             ("queryMLExclusionsV1", ["ml-exclusions:read"]),
+            ("getSensorVisibilityExclusionsV1", ["sensor-visibility-exclusions:read"]),
+            ("createSVExclusionsV1", ["sensor-visibility-exclusions:write"]),
+            ("deleteSensorVisibilityExclusionsV1", ["sensor-visibility-exclusions:write"]),
+            ("updateSensorVisibilityExclusionsV1", ["sensor-visibility-exclusions:write"]),
+            ("querySensorVisibilityExclusionsV1", ["sensor-visibility-exclusions:read"]),
             ("queryIOAExclusionsV1", ["IOA Exclusions:read"]),
             ("createIOAExclusionsV1", ["IOA Exclusions:write"]),
             ("query_rules", ["Firewall Management:read"]),
@@ -669,6 +694,7 @@ class TestApiScopes(unittest.TestCase):
             "IT Automation",
             "IOC Management",
             "ml-exclusions",
+            "sensor-visibility-exclusions",
             "IOA Exclusions",
             "Firewall Management",
             "Exposure Management",
@@ -1040,6 +1066,13 @@ class TestApiScopes(unittest.TestCase):
                 "deleteMLExclusionsV1",
                 "updateMLExclusionsV1",
                 "queryMLExclusionsV1",
+            ],
+            "sensor_visibility_exclusions": [
+                "getSensorVisibilityExclusionsV1",
+                "createSVExclusionsV1",
+                "deleteSensorVisibilityExclusionsV1",
+                "updateSensorVisibilityExclusionsV1",
+                "querySensorVisibilityExclusionsV1",
             ],
             "firewall": [
                 "aggregate_events",

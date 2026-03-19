@@ -47,6 +47,7 @@
   - [ML Exclusions Module](#ml-exclusions-module)
   - [IOC Module](#ioc-module)
   - [IOA Exclusions Module](#ioa-exclusions-module)
+  - [Sensor Visibility Exclusions Module](#sensor-visibility-exclusions-module)
   - [Firewall Management Module](#firewall-management-module)
   - [Quarantine Module](#quarantine-module)
   - [Real Time Response Module](#real-time-response-module)
@@ -135,6 +136,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **ML Exclusions** | `ml-exclusions:read`<br>`ml-exclusions:write` | Search and manage machine learning exclusions with guarded write operations |
 | **IOC** | `IOC Management:read`<br>`IOC Management:write` | Search, create, and remove custom IOCs using IOC Service Collection endpoints |
 | **IOA Exclusions** | `IOA Exclusions:read`<br>`IOA Exclusions:write` | Search, create, update, and delete IOA exclusions |
+| **Sensor Visibility Exclusions** | `sensor-visibility-exclusions:read`<br>`sensor-visibility-exclusions:write` | Search and manage sensor visibility exclusions with guarded write operations |
 | **Firewall Management** | `Firewall Management:read`<br>`Firewall Management:write` | Full firewall management coverage for rules, rule groups, policy containers, events, fields, platforms, and network locations |
 | **Quarantine** | `Quarantined Files:read`<br>`Quarantined Files:write` | Search and aggregate quarantined files, estimate update impact, and apply quarantine actions |
 | **Real Time Response** | `Real Time Response:read`<br>`Real Time Response Admin:write`<br>`Real Time Response Audit:read` | Unified RTR module covering session workflows, admin command/script operations, and audit session search |
@@ -894,6 +896,29 @@ Provides tools for managing custom indicators of compromise (IOCs) with Falcon I
 - `falcon://ioc/search/fql-guide`: FQL documentation and examples for IOC searches
 
 **Use Cases**: IOC lifecycle management, automated IOC onboarding, IOC cleanup and hygiene workflows
+
+### Sensor Visibility Exclusions Module
+
+**API Scopes Required**:
+
+- `sensor-visibility-exclusions:read`
+- `sensor-visibility-exclusions:write`
+
+Provides tools for Falcon Sensor Visibility exclusion workflows:
+
+- `falcon_search_sensor_visibility_exclusions`: Search sensor visibility exclusions and return full exclusion details
+- `falcon_query_sensor_visibility_exclusion_ids`: Query sensor visibility exclusion IDs
+- `falcon_get_sensor_visibility_exclusion_details`: Retrieve sensor visibility exclusion records by ID
+- `falcon_create_sensor_visibility_exclusions`: Create sensor visibility exclusions (requires `confirm_execution=true`)
+- `falcon_update_sensor_visibility_exclusions`: Update sensor visibility exclusions (requires `confirm_execution=true`)
+- `falcon_delete_sensor_visibility_exclusions`: Delete sensor visibility exclusions by ID (requires `confirm_execution=true`)
+
+**Resources**:
+
+- `falcon://sensor-visibility-exclusions/search/fql-guide`: FQL documentation and examples for sensor visibility exclusion search tools
+- `falcon://sensor-visibility-exclusions/safety-guide`: Operational guardrails for sensor visibility exclusion write operations
+
+**Use Cases**: Telemetry suppression tuning for known-safe software, descendant-process visibility exception management, exclusion review, and guarded cleanup of obsolete exclusions
 
 ### IOA Exclusions Module
 
