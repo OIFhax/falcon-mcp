@@ -400,6 +400,42 @@ class TestApiScopes(unittest.TestCase):
             ["correlation-rules:read"],
         )
         self.assertEqual(
+            get_required_scopes("AggregateCases"),
+            ["message-center:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("GetCaseActivityByIds"),
+            ["message-center:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("CaseAddActivity"),
+            ["message-center:write"],
+        )
+        self.assertEqual(
+            get_required_scopes("CaseDownloadAttachment"),
+            ["message-center:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("CaseAddAttachment"),
+            ["message-center:write"],
+        )
+        self.assertEqual(
+            get_required_scopes("CreateCaseV2"),
+            ["message-center:write"],
+        )
+        self.assertEqual(
+            get_required_scopes("GetCaseEntitiesByIDs"),
+            ["message-center:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("QueryActivityByCaseID"),
+            ["message-center:read"],
+        )
+        self.assertEqual(
+            get_required_scopes("QueryCasesIdsByFilter"),
+            ["message-center:read"],
+        )
+        self.assertEqual(
             get_required_scopes("GetDriftIndicatorsValuesByDate"),
             ["drift-indicators:read"],
         )
@@ -826,6 +862,15 @@ class TestApiScopes(unittest.TestCase):
             ("entities_rules_get_v2", ["correlation-rules:read"]),
             ("queries_rules_get_v1", ["correlation-rules:read"]),
             ("queries_rules_get_v2", ["correlation-rules:read"]),
+            ("AggregateCases", ["message-center:read"]),
+            ("GetCaseActivityByIds", ["message-center:read"]),
+            ("CaseAddActivity", ["message-center:write"]),
+            ("CaseDownloadAttachment", ["message-center:read"]),
+            ("CaseAddAttachment", ["message-center:write"]),
+            ("CreateCaseV2", ["message-center:write"]),
+            ("GetCaseEntitiesByIDs", ["message-center:read"]),
+            ("QueryActivityByCaseID", ["message-center:read"]),
+            ("QueryCasesIdsByFilter", ["message-center:read"]),
             ("GetDriftIndicatorsValuesByDate", ["drift-indicators:read"]),
             ("ReadDriftIndicatorsCount", ["drift-indicators:read"]),
             ("SearchAndReadDriftIndicatorEntities", ["drift-indicators:read"]),
@@ -1205,6 +1250,17 @@ class TestApiScopes(unittest.TestCase):
                 "entities_rules_get_v2",
                 "queries_rules_get_v1",
                 "queries_rules_get_v2",
+            ],
+            "message_center": [
+                "AggregateCases",
+                "GetCaseActivityByIds",
+                "CaseAddActivity",
+                "CaseDownloadAttachment",
+                "CaseAddAttachment",
+                "CreateCaseV2",
+                "GetCaseEntitiesByIDs",
+                "QueryActivityByCaseID",
+                "QueryCasesIdsByFilter",
             ],
             "drift_indicators": [
                 "GetDriftIndicatorsValuesByDate",

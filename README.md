@@ -52,6 +52,7 @@
   - [Intel Module](#intel-module)
   - [Intelligence Feeds Module](#intelligence-feeds-module)
   - [MalQuery Module](#malquery-module)
+  - [Message Center Module](#message-center-module)
   - [ML Exclusions Module](#ml-exclusions-module)
   - [IOC Module](#ioc-module)
   - [IOA Exclusions Module](#ioa-exclusions-module)
@@ -151,6 +152,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Intel** | `Actors (Falcon Intelligence):read`<br>`Indicators (Falcon Intelligence):read`<br>`Reports (Falcon Intelligence):read` | Research threat actors, IOCs, and intelligence reports |
 | **Intelligence Feeds** | `indicator-graph:read` | List accessible feeds, query archive items, and request archive downloads |
 | **MalQuery** | `malquery:read`<br>`malquery:write` | Run corpus searches and hunts, inspect request status and metadata, and retrieve MalQuery downloads |
+| **Message Center** | `message-center:read`<br>`message-center:write` | Query and retrieve cases and activities, create cases, and manage Message Center attachments |
 | **ML Exclusions** | `ml-exclusions:read`<br>`ml-exclusions:write` | Search and manage machine learning exclusions with guarded write operations |
 | **IOC** | `IOC Management:read`<br>`IOC Management:write` | Search, create, and remove custom IOCs using IOC Service Collection endpoints |
 | **IOA Exclusions** | `IOA Exclusions:read`<br>`IOA Exclusions:write` | Search, create, update, and delete IOA exclusions |
@@ -1050,6 +1052,32 @@ Provides MalQuery tools for quotas, search, request tracking, metadata, and down
 - `falcon://malquery/safety-guide`: Operational guardrails for MalQuery write tools
 
 **Use Cases**: Malware corpus search, YARA hunting, sample metadata lookup, request polling, and guarded malware retrieval workflows
+
+### Message Center Module
+
+**API Scopes Required**:
+
+- `message-center:read`
+- `message-center:write`
+
+Provides Message Center tools for case discovery, activity workflows, attachments, and creation:
+
+- `falcon_aggregate_message_center_cases`
+- `falcon_get_message_center_case_activities`
+- `falcon_add_message_center_case_activity`
+- `falcon_download_message_center_case_attachment`
+- `falcon_add_message_center_case_attachment`
+- `falcon_create_message_center_case`
+- `falcon_get_message_center_cases`
+- `falcon_query_message_center_case_activity_ids`
+- `falcon_query_message_center_case_ids`
+
+**Resources**:
+
+- `falcon://message-center/usage-guide`: Workflow guidance for Message Center case discovery and attachments
+- `falcon://message-center/safety-guide`: Operational guardrails for Message Center write tools
+
+**Use Cases**: Case lookup, activity review, guarded case creation, and attachment workflows
 
 ### ML Exclusions Module
 

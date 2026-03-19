@@ -328,6 +328,16 @@ API_SCOPE_REQUIREMENTS = {
     "entities_rules_get_v2": ["correlation-rules:read"],
     "queries_rules_get_v1": ["correlation-rules:read"],
     "queries_rules_get_v2": ["correlation-rules:read"],
+    # Message Center operations
+    "AggregateCases": ["message-center:read"],
+    "GetCaseActivityByIds": ["message-center:read"],
+    "CaseAddActivity": ["message-center:write"],
+    "CaseDownloadAttachment": ["message-center:read"],
+    "CaseAddAttachment": ["message-center:write"],
+    "CreateCaseV2": ["message-center:write"],
+    "GetCaseEntitiesByIDs": ["message-center:read"],
+    "QueryActivityByCaseID": ["message-center:read"],
+    "QueryCasesIdsByFilter": ["message-center:read"],
     # Drift Indicators operations
     "GetDriftIndicatorsValuesByDate": ["drift-indicators:read"],
     "ReadDriftIndicatorsCount": ["drift-indicators:read"],
