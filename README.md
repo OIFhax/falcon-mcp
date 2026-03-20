@@ -1972,6 +1972,7 @@ Integration tests make real API calls to validate FalconPy operation names, HTTP
 
 - [Module Development Guide](docs/development/module_development.md): Instructions for implementing new modules
 - [Resource Development Guide](docs/development/resource_development.md): Instructions for implementing resources
+- [Agent Runtime Hardening Guide](docs/development/agent_runtime_hardening.md): AI-agent guardrails, tracing, retry, and fallback behaviors
 - [End-to-End Testing Guide](docs/development/e2e_testing.md): Guide for running and understanding E2E tests
 - [Integration Testing Guide](docs/development/integration_testing.md): Guide for running integration tests with real API calls
 
