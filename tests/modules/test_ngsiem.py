@@ -161,6 +161,21 @@ class TestNGSIEMModule(TestModules):
         self.assertIn("error", result)
         self.mock_client.command.assert_not_called()
 
+    def test_start_ngsiem_search_blocks_improvised_query(self):
+        """Test natural-language NGSIEM queries are rejected before API execution."""
+        result = self.module.start_ngsiem_search(
+            confirm_execution=True,
+            query_string="show me failed logins from the last hour",
+            start="2025-01-01T00:00:00Z",
+            repository="search-all",
+            end=None,
+            body=None,
+        )
+
+        self.assertEqual(result["error_type"], "malformed_query")
+        self.assertIn("explicit CQL", result["error"])
+        self.mock_client.command.assert_not_called()
+
     def test_start_ngsiem_search_success(self):
         """Test start search operation response shape."""
         self.mock_client.command.return_value = {
@@ -183,6 +198,20 @@ class TestNGSIEMModule(TestModules):
         self.assertEqual(first_call[1]["repository"], "search-all")
         self.assertEqual(first_call[1]["body"]["queryString"], "*")
         self.assertEqual(result["id"], "job-1")
+
+    def test_search_ngsiem_blocks_improvised_query(self):
+        """Test convenience NGSIEM search also rejects improvised queries."""
+        result = asyncio.run(
+            self.module.search_ngsiem(
+                query_string="find suspicious activity for this user",
+                start="2025-01-01T00:00:00Z",
+                repository="search-all",
+                end=None,
+            )
+        )
+
+        self.assertEqual(result["error_type"], "malformed_query")
+        self.mock_client.command.assert_not_called()
 
     def test_get_ngsiem_search_status_validation_and_success(self):
         """Test status validation and success path."""

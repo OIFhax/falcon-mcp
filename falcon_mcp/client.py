@@ -4,11 +4,17 @@ Falcon API Client for MCP Server
 This module provides the Falcon API client and authentication utilities for the Falcon MCP server.
 """
 
+import contextvars
 import os
 import platform
 import sys
+from collections import deque
+from contextlib import contextmanager
+from datetime import datetime, timezone
 from importlib.metadata import PackageNotFoundError, version
+from time import sleep
 from typing import Any
+from urllib.parse import urlparse
 
 # Import the APIHarnessV2 from FalconPy
 from falconpy import APIHarnessV2  # type: ignore[import-untyped]
@@ -16,6 +22,69 @@ from falconpy import APIHarnessV2  # type: ignore[import-untyped]
 from falcon_mcp.common.logging import get_logger
 
 logger = get_logger(__name__)
+
+DEFAULT_TOOL_IO_HISTORY_LIMIT = 200
+DEFAULT_RETRY_ATTEMPTS = 2
+DEFAULT_RETRY_BACKOFF_SECONDS = 0.5
+TRANSIENT_STATUS_CODES = frozenset({500, 502, 503, 504})
+RETRYABLE_OPERATIONS = frozenset(
+    {
+        "RTR_InitSession",
+        "BatchInitSessions",
+        "BatchRefreshSessions",
+        "RTR_PulseSession",
+    }
+)
+TRACE_ID_KEYS = frozenset(
+    {
+        "trace_id",
+        "traceid",
+        "x-cs-traceid",
+        "x-cs-trace-id",
+        "x-cs-requestid",
+        "request_id",
+    }
+)
+TARGET_DEVICE_ID_KEYS = frozenset(
+    {
+        "device_id",
+        "host_id",
+        "host_ids",
+        "optional_hosts",
+        "hosts_to_remove",
+        "aid",
+        "aids",
+    }
+)
+_TOOL_CONTEXT: contextvars.ContextVar[dict[str, Any] | None] = contextvars.ContextVar(
+    "falcon_mcp_tool_context",
+    default=None,
+)
+
+
+def _get_int_env(name: str, default: int) -> int:
+    """Read an integer environment variable with safe fallback."""
+    value = os.environ.get(name)
+    try:
+        return int(value) if value is not None else default
+    except (TypeError, ValueError):
+        logger.warning("Invalid integer value for %s=%r; using default %d", name, value, default)
+        return default
+
+
+def _get_float_env(name: str, default: float) -> float:
+    """Read a float environment variable with safe fallback."""
+    value = os.environ.get(name)
+    try:
+        return float(value) if value is not None else default
+    except (TypeError, ValueError):
+        logger.warning("Invalid float value for %s=%r; using default %.2f", name, value, default)
+        return default
+
+
+def _utc_timestamp() -> str:
+    """Return an ISO-8601 UTC timestamp."""
+    return datetime.now(timezone.utc).isoformat()
 
 
 class FalconClient:
@@ -48,6 +117,12 @@ class FalconClient:
         self.user_agent_comment = user_agent_comment or os.environ.get(
             "FALCON_MCP_USER_AGENT_COMMENT"
         )
+        self.max_retries = _get_int_env("FALCON_MCP_RETRY_ATTEMPTS", DEFAULT_RETRY_ATTEMPTS)
+        self.retry_backoff_seconds = _get_float_env(
+            "FALCON_MCP_RETRY_BACKOFF_SECONDS",
+            DEFAULT_RETRY_BACKOFF_SECONDS,
+        )
+        self.tool_io_history: deque[dict[str, Any]] = deque(maxlen=DEFAULT_TOOL_IO_HISTORY_LIMIT)
 
         if not self.client_id or not self.client_secret:
             raise ValueError(
@@ -84,7 +159,25 @@ class FalconClient:
         result: bool = self.client.token_valid
         return result
 
-    def command(self, operation: str, **kwargs: Any) -> dict[str, Any]:
+    @contextmanager
+    def tool_context(
+        self,
+        tool_name: str,
+        tool_parameters: dict[str, Any] | None = None,
+    ):
+        """Attach MCP tool context to downstream Falcon API calls."""
+        token = _TOOL_CONTEXT.set(
+            {
+                "tool_name": tool_name,
+                "tool_parameters": self._make_json_safe(tool_parameters or {}),
+            }
+        )
+        try:
+            yield
+        finally:
+            _TOOL_CONTEXT.reset(token)
+
+    def command(self, operation: str, **kwargs: Any) -> dict[str, Any] | bytes:
         """Execute a Falcon API command.
 
         Args:
@@ -92,10 +185,52 @@ class FalconClient:
             **kwargs: Additional arguments to pass to the API
 
         Returns:
-            dict[str, Any]: The API response
+            dict[str, Any] | bytes: The API response
         """
-        result: dict[str, Any] = self.client.command(operation, **kwargs)
-        return result
+        retry_attempts = self.max_retries if operation in RETRYABLE_OPERATIONS else 0
+
+        for attempt in range(retry_attempts + 1):
+            timestamp = _utc_timestamp()
+            try:
+                result = self.client.command(operation, **kwargs)
+            except Exception as exc:
+                self._record_tool_io(
+                    operation=operation,
+                    parameters=kwargs,
+                    timestamp=timestamp,
+                    raw_response=None,
+                    error_object={
+                        "type": type(exc).__name__,
+                        "message": str(exc),
+                    },
+                    attempt=attempt + 1,
+                )
+                raise
+
+            self._record_tool_io(
+                operation=operation,
+                parameters=kwargs,
+                timestamp=timestamp,
+                raw_response=result,
+                error_object=self._extract_error_object(result),
+                attempt=attempt + 1,
+            )
+
+            if attempt < retry_attempts and self._should_retry(operation, result):
+                backoff = self.retry_backoff_seconds * (2**attempt)
+                logger.warning(
+                    "Retrying Falcon operation %s after transient %s response (attempt %d/%d)",
+                    operation,
+                    result.get("status_code"),
+                    attempt + 1,
+                    retry_attempts + 1,
+                )
+                sleep(backoff)
+                continue
+
+            return result
+
+        raise RuntimeError(f"Unexpected retry flow termination for operation {operation}")
 
     def get_user_agent(self) -> str:
         """Get RFC-compliant user agent string for API requests.
@@ -140,6 +275,196 @@ class FalconClient:
         """
         headers: dict[str, str] = self.client.auth_headers
         return headers
+
+    def get_region(self) -> str:
+        """Derive the Falcon region hint from the configured base URL."""
+        hostname = urlparse(self.base_url).hostname or ""
+        host_parts = hostname.split(".")
+        if len(host_parts) >= 4 and host_parts[0] == "api":
+            return host_parts[1]
+        return "default"
+
+    def get_tool_io_history(
+        self,
+        limit: int = 20,
+        tool_name: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """Return recent Falcon tool I/O history."""
+        history = list(self.tool_io_history)
+        if tool_name:
+            history = [entry for entry in history if entry.get("tool_name") == tool_name]
+        if limit > 0:
+            history = history[-limit:]
+        return history
+
+    def generate_support_bundle(
+        self,
+        limit: int = 50,
+        tool_name: str | None = None,
+        device_ids: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """Generate a support bundle from preserved raw Falcon tool I/O."""
+        requested_device_ids = set(device_ids or [])
+        history = self.get_tool_io_history(limit=limit, tool_name=tool_name)
+
+        if requested_device_ids:
+            history = [
+                entry
+                for entry in history
+                if requested_device_ids.intersection(entry.get("target_device_ids", []))
+            ]
+
+        return {
+            "generated_at": _utc_timestamp(),
+            "base_url": self.base_url,
+            "region": self.get_region(),
+            "tool_name_filter": tool_name,
+            "device_id_filter": sorted(requested_device_ids),
+            "trace_ids": sorted(
+                {
+                    trace_id
+                    for entry in history
+                    for trace_id in entry.get("trace_ids", [])
+                }
+            ),
+            "tool_functions": [
+                {
+                    "tool_name": tool_name_value,
+                    "falcon_operation": operation_value,
+                }
+                for tool_name_value, operation_value in sorted(
+                    {
+                        (
+                            entry.get("tool_name"),
+                            entry.get("falcon_operation"),
+                        )
+                        for entry in history
+                    }
+                )
+            ],
+            "timestamps": [entry["timestamp"] for entry in history],
+            "target_device_ids": sorted(
+                {
+                    device_id
+                    for entry in history
+                    for device_id in entry.get("target_device_ids", [])
+                }
+            ),
+            "entries": history,
+        }
+
+    def _record_tool_io(
+        self,
+        operation: str,
+        parameters: dict[str, Any],
+        timestamp: str,
+        raw_response: Any,
+        error_object: dict[str, Any] | None,
+        attempt: int,
+    ) -> None:
+        """Persist tool I/O details for grounding and support workflows."""
+        tool_context = _TOOL_CONTEXT.get() or {}
+        entry = {
+            "tool_name": tool_context.get("tool_name"),
+            "tool_parameters": tool_context.get("tool_parameters", {}),
+            "falcon_operation": operation,
+            "parameters": self._make_json_safe(parameters),
+            "timestamp": timestamp,
+            "attempt": attempt,
+            "status_code": raw_response.get("status_code")
+            if isinstance(raw_response, dict)
+            else None,
+            "raw_response": self._make_json_safe(raw_response),
+            "error_object": self._make_json_safe(error_object),
+            "trace_ids": self._extract_trace_ids(raw_response),
+            "target_device_ids": self._extract_target_device_ids(
+                tool_context.get("tool_parameters", {}),
+                parameters,
+                raw_response,
+            ),
+        }
+        self.tool_io_history.append(entry)
+
+    def _should_retry(self, operation: str, response: Any) -> bool:
+        """Return True when the Falcon response is retryable."""
+        if not isinstance(response, dict):
+            return False
+        status_code = response.get("status_code")
+        return operation in RETRYABLE_OPERATIONS and status_code in TRANSIENT_STATUS_CODES
+
+    def _extract_error_object(self, response: Any) -> dict[str, Any] | None:
+        """Extract a compact error object from a Falcon response."""
+        if not isinstance(response, dict):
+            return None
+
+        status_code = response.get("status_code")
+        errors = response.get("body", {}).get("errors")
+        if status_code is None and not errors:
+            return None
+        if status_code is not None and status_code < 400 and not errors:
+            return None
+
+        return {
+            "status_code": status_code,
+            "errors": self._make_json_safe(errors or []),
+        }
+
+    def _extract_trace_ids(self, payload: Any) -> list[str]:
+        """Extract Falcon trace identifiers from nested payloads."""
+        trace_ids: set[str] = set()
+
+        def _walk(value: Any) -> None:
+            if isinstance(value, dict):
+                for key, nested_value in value.items():
+                    normalized_key = str(key).lower()
+                    if normalized_key in TRACE_ID_KEYS and nested_value:
+                        trace_ids.add(str(nested_value))
+                    _walk(nested_value)
+            elif isinstance(value, list):
+                for item in value:
+                    _walk(item)
+
+        _walk(payload)
+        return sorted(trace_ids)
+
+    def _extract_target_device_ids(self, *payloads: Any) -> list[str]:
+        """Extract target device identifiers from tool inputs and Falcon request payloads."""
+        device_ids: set[str] = set()
+
+        def _record_device_ids(value: Any) -> None:
+            if isinstance(value, list):
+                for item in value:
+                    if isinstance(item, str) and item:
+                        device_ids.add(item)
+            elif isinstance(value, str) and value:
+                device_ids.add(value)
+
+        def _walk(value: Any) -> None:
+            if isinstance(value, dict):
+                for key, nested_value in value.items():
+                    if str(key).lower() in TARGET_DEVICE_ID_KEYS:
+                        _record_device_ids(nested_value)
+                    _walk(nested_value)
+            elif isinstance(value, list):
+                for item in value:
+                    _walk(item)
+
+        for payload in payloads:
+            _walk(payload)
+
+        return sorted(device_ids)
+
+    def _make_json_safe(self, value: Any) -> Any:
+        """Convert nested values into a JSON-safe structure."""
+        if value is None or isinstance(value, (bool, int, float, str)):
+            return value
+        if isinstance(value, bytes):
+            return value.decode("utf-8", errors="replace")
+        if isinstance(value, dict):
+            return {str(key): self._make_json_safe(nested) for key, nested in value.items()}
+        if isinstance(value, (list, tuple, set)):
+            return [self._make_json_safe(item) for item in value]
+        return repr(value)
 
 
 def get_version() -> str:

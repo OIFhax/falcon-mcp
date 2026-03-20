@@ -229,6 +229,104 @@ class TestFalconClient(unittest.TestCase):
         self.assertEqual(response["status_code"], 200)
         self.assertEqual(response["body"]["resources"][0]["id"], "test")
 
+    @patch("falcon_mcp.client.os.environ.get")
+    @patch("falcon_mcp.client.APIHarnessV2")
+    def test_command_records_tool_io_history(self, mock_apiharness, mock_environ_get):
+        """Test command history preserves tool context and raw I/O."""
+        mock_environ_get.side_effect = lambda key, default=None: {
+            "FALCON_CLIENT_ID": "test-client-id",
+            "FALCON_CLIENT_SECRET": "test-client-secret",
+        }.get(key, default)
+
+        mock_instance = MagicMock()
+        mock_instance.command.return_value = {
+            "status_code": 200,
+            "headers": {"x-cs-traceid": "trace-123"},
+            "body": {"resources": [{"id": "test"}]},
+        }
+        mock_apiharness.return_value = mock_instance
+
+        client = FalconClient(base_url="https://api.us-2.crowdstrike.com")
+        with client.tool_context("falcon_test_tool", {"device_id": "aid-123"}):
+            client.command("TestOperation", parameters={"filter": "test"})
+
+        history = client.get_tool_io_history()
+        self.assertEqual(len(history), 1)
+        self.assertEqual(history[0]["tool_name"], "falcon_test_tool")
+        self.assertEqual(history[0]["tool_parameters"]["device_id"], "aid-123")
+        self.assertEqual(history[0]["falcon_operation"], "TestOperation")
+        self.assertEqual(history[0]["trace_ids"], ["trace-123"])
+        self.assertEqual(history[0]["target_device_ids"], ["aid-123"])
+        self.assertIsNone(history[0]["error_object"])
+
+    @patch("falcon_mcp.client.sleep")
+    @patch("falcon_mcp.client.os.environ.get")
+    @patch("falcon_mcp.client.APIHarnessV2")
+    def test_command_retries_retryable_transient_5xx(
+        self, mock_apiharness, mock_environ_get, mock_sleep
+    ):
+        """Test retry/backoff for transient RTR initialization failures."""
+        mock_environ_get.side_effect = lambda key, default=None: {
+            "FALCON_CLIENT_ID": "test-client-id",
+            "FALCON_CLIENT_SECRET": "test-client-secret",
+        }.get(key, default)
+
+        mock_instance = MagicMock()
+        mock_instance.command.side_effect = [
+            {
+                "status_code": 503,
+                "body": {"errors": [{"message": "Service unavailable"}]},
+            },
+            {
+                "status_code": 201,
+                "body": {"resources": [{"session_id": "session-1"}]},
+            },
+        ]
+        mock_apiharness.return_value = mock_instance
+
+        client = FalconClient()
+        response = client.command("RTR_InitSession", body={"device_id": "aid-123"})
+
+        self.assertEqual(mock_instance.command.call_count, 2)
+        mock_sleep.assert_called_once()
+        self.assertEqual(response["status_code"], 201)
+        self.assertEqual(len(client.get_tool_io_history()), 2)
+
+    @patch("falcon_mcp.client.os.environ.get")
+    @patch("falcon_mcp.client.APIHarnessV2")
+    def test_generate_support_bundle_extracts_summary(self, mock_apiharness, mock_environ_get):
+        """Test support bundle generation extracts region, traces, operations, and device IDs."""
+        mock_environ_get.side_effect = lambda key, default=None: {
+            "FALCON_CLIENT_ID": "test-client-id",
+            "FALCON_CLIENT_SECRET": "test-client-secret",
+        }.get(key, default)
+
+        mock_instance = MagicMock()
+        mock_instance.command.return_value = {
+            "status_code": 500,
+            "headers": {"x-cs-traceid": "trace-500"},
+            "body": {"errors": [{"message": "Server error"}]},
+        }
+        mock_apiharness.return_value = mock_instance
+
+        client = FalconClient(base_url="https://api.us-2.crowdstrike.com")
+        with client.tool_context("falcon_init_rtr_session", {"device_id": "aid-123"}):
+            client.command("TestOperation", body={"device_id": "aid-123"})
+
+        bundle = client.generate_support_bundle()
+
+        self.assertEqual(bundle["region"], "us-2")
+        self.assertEqual(bundle["trace_ids"], ["trace-500"])
+        self.assertEqual(bundle["target_device_ids"], ["aid-123"])
+        self.assertIn(
+            {
+                "tool_name": "falcon_init_rtr_session",
+                "falcon_operation": "TestOperation",
+            },
+            bundle["tool_functions"],
+        )
+        self.assertEqual(len(bundle["entries"]), 1)
+
     @patch("falcon_mcp.client.version")
     @patch("falcon_mcp.client.os.environ.get")
     @patch("falcon_mcp.client.APIHarnessV2")

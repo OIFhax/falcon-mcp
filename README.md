@@ -312,6 +312,12 @@ The server provides core tools for interacting with the Falcon API:
 - `falcon_list_enabled_modules`: Lists enabled modules in the falcon-mcp server
     > These modules are determined by the `--modules` [flag](#module-configuration) when starting the server. If no modules are specified, all available modules are enabled.
 - `falcon_list_modules`: Lists all available modules in the falcon-mcp server
+- `falcon_startup_check`: Recommended session-start validation tool that returns connectivity, enabled modules, available modules, base URL, region hint, and declared tools
+- `falcon_get_tool_io_history`: Returns preserved raw Falcon tool I/O for grounding and troubleshooting
+- `falcon_generate_support_bundle`: Generates a vendor-support bundle with timestamps, trace IDs, tool/function calls, and target device IDs extracted from recent Falcon tool I/O
+
+> [!IMPORTANT]
+> Agent clients should call `falcon_startup_check` at the beginning of each session, use only declared `falcon_*` tools, and ground final statements in returned tool results.
 
 ### Content Update Policies Module
 
@@ -998,7 +1004,7 @@ Provides full NGSIEM service collection coverage:
 - `falcon://ngsiem/safety-guide`: Operational guardrails for NGSIEM write/delete operations
 
 > [!IMPORTANT]
-> This tool executes pre-written CQL queries only. It does **not** assist with query construction or provide CQL syntax guidance. Users must supply complete, valid CQL queries. For CQL documentation, refer to the [CrowdStrike LogScale documentation](https://library.humio.com/).
+> This tool executes pre-written CQL queries only. It does **not** assist with query construction or provide CQL syntax guidance. Users must supply complete, valid CQL queries. Improvised natural-language NGSIEM queries are blocked at runtime and redirected to `falcon://ngsiem/search-guide`. For CQL documentation, refer to the [CrowdStrike LogScale documentation](https://library.humio.com/).
 
 **Use Cases**: Log search and analysis, event correlation, threat hunting with custom CQL queries, security monitoring
 
@@ -1363,6 +1369,11 @@ Provides unified tools for RTR core, RTR admin, and RTR audit workflows:
 - `falcon://rtr/sessions/fql-guide`: FQL documentation and examples for RTR session searches
 - `falcon://rtr/admin/fql-guide`: FQL documentation and examples for RTR admin script / put-file searches
 - `falcon://rtr/audit/sessions/fql-guide`: FQL documentation and examples for RTR audit session searches
+
+**Operational Safeguards**:
+
+- Transient Falcon 5xx responses on RTR session initialization and refresh workflows are retried with backoff
+- If RTR session initialization still fails with a Falcon 5xx, the tool attaches a low-confidence, read-only fallback query against existing RTR session data for the requested device IDs
 
 **Use Cases**: Host-level triage, remote session management, admin command and script operations, audit-driven RTR investigations, RTR workflow cleanup
 

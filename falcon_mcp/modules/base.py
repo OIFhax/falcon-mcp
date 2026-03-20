@@ -4,7 +4,10 @@ Base module for Falcon MCP Server
 This module provides the base class for all Falcon MCP server modules.
 """
 
+import inspect
 from abc import ABC, abstractmethod
+from contextlib import nullcontext
+from functools import wraps
 from typing import Any, Callable
 
 from mcp import Resource
@@ -71,7 +74,52 @@ class BaseModule(ABC):
             annotations: MCP tool annotations. Defaults to READ_ONLY_ANNOTATIONS.
         """
         prefixed_name = f"falcon_{name}"
-        server.add_tool(method, name=prefixed_name, annotations=annotations or READ_ONLY_ANNOTATIONS)
+        signature = inspect.signature(method)
+
+        def _build_tool_arguments(args: tuple[Any, ...], kwargs: dict[str, Any]) -> dict[str, Any]:
+            try:
+                bound_arguments = signature.bind_partial(*args, **kwargs)
+                bound_arguments.apply_defaults()
+                return {
+                    key: value
+                    for key, value in bound_arguments.arguments.items()
+                    if key != "self"
+                }
+            except TypeError:
+                fallback_arguments: dict[str, Any] = {"kwargs": kwargs}
+                if args:
+                    fallback_arguments["args"] = list(args)
+                return fallback_arguments
+
+        if inspect.iscoroutinefunction(method):
+
+            @wraps(method)
+            async def wrapped_method(*args: Any, **kwargs: Any) -> Any:
+                context_manager = (
+                    self.client.tool_context(prefixed_name, _build_tool_arguments(args, kwargs))
+                    if hasattr(self.client, "tool_context")
+                    else nullcontext()
+                )
+                with context_manager:
+                    return await method(*args, **kwargs)
+
+        else:
+
+            @wraps(method)
+            def wrapped_method(*args: Any, **kwargs: Any) -> Any:
+                context_manager = (
+                    self.client.tool_context(prefixed_name, _build_tool_arguments(args, kwargs))
+                    if hasattr(self.client, "tool_context")
+                    else nullcontext()
+                )
+                with context_manager:
+                    return method(*args, **kwargs)
+
+        server.add_tool(
+            wrapped_method,
+            name=prefixed_name,
+            annotations=annotations or READ_ONLY_ANNOTATIONS,
+        )
         self.tools.append(prefixed_name)
         logger.debug("Added tool: %s", prefixed_name)
 
@@ -313,6 +361,7 @@ class BaseModule(ABC):
         is_error = error_or_empty and self._is_error(error_or_empty[0])
         return {
             "results": error_or_empty,
+            "error_type": "malformed_query" if is_error else "empty_result",
             "filter_used": filter_used,
             "fql_guide": fql_documentation,
             "hint": "Filter error occurred. Review the FQL guide above to correct your query syntax."

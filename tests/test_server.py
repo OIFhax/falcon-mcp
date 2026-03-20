@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 from falcon_mcp import registry
 from falcon_mcp.modules.base import READ_ONLY_ANNOTATIONS
-from falcon_mcp.server import FalconMCPServer
+from falcon_mcp.server import FalconMCPServer, SERVER_INSTRUCTIONS
 
 
 class TestFalconMCPServer(unittest.TestCase):
@@ -49,7 +49,7 @@ class TestFalconMCPServer(unittest.TestCase):
         # Verify server initialization
         mock_fastmcp.assert_called_once_with(
             name="Falcon MCP Server",
-            instructions="This server provides access to CrowdStrike Falcon capabilities.",
+            instructions=SERVER_INSTRUCTIONS,
             debug=True,
             log_level="DEBUG",
             stateless_http=False,
@@ -228,7 +228,7 @@ class TestFalconMCPServer(unittest.TestCase):
         # Verify FastMCP was initialized with stateless_http
         mock_fastmcp.assert_called_once_with(
             name="Falcon MCP Server",
-            instructions="This server provides access to CrowdStrike Falcon capabilities.",
+            instructions=SERVER_INSTRUCTIONS,
             debug=False,
             log_level="INFO",
             stateless_http=True,
@@ -257,7 +257,7 @@ class TestFalconMCPServer(unittest.TestCase):
         # Verify FastMCP was initialized with stateless_http=False
         mock_fastmcp.assert_called_once_with(
             name="Falcon MCP Server",
-            instructions="This server provides access to CrowdStrike Falcon capabilities.",
+            instructions=SERVER_INSTRUCTIONS,
             debug=False,
             log_level="INFO",
             stateless_http=False,
@@ -339,7 +339,7 @@ class TestFalconMCPServer(unittest.TestCase):
         # Verify FastMCP receives the non-localhost host
         mock_fastmcp.assert_called_once_with(
             name="Falcon MCP Server",
-            instructions="This server provides access to CrowdStrike Falcon capabilities.",
+            instructions=SERVER_INSTRUCTIONS,
             debug=False,
             log_level="INFO",
             stateless_http=False,
@@ -377,7 +377,7 @@ class TestFalconMCPServer(unittest.TestCase):
     @patch("falcon_mcp.server.FalconClient")
     @patch("falcon_mcp.server.FastMCP")
     def test_core_tools_have_read_only_annotations(self, mock_fastmcp, mock_client):
-        """Test that all 3 core server tools are registered with read-only annotations."""
+        """Test that all core server tools are registered with read-only annotations."""
         # Setup mocks
         mock_client_instance = MagicMock()
         mock_client_instance.authenticate.return_value = True
@@ -389,11 +389,14 @@ class TestFalconMCPServer(unittest.TestCase):
         # Create server (registers tools during __init__)
         FalconMCPServer(enabled_modules=set())
 
-        # Collect core tool registrations (the first 3 add_tool calls)
+        # Collect core tool registrations
         core_tool_names = [
             "falcon_check_connectivity",
             "falcon_list_enabled_modules",
             "falcon_list_modules",
+            "falcon_startup_check",
+            "falcon_get_tool_io_history",
+            "falcon_generate_support_bundle",
         ]
         for call in mock_server_instance.add_tool.call_args_list:
             name = call.kwargs.get("name")
@@ -403,6 +406,49 @@ class TestFalconMCPServer(unittest.TestCase):
                     READ_ONLY_ANNOTATIONS,
                     f"Tool {name} should have READ_ONLY_ANNOTATIONS",
                 )
+
+    @patch("falcon_mcp.server.FalconClient")
+    def test_startup_check_returns_connectivity_modules_and_tools(self, mock_client):
+        """Test startup check includes the recommended session-start contract data."""
+        mock_client_instance = MagicMock()
+        mock_client_instance.authenticate.return_value = True
+        mock_client_instance.is_authenticated.return_value = True
+        mock_client_instance.base_url = "https://api.us-2.crowdstrike.com"
+        mock_client_instance.get_region.return_value = "us-2"
+        mock_client.return_value = mock_client_instance
+
+        server = FalconMCPServer(enabled_modules={"detections"})
+
+        result = server.falcon_startup_check()
+
+        self.assertTrue(result["connected"])
+        self.assertEqual(result["base_url"], "https://api.us-2.crowdstrike.com")
+        self.assertEqual(result["region"], "us-2")
+        self.assertIn("detections", result["enabled_modules"])
+        self.assertIn("falcon_startup_check", result["declared_tools"])
+        self.assertIn("falcon_list_modules", result["declared_tools"])
+
+    @patch("falcon_mcp.server.FalconClient")
+    def test_support_bundle_proxies_client_bundle_and_server_context(self, mock_client):
+        """Test support bundle tool augments client bundle with enabled modules and declared tools."""
+        mock_client_instance = MagicMock()
+        mock_client_instance.authenticate.return_value = True
+        mock_client_instance.generate_support_bundle.return_value = {
+            "generated_at": "2026-03-20T00:00:00+00:00",
+            "entries": [],
+        }
+        mock_client.return_value = mock_client_instance
+
+        server = FalconMCPServer(enabled_modules={"detections"})
+        result = server.falcon_generate_support_bundle(limit=10, tool_name="falcon_test")
+
+        mock_client_instance.generate_support_bundle.assert_called_once_with(
+            limit=10,
+            tool_name="falcon_test",
+            device_ids=None,
+        )
+        self.assertIn("detections", result["enabled_modules"])
+        self.assertIn("falcon_generate_support_bundle", result["declared_tools"])
 
 
     @patch("falcon_mcp.server.FalconClient")

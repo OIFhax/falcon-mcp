@@ -11,6 +11,7 @@ from falcon_mcp.common.errors import (
     AuthenticationError,
     FalconError,
     _format_error_response,
+    classify_error_response,
     handle_api_response,
     is_success_response,
 )
@@ -52,12 +53,20 @@ class TestErrorUtils(unittest.TestCase):
         """Test is_success_response function."""
         # Success response
         self.assertTrue(is_success_response({"status_code": 200}))
+        self.assertTrue(is_success_response({"status_code": 201}))
 
         # Error responses
         self.assertFalse(is_success_response({"status_code": 400}))
         self.assertFalse(is_success_response({"status_code": 403}))
         self.assertFalse(is_success_response({"status_code": 500}))
         self.assertFalse(is_success_response({}))  # Missing status_code
+
+    def test_classify_error_response(self):
+        """Test explicit error classification helper."""
+        self.assertEqual(classify_error_response(error_type="malformed_query"), "malformed_query")
+        self.assertEqual(classify_error_response({"status_code": 404}), "falcon_backend_4xx")
+        self.assertEqual(classify_error_response({"status_code": 503}), "falcon_backend_5xx")
+        self.assertEqual(classify_error_response(), "validation_error")
 
     def test_get_required_scopes(self):
         """Test get_required_scopes function."""
@@ -72,13 +81,14 @@ class TestErrorUtils(unittest.TestCase):
         """Test format_error_response function."""
         # Basic error
         response = _format_error_response("Test error")
-        self.assertEqual(response, {"error": "Test error"})
+        self.assertEqual(response, {"error": "Test error", "error_type": "validation_error"})
         mock_logger.error.assert_called_with("Error: %s", "Test error")
 
         # Error with details
         details = {"status_code": 400, "body": {"errors": [{"message": "Bad request"}]}}
         response = _format_error_response("Test error", details=details)
         self.assertEqual(response["error"], "Test error")
+        self.assertEqual(response["error_type"], "falcon_backend_4xx")
         self.assertEqual(response["details"], details)
 
         # Permission error with operation
@@ -90,6 +100,7 @@ class TestErrorUtils(unittest.TestCase):
             "Permission denied", details=details, operation="GetQueriesAlertsV2"
         )
         self.assertEqual(response["error"], "Permission denied")
+        self.assertEqual(response["error_type"], "falcon_backend_4xx")
         self.assertEqual(response["details"], details)
         self.assertEqual(response["required_scopes"], ["Alerts:read"])
         self.assertIn("resolution", response)
@@ -131,6 +142,7 @@ class TestErrorUtils(unittest.TestCase):
         )
         self.assertIn("error", result)
         self.assertIn("Test failed", result["error"])
+        self.assertEqual(result["error_type"], "falcon_backend_4xx")
         self.assertEqual(result["details"], response)
 
         # Permission error
@@ -151,6 +163,7 @@ class TestErrorUtils(unittest.TestCase):
             self.assertIn("error", result)
             self.assertIn("Permission denied", result["error"])
             self.assertIn("Required scopes: test:read", result["error"])
+            self.assertEqual(result["error_type"], "falcon_backend_4xx")
             self.assertEqual(result["details"], response)
         finally:
             # Restore original API_SCOPE_REQUIREMENTS

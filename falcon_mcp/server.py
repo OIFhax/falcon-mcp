@@ -8,11 +8,13 @@ and serves as the entry point for the application.
 import argparse
 import os
 import sys
-from typing import Literal
+from datetime import datetime, timezone
+from typing import Annotated, Literal
 
 import uvicorn
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
+from pydantic import Field
 
 from falcon_mcp import registry
 from falcon_mcp.client import FalconClient
@@ -29,6 +31,19 @@ logger = get_logger(__name__)
 
 # Type alias for transport options
 TransportType = Literal["stdio", "sse", "streamable-http"]
+SERVER_INSTRUCTIONS = """
+Use only declared `falcon_*` tools exposed by this server. Never invent wrapper names or aliases such as `MCP_Client`.
+At session start, call `falcon_startup_check` to verify connectivity, enabled modules, and declared tools.
+Before composing FQL filters, read the module-specific `falcon://.../fql-guide` resource first.
+NGSIEM searches require pre-written CQL from `falcon://ngsiem/search-guide`; improvised natural-language queries are blocked.
+Preserve raw tool I/O with `falcon_get_tool_io_history` and `falcon_generate_support_bundle` when troubleshooting.
+Do not make final claims unless they are grounded in tool results returned by this server.
+""".strip()
+
+
+def _utc_timestamp() -> str:
+    """Return an ISO-8601 UTC timestamp."""
+    return datetime.now(timezone.utc).isoformat()
 
 
 class FalconMCPServer:
@@ -93,13 +108,15 @@ class FalconMCPServer:
         # Initialize the MCP server
         self.server = FastMCP(
             name="Falcon MCP Server",
-            instructions="This server provides access to CrowdStrike Falcon capabilities.",
+            instructions=SERVER_INSTRUCTIONS,
             debug=self.debug,
             log_level="DEBUG" if self.debug else "INFO",
             stateless_http=self.stateless_http,
             host=self.host,
             port=self.port,
         )
+        self.core_tools: list[str] = []
+        self.declared_tools: list[str] = []
 
         # Initialize and register modules
         self.modules = {}
@@ -137,34 +154,32 @@ class FalconMCPServer:
         Returns:
             int: Number of tools registered
         """
-        # Register core tools directly
-        self.server.add_tool(
-            self.falcon_check_connectivity,
-            name="falcon_check_connectivity",
-            annotations=READ_ONLY_ANNOTATIONS,
-        )
+        core_tools = [
+            ("falcon_check_connectivity", self.falcon_check_connectivity),
+            ("falcon_list_enabled_modules", self.list_enabled_modules),
+            ("falcon_list_modules", self.list_modules),
+            ("falcon_startup_check", self.falcon_startup_check),
+            ("falcon_get_tool_io_history", self.falcon_get_tool_io_history),
+            ("falcon_generate_support_bundle", self.falcon_generate_support_bundle),
+        ]
 
-        self.server.add_tool(
-            self.list_enabled_modules,
-            name="falcon_list_enabled_modules",
-            annotations=READ_ONLY_ANNOTATIONS,
-        )
+        for tool_name, tool_method in core_tools:
+            self.server.add_tool(
+                tool_method,
+                name=tool_name,
+                annotations=READ_ONLY_ANNOTATIONS,
+            )
 
-        self.server.add_tool(
-            self.list_modules,
-            name="falcon_list_modules",
-            annotations=READ_ONLY_ANNOTATIONS,
-        )
-
-        tool_count = 3  # the tools added above
+        self.core_tools = [tool_name for tool_name, _ in core_tools]
+        self.declared_tools = list(self.core_tools)
 
         # Register tools from modules
         for module in self.modules.values():
             module.register_tools(self.server)
+            self.declared_tools.extend(getattr(module, "tools", []))
 
-        tool_count += sum(len(getattr(m, "tools", [])) for m in self.modules.values())
-
-        return tool_count
+        self.declared_tools = list(dict.fromkeys(self.declared_tools))
+        return len(self.declared_tools)
 
     def _register_resources(self) -> int:
         """Register resources from all modules.
@@ -195,6 +210,71 @@ class FalconMCPServer:
     def list_modules(self) -> dict[str, list[str]]:
         """Lists all available modules in the falcon-mcp server."""
         return {"modules": registry.get_module_names()}
+
+    def falcon_startup_check(self) -> dict[str, object]:
+        """Run the recommended session-start validation checks."""
+        return {
+            "timestamp": _utc_timestamp(),
+            "connected": self.falcon_client.is_authenticated(),
+            "base_url": self.falcon_client.base_url,
+            "region": self.falcon_client.get_region(),
+            "enabled_modules": sorted(self.modules.keys()),
+            "available_modules": registry.get_module_names(),
+            "declared_tools": self.declared_tools,
+        }
+
+    def falcon_get_tool_io_history(
+        self,
+        limit: Annotated[
+            int,
+            Field(
+                ge=1,
+                le=200,
+                description="Maximum number of recent Falcon tool I/O entries to return.",
+            ),
+        ] = 20,
+        tool_name: Annotated[
+            str | None,
+            Field(
+                description="Optional MCP tool name to filter on (for example `falcon_init_rtr_session`)."
+            ),
+        ] = None,
+    ) -> dict[str, object]:
+        """Return recent preserved raw Falcon tool I/O."""
+        entries = self.falcon_client.get_tool_io_history(limit=limit, tool_name=tool_name)
+        return {
+            "count": len(entries),
+            "entries": entries,
+        }
+
+    def falcon_generate_support_bundle(
+        self,
+        limit: Annotated[
+            int,
+            Field(
+                ge=1,
+                le=200,
+                description="Maximum number of recent Falcon tool I/O entries to include.",
+            ),
+        ] = 50,
+        tool_name: Annotated[
+            str | None,
+            Field(description="Optional MCP tool name to filter on."),
+        ] = None,
+        device_ids: Annotated[
+            list[str] | None,
+            Field(description="Optional device IDs to filter support data on."),
+        ] = None,
+    ) -> dict[str, object]:
+        """Generate a vendor-support bundle from preserved Falcon tool I/O."""
+        bundle = self.falcon_client.generate_support_bundle(
+            limit=limit,
+            tool_name=tool_name,
+            device_ids=device_ids,
+        )
+        bundle["enabled_modules"] = sorted(self.modules.keys())
+        bundle["declared_tools"] = self.declared_tools
+        return bundle
 
     def _run_http_transport(self, app: ASGIApp) -> None:
         """Apply middleware and start uvicorn for an HTTP transport.

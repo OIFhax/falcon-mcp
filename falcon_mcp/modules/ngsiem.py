@@ -41,6 +41,20 @@ DESTRUCTIVE_WRITE_ANNOTATIONS = ToolAnnotations(
     idempotentHint=False,
     openWorldHint=True,
 )
+NGSIEM_SEARCH_GUIDE_URI = "falcon://ngsiem/search-guide"
+NATURAL_LANGUAGE_PREFIXES = (
+    "show ",
+    "find ",
+    "search ",
+    "list ",
+    "display ",
+    "tell ",
+    "look ",
+    "get ",
+    "what ",
+    "which ",
+)
+CQL_MARKERS = ("|", "=", ":", "!=", ">=", "<=", "<", ">", "(", ")", "[", "]", "*", "#")
 
 
 def _iso_to_epoch_ms(iso_timestamp: str) -> int:
@@ -51,6 +65,66 @@ def _iso_to_epoch_ms(iso_timestamp: str) -> int:
 
 class NGSIEMModule(BaseModule):
     """Module for Falcon NGSIEM operations."""
+
+    def _is_structured_ngsiem_query(self, query_string: str) -> bool:
+        """Return True when the provided NGSIEM query looks like explicit CQL."""
+        stripped = query_string.strip()
+        if stripped == "*":
+            return True
+        if any(marker in stripped for marker in CQL_MARKERS):
+            return True
+        lowered = stripped.lower()
+        if lowered.startswith(NATURAL_LANGUAGE_PREFIXES) or stripped.endswith("?"):
+            return False
+        return False
+
+    def _validate_ngsiem_query_string(
+        self,
+        query_string: str | None,
+        operation: str,
+    ) -> dict[str, Any] | None:
+        """Block natural-language or improvised NGSIEM queries."""
+        if query_string is None:
+            return None
+
+        if not isinstance(query_string, str):
+            error = _format_error_response(
+                "NGSIEM `query_string` must be a string containing complete CQL.",
+                details={"guide": NGSIEM_SEARCH_GUIDE_URI},
+                operation=operation,
+                error_type="malformed_query",
+            )
+            error["resolution"] = (
+                "Use `falcon://ngsiem/search-guide` to build a complete, validated CQL query string."
+            )
+            return error
+
+        stripped = query_string.strip()
+        if not stripped:
+            error = _format_error_response(
+                "NGSIEM `query_string` cannot be empty.",
+                details={"guide": NGSIEM_SEARCH_GUIDE_URI},
+                operation=operation,
+                error_type="malformed_query",
+            )
+            error["resolution"] = (
+                "Read `falcon://ngsiem/search-guide` and submit a complete, validated CQL query."
+            )
+            return error
+
+        if self._is_structured_ngsiem_query(stripped):
+            return None
+
+        error = _format_error_response(
+            "NGSIEM queries must be explicit CQL. Improvised natural-language queries are blocked.",
+            details={"query_string": stripped, "guide": NGSIEM_SEARCH_GUIDE_URI},
+            operation=operation,
+            error_type="malformed_query",
+        )
+        error["resolution"] = (
+            "Use `falcon://ngsiem/search-guide` to build a complete CQL query before calling this tool."
+        )
+        return error
 
     def register_tools(self, server: FastMCP) -> None:
         """Register tools with the MCP server."""
@@ -225,6 +299,13 @@ class NGSIEMModule(BaseModule):
         ),
     ) -> list[dict[str, Any]] | dict[str, Any]:
         """Execute asynchronous NGSIEM search and return matching events."""
+        query_validation_error = self._validate_ngsiem_query_string(
+            query_string=query_string,
+            operation="StartSearchV1",
+        )
+        if query_validation_error:
+            return query_validation_error
+
         start_result = self.start_ngsiem_search(
             confirm_execution=True,
             query_string=query_string,
@@ -320,6 +401,13 @@ class NGSIEMModule(BaseModule):
             }
             if end:
                 request_body["end"] = _iso_to_epoch_ms(end)
+
+        query_validation_error = self._validate_ngsiem_query_string(
+            query_string=request_body.get("queryString") if isinstance(request_body, dict) else None,
+            operation="StartSearchV1",
+        )
+        if query_validation_error:
+            return query_validation_error
 
         return self._write_ngsiem_operation(
             confirm_execution=confirm_execution,

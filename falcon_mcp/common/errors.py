@@ -53,15 +53,36 @@ def is_success_response(response: dict[str, Any]) -> bool:
         response: The API response dictionary
 
     Returns:
-        bool: True if the response indicates success (status code 200)
+        bool: True if the response indicates success (HTTP 2xx)
     """
-    return response.get("status_code") == 200
+    status_code = response.get("status_code")
+    return status_code is not None and 200 <= status_code < 300
+
+
+def classify_error_response(
+    details: dict[str, Any] | None = None,
+    error_type: str | None = None,
+) -> str:
+    """Classify Falcon MCP errors into consistent agent-friendly categories."""
+    if error_type:
+        return error_type
+
+    if details:
+        status_code = details.get("status_code")
+        if status_code is not None:
+            if 400 <= status_code < 500:
+                return "falcon_backend_4xx"
+            if status_code >= 500:
+                return "falcon_backend_5xx"
+
+    return "validation_error"
 
 
 def _format_error_response(
     message: str,
     details: dict[str, Any] | None = None,
     operation: str | None = None,
+    error_type: str | None = None,
 ) -> dict[str, Any]:
     """Format an error as a standardized response.
 
@@ -69,11 +90,15 @@ def _format_error_response(
         message: The error message
         details: Additional error details
         operation: The API operation that failed (used for permission errors)
+        error_type: Optional explicit error classification
 
     Returns:
         Dict[str, Any]: Formatted error response
     """
-    response: dict[str, Any] = {"error": message}
+    response: dict[str, Any] = {
+        "error": message,
+        "error_type": classify_error_response(details=details, error_type=error_type),
+    }
 
     # Add details if provided
     if details:
@@ -132,7 +157,9 @@ def handle_api_response(
         logger.error("Error: %s: %s", error_message, status_message)
 
         return _format_error_response(
-            f"{error_message}: {status_message}", details=response, operation=operation
+            f"{error_message}: {status_message}",
+            details=response,
+            operation=operation,
         )
 
     # Extract resources from the response body

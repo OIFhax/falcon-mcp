@@ -130,6 +130,43 @@ class TestRTRModule(TestModules):
         )
         self.assertEqual(result[0]["batch_id"], "batch-1")
 
+    def test_init_rtr_session_adds_low_confidence_fallback_on_backend_5xx(self):
+        self.mock_client.command.side_effect = [
+            {
+                "status_code": 503,
+                "body": {"errors": [{"message": "Service unavailable"}]},
+            },
+            {
+                "status_code": 200,
+                "body": {"resources": ["session-1"]},
+            },
+            {
+                "status_code": 200,
+                "body": {"resources": [{"session_id": "session-1", "aid": "aid-1"}]},
+            },
+        ]
+
+        result = self.module.init_rtr_session(
+            device_id="aid-1",
+            origin=None,
+            queue_offline=False,
+            timeout=120,
+            timeout_duration="120s",
+            body=None,
+        )
+
+        self.assertEqual(result[0]["error_type"], "falcon_backend_5xx")
+        self.assertEqual(result[0]["confidence"], "low")
+        self.assertEqual(result[0]["fallback"]["strategy"], "search_existing_rtr_sessions")
+        self.assertEqual(result[0]["fallback"]["entries"][0]["device_id"], "aid-1")
+        self.assertEqual(
+            result[0]["fallback"]["entries"][0]["results"][0]["session_id"],
+            "session-1",
+        )
+        self.assertEqual(self.mock_client.command.call_args_list[0][0][0], "RTR_InitSession")
+        self.assertEqual(self.mock_client.command.call_args_list[1][0][0], "RTR_ListAllSessions")
+        self.assertEqual(self.mock_client.command.call_args_list[2][0][0], "RTR_ListSessions")
+
     def test_execute_rtr_batch_command_success(self):
         self.mock_client.command.return_value = {
             "status_code": 201,

@@ -25,6 +25,88 @@ from falcon_mcp.resources.rtr import (
 class RTRModule(BaseModule):
     """Module for Real Time Response operations via FalconPy."""
 
+    def _collect_rtr_session_fallback(
+        self,
+        device_ids: list[str],
+    ) -> dict[str, Any]:
+        """Query read-only RTR session data when session initialization fails."""
+        fallback_entries: list[dict[str, Any]] = []
+        queried_device_ids = device_ids[:5]
+
+        for device_id in queried_device_ids:
+            fallback_filter = f"aid:'{device_id}'"
+            session_ids = self._base_search_api_call(
+                operation="RTR_ListAllSessions",
+                search_params={
+                    "filter": fallback_filter,
+                    "limit": 10,
+                },
+                error_message="Failed to query existing RTR sessions during fallback",
+            )
+
+            if self._is_error(session_ids):
+                fallback_entries.append(
+                    {
+                        "device_id": device_id,
+                        "filter": fallback_filter,
+                        "error": session_ids,
+                    }
+                )
+                continue
+
+            details: list[dict[str, Any]] | dict[str, Any] = []
+            if session_ids:
+                details = self._base_get_by_ids(
+                    operation="RTR_ListSessions",
+                    ids=session_ids,
+                )
+                if self._is_error(details):
+                    fallback_entries.append(
+                        {
+                            "device_id": device_id,
+                            "filter": fallback_filter,
+                            "session_ids": session_ids,
+                            "error": details,
+                        }
+                    )
+                    continue
+
+            fallback_entries.append(
+                {
+                    "device_id": device_id,
+                    "filter": fallback_filter,
+                    "session_ids": session_ids,
+                    "results": details if isinstance(details, list) else [],
+                }
+            )
+
+        return {
+            "strategy": "search_existing_rtr_sessions",
+            "read_only": True,
+            "confidence": "low",
+            "queried_device_ids": queried_device_ids,
+            "partial": len(device_ids) > len(queried_device_ids),
+            "note": (
+                "Fallback inspects existing RTR session metadata only and does not confirm "
+                "that a new session was created."
+            ),
+            "entries": fallback_entries,
+        }
+
+    def _attach_rtr_init_fallback(
+        self,
+        result: dict[str, Any],
+        device_ids: list[str],
+    ) -> dict[str, Any]:
+        """Attach low-confidence, read-only fallback data to RTR initialization errors."""
+        if result.get("error_type") != "falcon_backend_5xx" or not device_ids:
+            return result
+
+        fallback_result = dict(result)
+        fallback_result["confidence"] = "low"
+        fallback_result["fallback"] = self._collect_rtr_session_fallback(device_ids)
+        return fallback_result
+
     def register_tools(self, server: FastMCP) -> None:
         """Register tools with the MCP server.
 
@@ -538,7 +620,10 @@ class RTRModule(BaseModule):
         )
 
         if self._is_error(result):
-            return [result]
+            fallback_device_ids = []
+            if isinstance(request_body, dict) and request_body.get("device_id"):
+                fallback_device_ids = [request_body["device_id"]]
+            return [self._attach_rtr_init_fallback(result, fallback_device_ids)]
 
         return result
 
@@ -1344,7 +1429,10 @@ class RTRModule(BaseModule):
         )
 
         if self._is_error(result):
-            return [result]
+            fallback_device_ids = []
+            if isinstance(request_body, dict):
+                fallback_device_ids = request_body.get("host_ids", []) or []
+            return [self._attach_rtr_init_fallback(result, fallback_device_ids)]
 
         return result
 
