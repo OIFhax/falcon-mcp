@@ -161,7 +161,7 @@ class QuickScanModule(BaseModule):
         type: str | None = None,
         date_ranges: list[dict[str, Any]] | None = None,
         ranges: list[dict[str, Any]] | None = None,
-        sub_aggregates: list[Any] | None = None,
+        sub_aggregates: list[dict[str, Any]] | None = None,
         missing: str | None = None,
     ) -> list[dict[str, Any]]:
         """Run Quick Scan aggregate queries."""

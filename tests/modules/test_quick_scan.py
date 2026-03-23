@@ -1,6 +1,9 @@
 """Tests for the Quick Scan module."""
 
+import asyncio
 import unittest
+
+from mcp.server.fastmcp import FastMCP
 
 from falcon_mcp.modules.base import READ_ONLY_ANNOTATIONS
 from falcon_mcp.modules.quick_scan import (
@@ -47,6 +50,29 @@ class TestQuickScanModule(TestModules):
     def test_aggregate_quick_scans_validation(self):
         result = self.module.aggregate_quick_scans(body=None)
         self.assertIn("error", result[0])
+
+    def test_aggregate_quick_scans_schema_has_typed_sub_aggregates_items(self):
+        server = FastMCP("test")
+        self.module.register_tools(server)
+
+        async def get_input_schema():
+            tools = await server.list_tools()
+            for tool in tools:
+                if tool.name == "falcon_aggregate_quick_scans":
+                    return tool.inputSchema
+            self.fail("falcon_aggregate_quick_scans was not registered")
+
+        input_schema = asyncio.run(get_input_schema())
+        sub_aggregates_schema = input_schema["properties"]["sub_aggregates"]
+        array_schema = next(
+            schema for schema in sub_aggregates_schema["anyOf"] if schema.get("type") == "array"
+        )
+
+        self.assertIn("items", array_schema)
+        self.assertEqual(
+            array_schema["items"],
+            {"additionalProperties": True, "type": "object"},
+        )
 
     def test_scan_quick_samples_confirm_required(self):
         result = self.module.scan_quick_samples(confirm_execution=False, samples=["0" * 64])
