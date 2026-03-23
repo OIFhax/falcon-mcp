@@ -7,6 +7,8 @@ import sys
 import unittest
 from unittest.mock import MagicMock, patch
 
+from requests.exceptions import Timeout as RequestsTimeout
+
 from falcon_mcp.client import FalconClient
 
 
@@ -291,6 +293,64 @@ class TestFalconClient(unittest.TestCase):
         mock_sleep.assert_called_once()
         self.assertEqual(response["status_code"], 201)
         self.assertEqual(len(client.get_tool_io_history()), 2)
+
+    @patch("falcon_mcp.client.os.environ.get")
+    @patch("falcon_mcp.client.APIHarnessV2")
+    def test_retryable_operations_use_dedicated_rtr_timeout_client(
+        self, mock_apiharness, mock_environ_get
+    ):
+        """Test RTR retryable operations use the shorter dedicated Falcon timeout client."""
+        mock_environ_get.side_effect = lambda key, default=None: {
+            "FALCON_CLIENT_ID": "test-client-id",
+            "FALCON_CLIENT_SECRET": "test-client-secret",
+        }.get(key, default)
+
+        primary_client = MagicMock()
+        rtr_client = MagicMock()
+        rtr_client.command.return_value = {
+            "status_code": 201,
+            "body": {"resources": [{"session_id": "session-1"}]},
+        }
+        mock_apiharness.side_effect = [primary_client, rtr_client]
+
+        client = FalconClient()
+        response = client.command("RTR_InitSession", body={"device_id": "aid-123"})
+
+        self.assertEqual(mock_apiharness.call_count, 2)
+        self.assertIs(client._rtr_client, rtr_client)
+        self.assertEqual(mock_apiharness.call_args_list[0].kwargs["timeout"], None)
+        self.assertEqual(mock_apiharness.call_args_list[1].kwargs["timeout"], 15.0)
+        rtr_client.command.assert_called_once_with("RTR_InitSession", body={"device_id": "aid-123"})
+        primary_client.command.assert_not_called()
+        self.assertEqual(response["status_code"], 201)
+
+    @patch("falcon_mcp.client.os.environ.get")
+    @patch("falcon_mcp.client.APIHarnessV2")
+    def test_command_converts_timeout_exception_to_gateway_timeout(
+        self, mock_apiharness, mock_environ_get
+    ):
+        """Test Falcon request timeouts return a structured 504 response instead of raising."""
+        mock_environ_get.side_effect = lambda key, default=None: {
+            "FALCON_CLIENT_ID": "test-client-id",
+            "FALCON_CLIENT_SECRET": "test-client-secret",
+        }.get(key, default)
+
+        mock_instance = MagicMock()
+        mock_instance.command.side_effect = RequestsTimeout("request timed out")
+        mock_apiharness.return_value = mock_instance
+
+        client = FalconClient()
+        response = client.command("QueryDevicesByFilter", parameters={"filter": "hostname:'test'"})
+
+        self.assertEqual(response["status_code"], 504)
+        self.assertTrue(response["meta"]["timed_out"])
+        self.assertEqual(response["meta"]["operation"], "QueryDevicesByFilter")
+        self.assertEqual(response["meta"]["configured_timeout_seconds"], None)
+        self.assertIn("timed out", response["body"]["errors"][0]["message"])
+        history = client.get_tool_io_history()
+        self.assertEqual(len(history), 1)
+        self.assertEqual(history[0]["status_code"], 504)
+        self.assertEqual(history[0]["error_object"]["status_code"], 504)
 
     @patch("falcon_mcp.client.os.environ.get")
     @patch("falcon_mcp.client.APIHarnessV2")

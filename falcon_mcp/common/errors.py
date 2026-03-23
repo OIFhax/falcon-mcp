@@ -19,6 +19,7 @@ ERROR_CODE_DESCRIPTIONS = {
     429: "Rate limit exceeded. Too many requests in a short period.",
     500: "Server error. An unexpected error occurred on the server.",
     503: "Service unavailable. The service is temporarily unavailable.",
+    504: "Gateway timeout. The Falcon API did not respond within the configured timeout.",
 }
 
 

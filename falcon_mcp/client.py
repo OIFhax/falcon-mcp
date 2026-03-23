@@ -18,14 +18,16 @@ from urllib.parse import urlparse
 
 # Import the APIHarnessV2 from FalconPy
 from falconpy import APIHarnessV2  # type: ignore[import-untyped]
+from requests.exceptions import Timeout as RequestsTimeout
 
 from falcon_mcp.common.logging import get_logger
 
 logger = get_logger(__name__)
 
 DEFAULT_TOOL_IO_HISTORY_LIMIT = 200
-DEFAULT_RETRY_ATTEMPTS = 2
+DEFAULT_RETRY_ATTEMPTS = 1
 DEFAULT_RETRY_BACKOFF_SECONDS = 0.5
+DEFAULT_RTR_HTTP_TIMEOUT_SECONDS = 15.0
 TRANSIENT_STATUS_CODES = frozenset({500, 502, 503, 504})
 RETRYABLE_OPERATIONS = frozenset(
     {
@@ -82,6 +84,35 @@ def _get_float_env(name: str, default: float) -> float:
         return default
 
 
+def _get_timeout_env(name: str, default: float | None) -> float | None:
+    """Read a positive timeout value from the environment."""
+    value = os.environ.get(name)
+    if value in (None, ""):
+        return default
+
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        logger.warning(
+            "Invalid timeout value for %s=%r; using default %s",
+            name,
+            value,
+            default,
+        )
+        return default
+
+    if parsed <= 0:
+        logger.warning(
+            "Non-positive timeout value for %s=%r; using default %s",
+            name,
+            value,
+            default,
+        )
+        return default
+
+    return parsed
+
+
 def _utc_timestamp() -> str:
     """Return an ISO-8601 UTC timestamp."""
     return datetime.now(timezone.utc).isoformat()
@@ -117,6 +148,11 @@ class FalconClient:
         self.user_agent_comment = user_agent_comment or os.environ.get(
             "FALCON_MCP_USER_AGENT_COMMENT"
         )
+        self.http_timeout = _get_timeout_env("FALCON_MCP_HTTP_TIMEOUT_SECONDS", default=None)
+        self.rtr_http_timeout = _get_timeout_env(
+            "FALCON_MCP_RTR_HTTP_TIMEOUT_SECONDS",
+            default=DEFAULT_RTR_HTTP_TIMEOUT_SECONDS,
+        )
         self.max_retries = _get_int_env("FALCON_MCP_RETRY_ATTEMPTS", DEFAULT_RETRY_ATTEMPTS)
         self.retry_backoff_seconds = _get_float_env(
             "FALCON_MCP_RETRY_BACKOFF_SECONDS",
@@ -130,14 +166,8 @@ class FalconClient:
                 "parameters or set FALCON_CLIENT_ID and FALCON_CLIENT_SECRET environment variables."
             )
 
-        # Initialize the Falcon API client using APIHarnessV2
-        self.client = APIHarnessV2(
-            client_id=self.client_id,
-            client_secret=self.client_secret,
-            base_url=self.base_url,
-            debug=debug,
-            user_agent=self.get_user_agent(),
-        )
+        self.client = self._build_api_client(timeout=self.http_timeout)
+        self._rtr_client: APIHarnessV2 | None = None
 
         logger.debug("Initialized Falcon client with base URL: %s", self.base_url)
 
@@ -188,11 +218,18 @@ class FalconClient:
             dict[str, Any] | bytes: The API response
         """
         retry_attempts = self.max_retries if operation in RETRYABLE_OPERATIONS else 0
+        api_client = self._get_operation_client(operation)
 
         for attempt in range(retry_attempts + 1):
             timestamp = _utc_timestamp()
             try:
-                result = self.client.command(operation, **kwargs)
+                result = api_client.command(operation, **kwargs)
+            except RequestsTimeout as exc:
+                result = self._build_timeout_response(
+                    operation=operation,
+                    timeout_seconds=self._get_operation_timeout(operation),
+                    exc=exc,
+                )
             except Exception as exc:
                 self._record_tool_io(
                     operation=operation,
@@ -263,6 +300,36 @@ class FalconClient:
         )
 
         return f"falcon-mcp/{falcon_mcp_version} ({'; '.join(comment_parts)})"
+
+    def _build_api_client(self, timeout: float | None) -> APIHarnessV2:
+        """Create a FalconPy client with the configured transport timeout."""
+        return APIHarnessV2(
+            client_id=self.client_id,
+            client_secret=self.client_secret,
+            base_url=self.base_url,
+            debug=self.debug,
+            user_agent=self.get_user_agent(),
+            timeout=timeout,
+        )
+
+    def _get_operation_client(self, operation: str) -> APIHarnessV2:
+        """Return the appropriate Falcon client for a given operation."""
+        if operation not in RETRYABLE_OPERATIONS:
+            return self.client
+
+        if self.rtr_http_timeout == self.http_timeout:
+            return self.client
+
+        if self._rtr_client is None:
+            self._rtr_client = self._build_api_client(timeout=self.rtr_http_timeout)
+
+        return self._rtr_client
+
+    def _get_operation_timeout(self, operation: str) -> float | None:
+        """Return the configured HTTP timeout for an operation."""
+        if operation in RETRYABLE_OPERATIONS and self.rtr_http_timeout != self.http_timeout:
+            return self.rtr_http_timeout
+        return self.http_timeout
 
     def get_headers(self) -> dict[str, str]:
         """Get authentication headers for API requests.
@@ -351,6 +418,36 @@ class FalconClient:
                 }
             ),
             "entries": history,
+        }
+
+    def _build_timeout_response(
+        self,
+        operation: str,
+        timeout_seconds: float | None,
+        exc: RequestsTimeout,
+    ) -> dict[str, Any]:
+        """Convert a FalconPy timeout into a structured API-style response."""
+        timeout_hint = (
+            f" after {timeout_seconds:g} seconds" if timeout_seconds is not None else ""
+        )
+        message = f"Falcon API request timed out{timeout_hint} during {operation}"
+        logger.warning(message)
+        return {
+            "status_code": 504,
+            "body": {
+                "errors": [
+                    {
+                        "message": message,
+                    }
+                ]
+            },
+            "meta": {
+                "timed_out": True,
+                "operation": operation,
+                "configured_timeout_seconds": timeout_seconds,
+                "exception_type": type(exc).__name__,
+                "exception_message": str(exc),
+            },
         }
 
     def _record_tool_io(

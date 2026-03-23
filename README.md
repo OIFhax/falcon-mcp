@@ -1553,6 +1553,8 @@ FALCON_BASE_URL=https://api.crowdstrike.com
 #FALCON_MCP_PORT=8000
 #FALCON_MCP_STATELESS_HTTP=false
 #FALCON_MCP_API_KEY=your-api-key
+#FALCON_MCP_RTR_HTTP_TIMEOUT_SECONDS=15
+#FALCON_MCP_RETRY_ATTEMPTS=1
 ```
 
 #### Environment Variables
@@ -1575,6 +1577,8 @@ export FALCON_MCP_HOST="127.0.0.1"                      # Host for HTTP transpor
 export FALCON_MCP_PORT="8000"                           # Port for HTTP transports
 export FALCON_MCP_STATELESS_HTTP="false"                # Stateless mode for scalable deployments
 export FALCON_MCP_API_KEY="your-api-key"                # API key for HTTP transport auth (x-api-key header)
+export FALCON_MCP_RTR_HTTP_TIMEOUT_SECONDS="15"         # Fail fast on RTR init / pulse / refresh transport stalls
+export FALCON_MCP_RETRY_ATTEMPTS="1"                    # Retry transient RTR transport failures once by default
 ```
 
 **CrowdStrike API Region URLs:**

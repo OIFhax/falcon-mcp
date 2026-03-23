@@ -137,11 +137,14 @@ RTR initialization and refresh paths now include transient retry handling in `fa
 
 Retry behavior:
 
-- default retries: `2`
+- default retries: `1`
 - default initial backoff: `0.5` seconds
+- default RTR transport timeout: `15` seconds
 - environment overrides:
   - `FALCON_MCP_RETRY_ATTEMPTS`
   - `FALCON_MCP_RETRY_BACKOFF_SECONDS`
+  - `FALCON_MCP_RTR_HTTP_TIMEOUT_SECONDS`
+  - `FALCON_MCP_HTTP_TIMEOUT_SECONDS`
 
 Current retry allowlist:
 
@@ -150,7 +153,8 @@ Current retry allowlist:
 - `BatchRefreshSessions`
 - `RTR_PulseSession`
 
-Retries apply only to transient Falcon backend `5xx` responses.
+Retries apply only to transient Falcon backend `5xx` responses and Falcon transport timeouts
+that are normalized to HTTP `504`.
 
 ## RTR Post-Failure Fallback
 
