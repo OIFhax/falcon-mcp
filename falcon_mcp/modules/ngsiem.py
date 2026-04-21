@@ -55,6 +55,13 @@ NATURAL_LANGUAGE_PREFIXES = (
     "which ",
 )
 CQL_MARKERS = ("|", "=", ":", "!=", ">=", "<=", "<", ">", "(", ")", "[", "]", "*", "#")
+SEARCH_DOMAIN_OPERATIONS = {
+    "GetLookupFile",
+    "CreateLookupFile",
+    "UpdateLookupFile",
+    "DeleteLookupFile",
+    "ListLookupFiles",
+}
 
 
 def _iso_to_epoch_ms(iso_timestamp: str) -> int:
@@ -648,11 +655,22 @@ class NGSIEMModule(BaseModule):
         repository: str | None = Field(default=None, description="Repository name."),
     ) -> list[dict[str, Any]] | dict[str, Any]:
         """List NGSIEM lookup files."""
-        return self._call_ngsiem_api(
+        result = self._call_ngsiem_api(
             operation="ListLookupFiles",
             repository=repository,
             error_message="Failed to list NGSIEM lookup files",
         )
+        if isinstance(result, list):
+            if all(isinstance(item, str) for item in result):
+                return [
+                    {
+                        "filename": item,
+                        "name": item,
+                    }
+                    for item in result
+                    if item.strip()
+                ]
+        return result
 
     def get_ngsiem_parser_template(
         self,
@@ -845,17 +863,21 @@ class NGSIEMModule(BaseModule):
         default_result: Any | None = None,
     ) -> list[dict[str, Any]] | dict[str, Any]:
         call_args: dict[str, Any] = {"operation": operation}
+        prepared_parameters = prepare_api_parameters(parameters) if parameters else {}
 
         if repository:
-            call_args["repository"] = repository
+            if operation in SEARCH_DOMAIN_OPERATIONS:
+                prepared_parameters.setdefault("search_domain", repository)
+            else:
+                call_args["repository"] = repository
 
         if path_params:
             prepared_path = prepare_api_parameters(path_params)
             for key, value in prepared_path.items():
                 call_args[key] = value
 
-        if parameters:
-            call_args["parameters"] = prepare_api_parameters(parameters)
+        if prepared_parameters:
+            call_args["parameters"] = prepared_parameters
 
         if body is not None:
             call_args["body"] = prepare_api_parameters(body)

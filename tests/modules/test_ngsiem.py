@@ -285,6 +285,38 @@ class TestNGSIEMModule(TestModules):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]["id"], "db-1")
 
+    def test_lookup_file_operations_map_repository_to_search_domain(self):
+        """Test lookup file operations pass repository as search_domain."""
+        self.mock_client.command.side_effect = [
+            {
+                "status_code": 200,
+                "body": {"resources": [{"filename": "shadow-saas.csv"}]},
+            },
+            {
+                "status_code": 200,
+                "body": {"resources": ["shadow-saas.csv", "generic-usernames.csv"]},
+            },
+        ]
+
+        file_result = self.module.get_ngsiem_lookup_file(
+            repository="search-all",
+            filename="shadow-saas.csv",
+        )
+        list_result = self.module.list_ngsiem_lookup_files(repository="search-all")
+
+        self.assertEqual(len(file_result), 1)
+        self.assertEqual(file_result[0]["filename"], "shadow-saas.csv")
+        self.assertEqual(len(list_result), 2)
+        self.assertEqual(list_result[0]["filename"], "shadow-saas.csv")
+        self.assertEqual(list_result[1]["name"], "generic-usernames.csv")
+        get_call = self.mock_client.command.call_args_list[0]
+        list_call = self.mock_client.command.call_args_list[1]
+        self.assertEqual(get_call[1]["operation"], "GetLookupFile")
+        self.assertEqual(get_call[1]["filename"], "shadow-saas.csv")
+        self.assertEqual(get_call[1]["parameters"], {"search_domain": "search-all"})
+        self.assertEqual(list_call[1]["operation"], "ListLookupFiles")
+        self.assertEqual(list_call[1]["parameters"], {"search_domain": "search-all"})
+
     def test_delete_saved_query_validation(self):
         """Test delete saved query requires id."""
         result = self.module.delete_ngsiem_saved_query(
