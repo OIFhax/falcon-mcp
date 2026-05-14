@@ -44,6 +44,7 @@
   - [Installation Tokens Module](#installation-tokens-module)
   - [Prevention Policies Module](#prevention-policies-module)
   - [Response Policies Module](#response-policies-module)
+  - [Data Protection Configuration Module](#data-protection-configuration-module)
   - [Device Control Policies Module](#device-control-policies-module)
   - [Firewall Policies Module](#firewall-policies-module)
   - [Sensor Update Policies Module](#sensor-update-policies-module)
@@ -146,6 +147,7 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Installation Tokens** | `Installation Tokens:read`<br>`Installation Tokens:write`<br>`Installation Tokens Settings:write` | Search and manage installation tokens, inspect audit events, and control tenant token settings |
 | **Prevention Policies** | `Prevention Policies:read`<br>`Prevention Policies:write` | Search and manage prevention policies, policy members, policy actions, and precedence ordering |
 | **Response Policies** | `Response Policies:read`<br>`Response Policies:write` | Search and manage response policies, policy members, policy actions, and precedence ordering |
+| **Data Protection Configuration** | `Data Protection Config:read`<br>`Data Protection Config:write` | Search and manage DLP policies, classifications, content patterns, cloud/local applications, enterprise accounts, file types, sensitivity labels, web locations, and policy precedence |
 | **Device Control Policies** | `Device Control Policies:read`<br>`Device Control Policies:write` | Search and manage device control policies, defaults, classes, precedence, actions, and policy member relationships |
 | **Firewall Policies** | `Firewall Policies:read`<br>`Firewall Policies:write` | Search and manage firewall policies, policy actions, precedence, and policy member relationships |
 | **Sensor Update Policies** | `Sensor Update Policies:read`<br>`Sensor Update Policies:write` | Search and manage sensor update policies, builds, kernels, precedence, actions, and uninstall token reveal workflows |
@@ -794,6 +796,45 @@ Provides full Response Policies service collection coverage:
 - `falcon://response-policies/safety-guide`: Operational guardrails for response policy write operations
 
 **Use Cases**: Response policy inventory, policy-member assignment analysis, controlled policy lifecycle actions, and precedence governance
+
+### Data Protection Configuration Module
+
+**API Scopes Required**:
+
+- `Data Protection Config:read`
+- `Data Protection Config:write`
+
+Provides full Data Protection Configuration service collection coverage:
+
+- Generic resource helpers:
+  - `falcon_query_data_protection_resources`
+  - `falcon_get_data_protection_resources`
+  - `falcon_create_data_protection_resource` (`confirm_execution=true` required)
+  - `falcon_update_data_protection_resource` (`confirm_execution=true` required)
+  - `falcon_delete_data_protection_resources` (`confirm_execution=true` required)
+- Data Protection policies:
+  - `falcon_query_data_protection_policy_ids`
+  - `falcon_get_data_protection_policies`
+  - `falcon_create_data_protection_policy` (`confirm_execution=true` required)
+  - `falcon_update_data_protection_policy` (`confirm_execution=true` required)
+  - `falcon_delete_data_protection_policies` (`confirm_execution=true` required)
+  - `falcon_set_data_protection_policy_precedence` (`confirm_execution=true` required)
+- Classifications, content patterns, cloud applications, enterprise accounts, sensitivity labels, local application groups, local applications, and web locations:
+  - `falcon_query_data_protection_*_ids`
+  - `falcon_get_data_protection_*`
+  - `falcon_create_data_protection_*` where supported (`confirm_execution=true` required)
+  - `falcon_update_data_protection_*` where supported (`confirm_execution=true` required)
+  - `falcon_delete_data_protection_*` where supported (`confirm_execution=true` required)
+- File types:
+  - `falcon_query_data_protection_file_type_ids`
+  - `falcon_get_data_protection_file_types`
+
+**Resources**:
+
+- `falcon://data-protection-configuration/guide`: Tool coverage and parameter guidance for Data Protection resources
+- `falcon://data-protection-configuration/safety-guide`: Operational guardrails for Data Protection write operations
+
+**Use Cases**: DLP policy governance, classification and content-pattern lifecycle management, sensitivity label inventory, cloud/local application controls, web location controls, file type lookup, and policy precedence orchestration
 
 ### Device Control Policies Module
 
