@@ -455,6 +455,17 @@ API_SCOPE_REQUIREMENTS = {
     "ReadVulnerabilityCountByActivelyExploited": ["Falcon Container Image:read"],
     "ReadVulnerabilitiesByImageCount": ["Falcon Container Image:read"],
     "ReadVulnerabilitiesPublicationDate": ["Falcon Container Image:read"],
+    # CSPM Assets operations
+    "cloud_security_assets_queries": ["Cloud Security API Assets:read"],
+    "cloud_security_assets_entities_get": ["Cloud Security API Assets:read"],
+    # CSPM IOM Findings operations (CloudSecurityDetections)
+    "cspm_evaluations_iom_queries": ["Cloud Security API Detections:read"],
+    "cspm_evaluations_iom_entities": ["Cloud Security API Detections:read"],
+    # CSPM Suppression Rules operations
+    "QuerySuppressionRules": ["Cloud Security Policies:read"],
+    "GetSuppressionRules": ["Cloud Security Policies:read"],
+    "CreateSuppressionRule": ["Cloud Security Policies:write"],
+    "DeleteSuppressionRules": ["Cloud Security Policies:write"],
     # Content Update Policies operations
     "queryCombinedContentUpdatePolicyMembers": ["Content Update Policies:read"],
     "queryCombinedContentUpdatePolicies": ["Content Update Policies:read"],
@@ -529,6 +540,24 @@ API_SCOPE_REQUIREMENTS = {
     "querySensorUpdateKernelsDistinct": ["Sensor Update Policies:read"],
     "querySensorUpdatePolicyMembers": ["Sensor Update Policies:read"],
     "querySensorUpdatePolicies": ["Sensor Update Policies:read"],
+    # Shield (SaaS Security) operations
+    "GetSecurityChecksV3": ["SaaS Security:read"],
+    "GetSecurityCheckAffectedV3": ["SaaS Security:read"],
+    "GetMetricsV3": ["SaaS Security:read"],
+    "GetSecurityCheckComplianceV3": ["SaaS Security:read"],
+    "GetAlertsV3": ["SaaS Security:read"],
+    "GetActivityMonitorV3": ["SaaS Security:read"],
+    "GetUserInventoryV3": ["SaaS Security:read"],
+    "GetDeviceInventoryV3": ["SaaS Security:read"],
+    "GetAppInventory": ["SaaS Security:read"],
+    "GetAppInventoryUsers": ["SaaS Security:read"],
+    "GetAssetInventoryV3": ["SaaS Security:read"],
+    "GetIntegrationsV3": ["SaaS Security:read"],
+    "GetSystemUsersV3": ["SaaS Security:read"],
+    "GetSupportedSaasV3": ["SaaS Security:read"],
+    "GetSystemLogsV3": ["SaaS Security:read"],
+    "DismissSecurityCheckV3": ["SaaS Security:write"],
+    "DismissAffectedEntityV3": ["SaaS Security:write"],
     # Data Protection Configuration operations
     "entities_classification_get_v2": ["Data Protection Config:read"],
     "entities_classification_post_v2": ["Data Protection Config:write"],

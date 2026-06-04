@@ -1,4 +1,7 @@
-# Falcon MCP Server Module Development Guide
+<!-- meta:title Module Development -->
+<!-- meta:description Step-by-step guide for implementing new Falcon MCP modules. -->
+<!-- meta:section development -->
+<!-- meta:link-base /falcon-mcp/ -->
 
 This guide provides instructions for implementing new modules for the Falcon MCP server.
 
@@ -79,10 +82,11 @@ class YourModule(BaseModule):
             description="Description of param2. Include constraints if applicable.",
         ),
     ) -> dict[str, Any]:
-        """Description of what your tool does.
+        """Search for entities in your CrowdStrike environment.
 
-        Provide context on when to use this tool and any important notes.
-        Tool descriptions are derived from this docstring.
+        Use this to find entities by name, status, or other attributes. Consult
+        falcon://your-module/entities/fql-guide before constructing filter expressions.
+        Returns full entity details including id, name, and status.
         """
         # Use base class methods for common patterns
         results = self._base_search_api_call(
@@ -229,6 +233,16 @@ The `TestModules` base class provides:
 
 This approach simplifies test code and ensures consistency across all module tests.
 
+### 5. Regenerate Module Documentation
+
+After adding or modifying a module, regenerate the auto-generated module documentation:
+
+```bash
+uv run python scripts/generate_module_docs.py
+```
+
+Commit the updated `docs/modules/` files alongside your code changes. CI will verify that the committed docs match the generated output.
+
 ## Contributing Module Changes
 
 When contributing new modules or changes to existing modules, please follow these guidelines:
@@ -283,7 +297,7 @@ git commit -m "test(modules): add comprehensive tests for [module-name] module"
 git commit -m "docs(modules): update [module-name] module documentation"
 ```
 
-See the main [CONTRIBUTING.md](CONTRIBUTING.md) guide for complete conventional commits guidelines.
+See the main [CONTRIBUTING.md](../../.github/CONTRIBUTING.md) guide for complete conventional commits guidelines.
 
 ## Best Practices
 
@@ -338,7 +352,7 @@ Tools are annotated with MCP `ToolAnnotations` to inform clients about tool beha
 The `_add_tool()` helper applies `READ_ONLY_ANNOTATIONS` by default. **Override for any tool that creates, modifies, deletes, or triggers actions.**
 
 | Tool Type | readOnlyHint | destructiveHint | idempotentHint | Example |
-|-----------|:---:|:---:|:---:|---------|
+| --------- | :---: | :---: | :---: | ------- |
 | Search/Get/List | True | False | True | `falcon_search_hosts` |
 | Create/Write | False | False | False | `falcon_add_ioc` |
 | Delete/Remove | False | True | True | `falcon_remove_iocs` |
@@ -346,9 +360,9 @@ The `_add_tool()` helper applies `READ_ONLY_ANNOTATIONS` by default. **Override 
 
 ### Documentation
 
-1. **Docstrings**: Include detailed docstrings for all classes and methods. Tool descriptions are derived from method docstrings, so make sure they are comprehensive and well-written.
-2. **Parameter Descriptions**: Document all parameters and return values
-3. **Examples**: Include examples in docstrings where helpful
+1. **Tool Docstrings**: Tool descriptions are sent verbatim to LLM clients. Write 2-4 sentences covering: what the tool does, when to use it, the FQL resource pointer (for search tools), and what it returns. Avoid `IMPORTANT:` shouting — use natural prose. Keep return descriptions high-level and accurate (don't enumerate every field).
+2. **Parameter Descriptions**: Use concise Field descriptions. For FQL filters: `"FQL filter expression. See \`falcon://path/fql-guide\` for syntax."`
+3. **Examples**: Include examples in Field `examples` parameter where helpful
 
 ### Type Hints
 
@@ -454,7 +468,7 @@ class HostsModule(BaseModule):
         self,
         filter: str | None = Field(
             default=None,
-            description="FQL Syntax formatted string used to limit the results.",
+            description="FQL filter expression. See `falcon://hosts/search/fql-guide` for syntax.",
             examples={"platform_name:'Windows'", "hostname:'PC*'"},
         ),
         limit: int = Field(
@@ -490,6 +504,11 @@ class HostsModule(BaseModule):
         ),
     ) -> list[dict[str, Any]]:
         """Search for hosts in your CrowdStrike environment.
+
+        Use this to find devices by hostname, platform, IP, sensor version, or other
+        attributes. Consult falcon://hosts/search/fql-guide before constructing filter
+        expressions. Returns full host details including device info, OS, and network
+        context.
         """
         device_ids = self._base_search_api_call(
             operation="QueryDevicesByFilter",
@@ -530,11 +549,11 @@ class HostsModule(BaseModule):
             description="Host device IDs to retrieve details for. You can get device IDs from the search_hosts operation, the Falcon console, or the Streaming API. Maximum: 5000 IDs per request."
         ),
     ) -> list[dict[str, Any]] | dict[str, Any]:
-        """Retrieve detailed information for specified host device IDs.
+        """Retrieve detailed information for one or more host device IDs.
 
-        This tool returns comprehensive host details for one or more device IDs.
-        Use this when you already have specific device IDs and need their full details.
-        For searching/discovering hosts, use the `falcon_search_hosts` tool instead.
+        Use when you already have specific device IDs from search results, the Falcon
+        console, or the Streaming API. For discovering hosts by criteria, use
+        falcon_search_hosts instead. Returns comprehensive host details.
         """
         logger.debug("Getting host details for IDs: %s", ids)
 

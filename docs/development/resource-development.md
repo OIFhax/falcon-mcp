@@ -1,4 +1,7 @@
-# Falcon MCP Server Resource Development Guide
+<!-- meta:title Resource Development -->
+<!-- meta:description How to implement and register MCP resources in the Falcon MCP Server. -->
+<!-- meta:section development -->
+<!-- meta:link-base /falcon-mcp/ -->
 
 This guide provides instructions for implementing and registering resources for the Falcon MCP server.
 
@@ -101,9 +104,23 @@ Examples:
 
 - `falcon://intel/query_actor_entities/fql-guide`
 - `falcon://detections/search/fql-guide`
-- `falcon://incidents/status-codes`
+- `falcon://hosts/search/fql-guide`
 
-### 4. Resource Types
+### 4. FQL Table Format
+
+For FQL filter documentation, use `generate_md_table` from `falcon_mcp/common/utils.py` for consistent formatting:
+
+```python
+from falcon_mcp.common.utils import generate_md_table
+
+SEARCH_ENTITIES_FQL_FILTERS = [
+    ("field_name", "String", "Description with examples. Ex: example_value"),
+]
+
+DOCUMENTATION = """Guide content""" + generate_md_table(SEARCH_ENTITIES_FQL_FILTERS) + """More content"""
+```
+
+### 5. Resource Types
 
 The MCP server supports several resource types:
 
@@ -201,16 +218,15 @@ def query_actor_entities(
     self,
     filter: str | None = Field(
         default=None,
-        description="FQL query expression that should be used to limit the results. IMPORTANT: use the 'falcon://query_actor_entities_fql_documentation' resource when building this parameter.",
+        description="FQL filter expression. See `falcon://intel/actors/fql-guide` for syntax.",
     ),
     # Other parameters...
 ) -> list[dict[str, Any]]:
-    """Get info about actors that match provided FQL filters.
+    """Research threat actors and adversary groups tracked by CrowdStrike intelligence.
 
-    IMPORTANT: You must call the FQL Guide for Intel Query Actor Entities (falcon://intel/query_actor_entities/fql-guide) resource first
-
-    Returns:
-        Information about actors that match the provided filters.
+    Use this to search actors by name, target countries/industries, or activity dates.
+    Consult falcon://intel/actors/fql-guide before constructing filter expressions.
+    Returns full actor profiles including aliases, motivations, and targeting details.
     """
     # Method implementation...
 ```
@@ -247,7 +263,7 @@ git commit -m "fix(resources): correct formatting in intel FQL documentation"
 git commit -m "docs(resources): update resource development guide"
 # Examples:
 git commit -m "refactor(resources): improve clarity in detections FQL guide"
-git commit -m "fix(resources): correct syntax examples in incidents resource"
+git commit -m "fix(resources): correct syntax examples in hosts resource"
 ```
 
 **Resource Tests and Infrastructure:**
@@ -257,7 +273,7 @@ git commit -m "test(resources): add validation tests for resource content"
 git commit -m "chore(resources): update resource registration patterns"
 ```
 
-See the main [CONTRIBUTING.md](CONTRIBUTING.md) guide for complete conventional commits guidelines.
+See the main [CONTRIBUTING.md](../../.github/CONTRIBUTING.md) guide for complete conventional commits guidelines.
 
 ## Conclusion
 

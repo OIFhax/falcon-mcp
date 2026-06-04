@@ -14,7 +14,7 @@ from mcp.server import FastMCP
 from pydantic import Field
 
 from falcon_mcp.common.logging import get_logger
-from falcon_mcp.common.utils import sanitize_input
+from falcon_mcp.common.utils import sanitize_input, unwrap_field_default
 from falcon_mcp.modules.base import BaseModule
 
 logger = get_logger(__name__)
@@ -47,13 +47,23 @@ class IdpModule(BaseModule):
             default=None,
             description="List of specific entity IDs to investigate (e.g., ['entity-001'])",
         ),
-        entity_names: list[str] | None = Field(
+        entity_names: str | None = Field(
             default=None,
-            description="List of entity names to search for (e.g., ['Administrator', 'John Doe']). When combined with other parameters, uses AND logic.",
+            description=(
+                "Entity display name pattern to search for "
+                "(e.g., 'John Doe' or 'Doe, John' or 'Administrator' or 'Admin*'). Supports '*' wildcards. "
+                "When combined with other parameters, uses AND logic."
+            ),
         ),
-        email_addresses: list[str] | None = Field(
+        email_addresses: str | None = Field(
             default=None,
-            description="List of email addresses to investigate (e.g., ['user@example.com']). When combined with other parameters, uses AND logic.",
+            description=(
+                "UPN, email address, or Azure external identity pattern to search for "
+                "(e.g., 'user@example.com', '*@example.com', "
+                "or 'john.doe_contoso.com#EXT#@tenant.onmicrosoft.com'). Supports '*' wildcards. "
+                "For AD samAccountName lookups, use domain_names + entity_names together instead. "
+                "When combined with other parameters, uses AND logic."
+            ),
         ),
         ip_addresses: list[str] | None = Field(
             default=None,
@@ -61,7 +71,7 @@ class IdpModule(BaseModule):
         ),
         domain_names: list[str] | None = Field(
             default=None,
-            description="List of domain names to search for (e.g., ['XDRHOLDINGS.COM', 'CORP.LOCAL']). When combined with other parameters, uses AND logic. Example: entity_names=['Administrator'] + domain_names=['DOMAIN.COM'] finds Administrator user in that specific domain.",
+            description="List of domain names to search for (e.g., ['XDRHOLDINGS.COM', 'CORP.LOCAL']). When combined with other parameters, uses AND logic. Example: entity_names='Administrator' + domain_names=['DOMAIN.COM'] finds Administrator user in that specific domain.",
         ),
         # Investigation Scope Control
         investigation_types: list[str] = Field(
@@ -108,15 +118,31 @@ class IdpModule(BaseModule):
             description="Include open security incidents in results",
         ),
     ) -> dict[str, Any]:
-        """Comprehensive entity investigation tool.
+        """Investigate one or more Identity Protection entities by ID, name, email, IP, or domain.
 
-        This tool provides complete entity investigation capabilities including:
-        - Entity search and details lookup
-        - Activity timeline analysis
-        - Relationship and association mapping
-        - Risk assessment
+        Use this to look up entity details, activity timelines, relationship graphs, and risk
+        assessments; at least one identifier must be supplied, and multiple identifiers are
+        combined with AND logic (email and IP cannot be combined — email takes precedence).
+        Returns a structured response with an investigation_summary, resolved entity IDs,
+        and results keyed by each requested investigation type.
         """
         logger.debug("Starting comprehensive entity investigation")
+
+        # Resolve unset Pydantic Field defaults to avoid leaking FieldInfo objects (issue #384)
+        entity_ids = unwrap_field_default(entity_ids)
+        entity_names = unwrap_field_default(entity_names)
+        email_addresses = unwrap_field_default(email_addresses)
+        ip_addresses = unwrap_field_default(ip_addresses)
+        domain_names = unwrap_field_default(domain_names)
+        investigation_types = unwrap_field_default(investigation_types)
+        timeline_start_time = unwrap_field_default(timeline_start_time)
+        timeline_end_time = unwrap_field_default(timeline_end_time)
+        timeline_event_types = unwrap_field_default(timeline_event_types)
+        relationship_depth = unwrap_field_default(relationship_depth)
+        limit = unwrap_field_default(limit)
+        include_associations = unwrap_field_default(include_associations)
+        include_accounts = unwrap_field_default(include_accounts)
+        include_incidents = unwrap_field_default(include_incidents)
 
         # Step 1: Validate inputs
         validation_error = self._validate_entity_identifiers(
@@ -238,6 +264,25 @@ class IdpModule(BaseModule):
                     "status": "failed",
                 },
             }
+
+        if (entity_names and isinstance(entity_names, str) and entity_names.strip("* ") == "") or (
+            email_addresses
+            and isinstance(email_addresses, str)
+            and email_addresses.strip("* ") == ""
+        ):
+            return {
+                "error": (
+                    "entity_names/email_addresses cannot be a bare wildcard ('*'). "
+                    "Provide a more specific pattern (e.g., 'Admin*') or narrow the search."
+                ),
+                "investigation_summary": {
+                    "entity_count": 0,
+                    "investigation_types": investigation_types,
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "status": "failed",
+                },
+            }
+
         return None
 
     def _create_error_response(
@@ -809,7 +854,7 @@ class IdpModule(BaseModule):
         """Resolve entity IDs from various identifier types using unified AND-based query.
 
         All provided identifiers are combined using AND logic in a single GraphQL query.
-        For example: entity_names=["Administrator"] + domain_names=["XDRHOLDINGS.COM"]
+        For example: entity_names="Administrator" + domain_names=["XDRHOLDINGS.COM"]
         will find entities that match BOTH criteria.
 
         Returns:
@@ -932,10 +977,9 @@ class IdpModule(BaseModule):
         query_fields,
         query_filters,
     ):
-        if email_addresses and isinstance(email_addresses, list):
-            sanitized_emails = [sanitize_input(email) for email in email_addresses]
-            emails_json = json.dumps(sanitized_emails)
-            query_filters.append(f"secondaryDisplayNames: {emails_json}")
+        if email_addresses and isinstance(email_addresses, str):
+            sanitized_email = sanitize_input(email_addresses)
+            query_filters.append(f"secondaryDisplayNamePattern: {json.dumps(sanitized_email)}")
             query_filters.append("types: [USER]")
             query_fields.extend(["primaryDisplayName", "secondaryDisplayName"])
 
@@ -946,10 +990,9 @@ class IdpModule(BaseModule):
         query_filters,
     ):
         entity_names = identifiers.get("entity_names")
-        if entity_names and isinstance(entity_names, list):
-            sanitized_names = [sanitize_input(name) for name in entity_names]
-            names_json = json.dumps(sanitized_names)
-            query_filters.append(f"primaryDisplayNames: {names_json}")
+        if entity_names and isinstance(entity_names, str):
+            sanitized_name = sanitize_input(entity_names)
+            query_filters.append(f"primaryDisplayNamePattern: {json.dumps(sanitized_name)}")
             query_fields.append("primaryDisplayName")
 
     def _get_entity_details_batch(
@@ -1026,10 +1069,7 @@ class IdpModule(BaseModule):
         relationship_results = []
 
         for entity_id in entity_ids:
-            # Handle FieldInfo objects - extract the actual value
-            relationship_depth = options.get("relationship_depth", 2)
-            if hasattr(relationship_depth, "default"):
-                relationship_depth = relationship_depth.default
+            relationship_depth = unwrap_field_default(options.get("relationship_depth", 2))
 
             graphql_query = self._build_relationship_analysis_query(
                 entity_id=entity_id,

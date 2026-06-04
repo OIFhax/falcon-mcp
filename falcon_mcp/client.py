@@ -128,6 +128,8 @@ class FalconClient:
         user_agent_comment: str | None = None,
         client_id: str | None = None,
         client_secret: str | None = None,
+        member_cid: str | None = None,
+        proxy: str | None = None,
     ):
         """Initialize the Falcon client.
 
@@ -137,6 +139,8 @@ class FalconClient:
             user_agent_comment: Additional information to include in the User-Agent comment section
             client_id: Falcon API Client ID (defaults to FALCON_CLIENT_ID env var)
             client_secret: Falcon API Client Secret (defaults to FALCON_CLIENT_SECRET env var)
+            member_cid: Child CID for Flight Control (MSSP) support (defaults to FALCON_MEMBER_CID env var)
+            proxy: HTTP/HTTPS proxy URL for outbound Falcon API connections (defaults to FALCON_PROXY_URL env var)
         """
         # Get credentials from parameters or environment variables (parameters take precedence)
         self.client_id = client_id or os.environ.get("FALCON_CLIENT_ID")
@@ -148,6 +152,8 @@ class FalconClient:
         self.user_agent_comment = user_agent_comment or os.environ.get(
             "FALCON_MCP_USER_AGENT_COMMENT"
         )
+        self.member_cid = member_cid or os.environ.get("FALCON_MEMBER_CID")
+        self.proxy = proxy or os.environ.get("FALCON_PROXY_URL")
         self.http_timeout = _get_timeout_env("FALCON_MCP_HTTP_TIMEOUT_SECONDS", default=None)
         self.rtr_http_timeout = _get_timeout_env(
             "FALCON_MCP_RTR_HTTP_TIMEOUT_SECONDS",
@@ -170,6 +176,52 @@ class FalconClient:
         self._rtr_client: APIHarnessV2 | None = None
 
         logger.debug("Initialized Falcon client with base URL: %s", self.base_url)
+        if self.member_cid:
+            logger.debug("Flight Control member_cid: %s", self.member_cid)
+
+    @property
+    def token_status(self) -> int | None:
+        """HTTP status code from the last authentication attempt."""
+        result: int | None = self.client.token_status
+        return result
+
+    @property
+    def token_fail_reason(self) -> str | None:
+        """Error message from the API when authentication failed."""
+        result: str | None = self.client.token_fail_reason
+        return result
+
+    def auth_failure_message(self) -> str:
+        """Build a diagnostic message after a failed authentication attempt."""
+        parts = ["Failed to authenticate with the Falcon API"]
+        if self.token_status:
+            parts[0] += f" (HTTP {self.token_status})"
+        if self.token_fail_reason:
+            parts.append(self.token_fail_reason)
+
+        if self.token_status == 401:
+            parts.append(
+                "Hint: Verify FALCON_CLIENT_ID and FALCON_CLIENT_SECRET are correct"
+                " and the API key has not been revoked."
+            )
+        elif self.token_status == 403 and self.member_cid:
+            parts.append(
+                f"Hint: A member_cid is configured ({self.member_cid})."
+                " Verify this is a valid child CID managed by your parent tenant,"
+                " not the parent CID itself."
+            )
+        elif self.token_status == 403:
+            parts.append(
+                "Hint: Verify the API client has the required scopes"
+                " and has not been disabled."
+            )
+        else:
+            parts.append(
+                f"Hint: Check network connectivity to {self.base_url}"
+                " and verify FALCON_BASE_URL is correct for your CrowdStrike region."
+            )
+
+        return ". ".join(parts)
 
     def authenticate(self) -> bool:
         """Authenticate with the Falcon API.
@@ -303,14 +355,20 @@ class FalconClient:
 
     def _build_api_client(self, timeout: float | None) -> APIHarnessV2:
         """Create a FalconPy client with the configured transport timeout."""
-        return APIHarnessV2(
-            client_id=self.client_id,
-            client_secret=self.client_secret,
-            base_url=self.base_url,
-            debug=self.debug,
-            user_agent=self.get_user_agent(),
-            timeout=timeout,
-        )
+        api_params: dict[str, Any] = {
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
+            "base_url": self.base_url,
+            "debug": self.debug,
+            "user_agent": self.get_user_agent(),
+            "timeout": timeout,
+        }
+        if self.member_cid:
+            api_params["member_cid"] = self.member_cid
+        if self.proxy:
+            api_params["proxy"] = {"https": self.proxy}
+
+        return APIHarnessV2(**api_params)
 
     def _get_operation_client(self, operation: str) -> APIHarnessV2:
         """Return the appropriate Falcon client for a given operation."""

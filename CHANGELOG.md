@@ -1,5 +1,83 @@
 # Changelog
 
+## [0.11.0](https://github.com/CrowdStrike/falcon-mcp/compare/v0.10.0...v0.11.0) (2026-06-03)
+
+
+### Features
+
+* **client:** add proxy configuration for outbound Falcon API connections ([#408](https://github.com/CrowdStrike/falcon-mcp/issues/408)) ([5ebafe1](https://github.com/CrowdStrike/falcon-mcp/commit/5ebafe1ed417acfd31684929800f23cbd57608af)), closes [#405](https://github.com/CrowdStrike/falcon-mcp/issues/405)
+* **modules/correlation-rules:** add NG-SIEM Correlation Rules module ([#391](https://github.com/CrowdStrike/falcon-mcp/issues/391)) ([afd0a88](https://github.com/CrowdStrike/falcon-mcp/commit/afd0a885238dd75823066aeb4fd6dc82f501d218))
+* **modules/data-protection:** add Data Protection module ([#428](https://github.com/CrowdStrike/falcon-mcp/issues/428)) ([fff356c](https://github.com/CrowdStrike/falcon-mcp/commit/fff356ca32558be20cdd36488f718aaf1eb65262))
+* **modules/quarantine:** add quarantine workflows ([#352](https://github.com/CrowdStrike/falcon-mcp/issues/352)) ([0e66344](https://github.com/CrowdStrike/falcon-mcp/commit/0e66344356eca035b2fb2e53a2a5e6f3eab5c6b5))
+* **modules/rtr:** add audit and command wait workflows ([#356](https://github.com/CrowdStrike/falcon-mcp/issues/356)) ([14b1007](https://github.com/CrowdStrike/falcon-mcp/commit/14b1007acfa655a01b05ee1a5fc6a78cc56531ba))
+
+
+### Bug Fixes
+
+* **docker:** use multi-stage COPY pattern for uv binary ([#411](https://github.com/CrowdStrike/falcon-mcp/issues/411)) ([a1f0628](https://github.com/CrowdStrike/falcon-mcp/commit/a1f062873ec0e8906ee665a7035e921b8ed05142))
+* **modules/cloud:** return int count from count_kubernetes_containers ([#397](https://github.com/CrowdStrike/falcon-mcp/issues/397)) ([42d1172](https://github.com/CrowdStrike/falcon-mcp/commit/42d1172aea7ddbebbe8c9ba86dd106c3e8c58cf7))
+* **modules/correlation-rules:** align API fields with live behavior ([#407](https://github.com/CrowdStrike/falcon-mcp/issues/407)) ([0199222](https://github.com/CrowdStrike/falcon-mcp/commit/019922262303dfd43398879ea82e7e5ee9620455))
+* **modules/idp:** resolve FieldInfo defaults before building search_criteria ([#396](https://github.com/CrowdStrike/falcon-mcp/issues/396)) ([47205d1](https://github.com/CrowdStrike/falcon-mcp/commit/47205d12b6d74227139bf99c4e935e4e0b60dffa))
+* **modules/intel:** parse JSON format in get_mitre_report ([#429](https://github.com/CrowdStrike/falcon-mcp/issues/429)) ([62e698c](https://github.com/CrowdStrike/falcon-mcp/commit/62e698ccbff38f384a6cd76b3a93dfa2dc648da9)), closes [#383](https://github.com/CrowdStrike/falcon-mcp/issues/383)
+
+## [0.10.0](https://github.com/CrowdStrike/falcon-mcp/compare/v0.9.0...v0.10.0) (2026-05-18)
+
+
+### Features
+
+* **modules/cases:** add Case Management module ([#388](https://github.com/CrowdStrike/falcon-mcp/issues/388)) ([58d8460](https://github.com/CrowdStrike/falcon-mcp/commit/58d84606368fdff82eb5415388c45c56e654c35d))
+* **modules/cloud:** add CSPM findings query and suppression tools ([#378](https://github.com/CrowdStrike/falcon-mcp/issues/378)) ([c76dce5](https://github.com/CrowdStrike/falcon-mcp/commit/c76dce55ef634a5cf33cb56d084546aaf99d4887))
+* **modules/shield:** add Falcon Shield (SaaS Security) module ([#355](https://github.com/CrowdStrike/falcon-mcp/issues/355)) ([3218176](https://github.com/CrowdStrike/falcon-mcp/commit/3218176eb356f3dc6d4125f467d8b1b376b36051))
+* **modules:** remove deprecated incidents module ([#368](https://github.com/CrowdStrike/falcon-mcp/issues/368)) ([54c4948](https://github.com/CrowdStrike/falcon-mcp/commit/54c494838106e93691c4b1c22c85fc7a2a92de79)), closes [#330](https://github.com/CrowdStrike/falcon-mcp/issues/330)
+* publish falcon mcp to the mcp registry ([#357](https://github.com/CrowdStrike/falcon-mcp/issues/357)) ([47acb05](https://github.com/CrowdStrike/falcon-mcp/commit/47acb0503f3ad875ea7076cd4f393dcdefb16b5c))
+
+
+### Bug Fixes
+
+* **server:** falcon_check_connectivity will try auth once before reporting no connectivity to Falcon API ([#363](https://github.com/CrowdStrike/falcon-mcp/issues/363)) ([cea77ef](https://github.com/CrowdStrike/falcon-mcp/commit/cea77ef2f30f9f3339337df8fe69535868c99368))
+* **server:** surface diagnostic details on auth failure at startup ([#379](https://github.com/CrowdStrike/falcon-mcp/issues/379)) ([50a8c95](https://github.com/CrowdStrike/falcon-mcp/commit/50a8c95a1dc67e1ef78dfb9cb8f67a151a23686c)), closes [#351](https://github.com/CrowdStrike/falcon-mcp/issues/351)
+* **tests:** make NGSIEM async tests actually execute ([#381](https://github.com/CrowdStrike/falcon-mcp/issues/381)) ([64ecd27](https://github.com/CrowdStrike/falcon-mcp/commit/64ecd27e4a8359da2f2dcd93619d86d56dba2343)), closes [#375](https://github.com/CrowdStrike/falcon-mcp/issues/375)
+* **tools:** omit outputSchema from tools/list to fit client context budgets ([#376](https://github.com/CrowdStrike/falcon-mcp/issues/376)) ([943fe55](https://github.com/CrowdStrike/falcon-mcp/commit/943fe55952fa023a017ec769d237989d957f5740))
+
+
+### Refactoring
+
+* **modules:** standardize tool descriptions across all modules ([#385](https://github.com/CrowdStrike/falcon-mcp/issues/385)) ([939d62e](https://github.com/CrowdStrike/falcon-mcp/commit/939d62e4beaa8226d2b3e0ddcf4e8444b65abbab)), closes [#380](https://github.com/CrowdStrike/falcon-mcp/issues/380)
+
+## [0.9.0](https://github.com/CrowdStrike/falcon-mcp/compare/v0.8.0...v0.9.0) (2026-04-10)
+
+
+### Features
+
+* add Flight Control (MSSP) support with member_cid parameter ([#317](https://github.com/CrowdStrike/falcon-mcp/issues/317)) ([d15b1c8](https://github.com/CrowdStrike/falcon-mcp/commit/d15b1c8ea7dcb8739e0a41a6eb9e8f1a823d1973)), closes [#283](https://github.com/CrowdStrike/falcon-mcp/issues/283)
+* add version reporting via startup log, CLI flag, and MCP metadata ([#334](https://github.com/CrowdStrike/falcon-mcp/issues/334)) ([27acc45](https://github.com/CrowdStrike/falcon-mcp/commit/27acc450109ea447330d61985656f6d91137dfc4))
+* **modules/cloud:** add CSPM asset inventory search ([#319](https://github.com/CrowdStrike/falcon-mcp/issues/319)) ([cbf2614](https://github.com/CrowdStrike/falcon-mcp/commit/cbf2614cc75a550f20170fef97b99e2d992ac50e))
+* **modules/rtr:** add real time response support ([#327](https://github.com/CrowdStrike/falcon-mcp/issues/327)) ([d975534](https://github.com/CrowdStrike/falcon-mcp/commit/d975534ff7027d40744d51f3b5594641dbad7b80))
+
+
+### Bug Fixes
+
+* **modules/cloud:** correct CSPM asset FQL tag filter syntax ([#320](https://github.com/CrowdStrike/falcon-mcp/issues/320)) ([95fd9bd](https://github.com/CrowdStrike/falcon-mcp/commit/95fd9bd1b086b67f0c6b5c92f18334df24034d83))
+
+## [0.8.0](https://github.com/CrowdStrike/falcon-mcp/compare/v0.7.0...v0.8.0) (2026-03-09)
+
+
+### Features
+
+* **modules:** add Custom IOA behavioral rules module ([#307](https://github.com/CrowdStrike/falcon-mcp/issues/307)) ([1c10c1d](https://github.com/CrowdStrike/falcon-mcp/commit/1c10c1d113101f1f596663be90ca067af89407b2))
+* **modules:** add firewall management module and tests ([#306](https://github.com/CrowdStrike/falcon-mcp/issues/306)) ([eedd89c](https://github.com/CrowdStrike/falcon-mcp/commit/eedd89ce4aa11db1012143e76b4acd1135d8d4a6))
+* **modules:** add MCP tool annotations for all tools ([#303](https://github.com/CrowdStrike/falcon-mcp/issues/303)) ([339e7c4](https://github.com/CrowdStrike/falcon-mcp/commit/339e7c4b723bed7b5759a9f9a5c2ae07d2094d5b)), closes [#229](https://github.com/CrowdStrike/falcon-mcp/issues/229)
+
+
+### Bug Fixes
+
+* handle trailing-slash redirects and json-rpc content-type in HTTP transports ([#308](https://github.com/CrowdStrike/falcon-mcp/issues/308)) ([b4260b7](https://github.com/CrowdStrike/falcon-mcp/commit/b4260b7c862c0e98e5683f0b1d5f643e63f43e14))
+
+
+### Refactoring
+
+* **examples/adk:** simplify agent.py and clean up documentation ([#304](https://github.com/CrowdStrike/falcon-mcp/issues/304)) ([4baef37](https://github.com/CrowdStrike/falcon-mcp/commit/4baef37686abe74595f10dc08358de7030baa67b))
+
 ## [0.7.0](https://github.com/CrowdStrike/falcon-mcp/compare/v0.6.0...v0.7.0) (2026-02-26)
 
 

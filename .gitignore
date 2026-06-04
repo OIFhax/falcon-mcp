@@ -208,3 +208,6 @@ memory-bank/
 # E2E artifacts
 static_test_report.html
 test_results.json
+
+# Playwright MCP screenshots
+.playwright-mcp/

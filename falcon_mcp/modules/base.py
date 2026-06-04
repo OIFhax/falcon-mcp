@@ -119,6 +119,7 @@ class BaseModule(ABC):
             wrapped_method,
             name=prefixed_name,
             annotations=annotations or READ_ONLY_ANNOTATIONS,
+            structured_output=False,
         )
         self.tools.append(prefixed_name)
         logger.debug("Added tool: %s", prefixed_name)

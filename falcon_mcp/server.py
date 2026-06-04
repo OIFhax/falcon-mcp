@@ -17,7 +17,7 @@ from mcp.server.fastmcp import FastMCP
 from pydantic import Field
 
 from falcon_mcp import registry
-from falcon_mcp.client import FalconClient
+from falcon_mcp.client import FalconClient, get_version
 from falcon_mcp.common.auth import (
     ASGIApp,
     auth_middleware,
@@ -61,6 +61,8 @@ class FalconMCPServer:
         api_key: str | None = None,
         host: str = "127.0.0.1",
         port: int = 8000,
+        member_cid: str | None = None,
+        proxy: str | None = None,
     ):
         """Initialize the Falcon MCP server.
 
@@ -75,6 +77,8 @@ class FalconMCPServer:
             api_key: API key for HTTP transport authentication (x-api-key header)
             host: Host to bind to for HTTP transports (default: 127.0.0.1)
             port: Port to listen on for HTTP transports (default: 8000)
+            member_cid: Child CID for Flight Control (MSSP) support (defaults to FALCON_MEMBER_CID env var)
+            proxy: HTTP/HTTPS proxy URL for outbound Falcon API connections (defaults to FALCON_PROXY_URL env var)
         """
         # Store configuration
         self.base_url = base_url
@@ -98,12 +102,15 @@ class FalconMCPServer:
             user_agent_comment=self.user_agent_comment,
             client_id=client_id,
             client_secret=client_secret,
+            member_cid=member_cid,
+            proxy=proxy,
         )
 
         # Authenticate with the Falcon API
         if not self.falcon_client.authenticate():
-            logger.error("Failed to authenticate with the Falcon API")
-            raise RuntimeError("Failed to authenticate with the Falcon API")
+            msg = self.falcon_client.auth_failure_message()
+            logger.error(msg)
+            raise RuntimeError(msg)
 
         # Initialize the MCP server
         self.server = FastMCP(
@@ -117,6 +124,9 @@ class FalconMCPServer:
         )
         self.core_tools: list[str] = []
         self.declared_tools: list[str] = []
+
+        # Set the server version in MCP protocol metadata (returned in initialize handshake)
+        self.server._mcp_server.version = get_version()
 
         # Initialize and register modules
         self.modules = {}
@@ -139,7 +149,8 @@ class FalconMCPServer:
         module_word = "module" if module_count == 1 else "modules"
 
         logger.info(
-            "Initialized %d %s with %d %s and %d %s",
+            "Falcon MCP v%s — %d %s, %d %s, %d %s",
+            get_version(),
             module_count,
             module_word,
             tool_count,
@@ -168,6 +179,7 @@ class FalconMCPServer:
                 tool_method,
                 name=tool_name,
                 annotations=READ_ONLY_ANNOTATIONS,
+                structured_output=False,
             )
 
         self.core_tools = [tool_name for tool_name, _ in core_tools]
@@ -197,7 +209,12 @@ class FalconMCPServer:
 
     def falcon_check_connectivity(self) -> dict[str, bool]:
         """Check connectivity to the Falcon API."""
-        return {"connected": self.falcon_client.is_authenticated()}
+        try:
+            result = self.falcon_client.client._login_handler(stateful=False)
+            return {"connected": result.get("status_code") == 201}
+        except Exception:
+            logger.warning("Connectivity probe failed", exc_info=True)
+            return {"connected": False}
 
     def list_enabled_modules(self) -> dict[str, list[str]]:
         """Lists enabled modules in the falcon-mcp server.
@@ -349,6 +366,14 @@ def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="Falcon MCP Server")
 
+    # Version
+    parser.add_argument(
+        "--version",
+        "-V",
+        action="version",
+        version=f"%(prog)s {get_version()}",
+    )
+
     # Transport options
     parser.add_argument(
         "--transport",
@@ -423,6 +448,20 @@ def parse_args() -> argparse.Namespace:
         help="API key for HTTP transport authentication (x-api-key header, env: FALCON_MCP_API_KEY)",
     )
 
+    # Flight Control (MSSP) support
+    parser.add_argument(
+        "--member-cid",
+        default=os.environ.get("FALCON_MEMBER_CID"),
+        help="Child CID for Flight Control (MSSP) support (env: FALCON_MEMBER_CID)",
+    )
+
+    # Proxy configuration
+    parser.add_argument(
+        "--proxy",
+        default=os.environ.get("FALCON_PROXY_URL"),
+        help="HTTP/HTTPS proxy URL for outbound Falcon API connections (env: FALCON_PROXY_URL)",
+    )
+
     return parser.parse_args()
 
 
@@ -445,6 +484,8 @@ def main() -> None:
             api_key=args.api_key,
             host=args.host,
             port=args.port,
+            member_cid=args.member_cid,
+            proxy=args.proxy,
         )
         logger.info("Starting server with %s transport", args.transport)
         server.run(args.transport)
