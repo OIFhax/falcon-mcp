@@ -6,9 +6,8 @@ from falcon_mcp.common.utils import generate_md_table
 
 SEARCH_WORKFLOW_ACTIVITIES_FILTER_FIELDS = [
     ("Field", "Type", "Description"),
-    ("name", "String", "Workflow activity name."),
-    ("category", "String", "Workflow activity category."),
-    ("is_enabled", "Boolean", "Whether activity is enabled."),
+    ("name.raw", "String", "Exact workflow activity name."),
+    ("name", "String", "Workflow activity name search, where supported by the backend."),
 ]
 
 SEARCH_WORKFLOW_ACTIVITIES_SORT_FIELDS = [
@@ -21,16 +20,21 @@ SEARCH_WORKFLOW_DEFINITIONS_FILTER_FIELDS = [
     ("Field", "Type", "Description"),
     ("id", "String", "Workflow definition identifier."),
     ("name", "String", "Workflow definition name."),
+    ("name.raw", "String", "Exact workflow definition name."),
     ("enabled", "Boolean", "Definition enabled status."),
-    ("created_on", "Timestamp", "Definition creation timestamp."),
-    ("updated_on", "Timestamp", "Definition update timestamp."),
+    ("trigger", "String", "Trigger display/name field."),
+    ("trigger.id", "String", "Trigger identifier."),
+    ("trigger.type", "String", "Trigger type."),
+    ("last_modified_by_email", "String", "Email of the last modifying user."),
 ]
 
 SEARCH_WORKFLOW_DEFINITIONS_SORT_FIELDS = [
     ("Field", "Description"),
     ("name", "Sort by definition name."),
-    ("created_on", "Sort by creation time."),
-    ("updated_on", "Sort by update time."),
+    ("name.raw", "Sort by exact definition name."),
+    ("enabled", "Sort by enabled status."),
+    ("last_modified_timestamp", "Sort by last modified time."),
+    ("last_modified_by_email", "Sort by last modifying user."),
 ]
 
 SEARCH_WORKFLOW_EXECUTIONS_FILTER_FIELDS = [
@@ -66,6 +70,12 @@ Use this guide to build the `filter` parameter for:
 
 {generate_md_table(SEARCH_WORKFLOW_ACTIVITIES_FILTER_FIELDS)}
 
+## Notes
+
+- For exact activity name lookups, prefer `name.raw:'Send email'`.
+- Some backend versions reject `category` and `is_enabled` even though older
+  documentation listed them.
+
 ## Sort Fields
 
 Use either `field.asc` / `field.desc` or `field|asc` / `field|desc`.
@@ -86,6 +96,8 @@ Use this guide to build the `filter` parameter for:
 ## Sort Fields
 
 Use either `field.asc` / `field.desc` or `field|asc` / `field|desc`.
+
+For recent definitions, prefer `last_modified_timestamp.desc`.
 
 {generate_md_table(SEARCH_WORKFLOW_DEFINITIONS_SORT_FIELDS)}
 """

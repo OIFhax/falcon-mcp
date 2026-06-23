@@ -49,6 +49,18 @@ Enable specific modules by name (comma-separated):
 falcon-mcp --modules detections,intel,spotlight,idp
 ```
 
+For restricted workflow/Fusion SOAR troubleshooting, include both the workflow
+surface and raw FalconPy workflow gaps:
+
+```bash
+falcon-mcp --modules workflows,rawworkflows,fusionplaybooks,apiintegrations
+```
+
+`rawworkflows` exposes FalconPy workflow operations not covered by the
+hand-written `workflows` module. It does not by itself expose newer Fusion
+playbook UI routes; use `fusionplaybooks` for Fusion playbook export plus
+workflow-backed import, update, status, execute, and mock-execute operations.
+
 Enable only one module:
 
 ```bash

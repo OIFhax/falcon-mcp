@@ -73,6 +73,28 @@ Limit which modules are loaded to reduce tool count:
 }
 ```
 
+For restricted Fusion SOAR/playbook troubleshooting, include the workflow
+modules explicitly:
+
+```json
+{
+  "mcpServers": {
+    "falcon-mcp": {
+      "command": "uvx",
+      "args": [
+        "--env-file", "/path/to/.env",
+        "falcon-mcp",
+        "--modules", "workflows,rawworkflows,fusionplaybooks,apiintegrations"
+      ]
+    }
+  }
+}
+```
+
+`rawworkflows` covers FalconPy workflow gaps; `fusionplaybooks` provides Fusion
+playbook export plus workflow-backed import, update, status, execute, and
+mock-execute operations for API-visible definitions.
+
 ## Remote HTTP Server
 
 If running the server on a remote host or in Docker:

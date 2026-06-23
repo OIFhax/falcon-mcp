@@ -261,6 +261,88 @@ class TestFalconClient(unittest.TestCase):
         self.assertEqual(history[0]["target_device_ids"], ["aid-123"])
         self.assertIsNone(history[0]["error_object"])
 
+    @patch("falcon_mcp.client.requests.get")
+    @patch("falcon_mcp.client.os.environ.get")
+    @patch("falcon_mcp.client.APIHarnessV2")
+    def test_raw_get_allowed_enforces_path_allowlist(
+        self, mock_apiharness, mock_environ_get, mock_requests_get
+    ):
+        """Test raw GET helper rejects paths outside explicit allowlists."""
+        mock_environ_get.side_effect = lambda key, default=None: {
+            "FALCON_CLIENT_ID": "test-client-id",
+            "FALCON_CLIENT_SECRET": "test-client-secret",
+        }.get(key, default)
+        mock_apiharness.return_value = MagicMock()
+
+        client = FalconClient()
+
+        with self.assertRaises(ValueError):
+            client.raw_get_allowed(
+                "FusionPlaybookReadExperimental",
+                "/oauth2/token",
+                allowed_path_patterns=(r"/workflow/fusion/playbooks/[a-fA-F0-9]{32}",),
+            )
+
+        mock_requests_get.assert_not_called()
+
+    @patch("falcon_mcp.client.requests.get")
+    @patch("falcon_mcp.client.os.environ.get")
+    @patch("falcon_mcp.client.APIHarnessV2")
+    def test_raw_get_allowed_uses_auth_proxy_timeout_and_records_history(
+        self, mock_apiharness, mock_environ_get, mock_requests_get
+    ):
+        """Test raw GET helper uses Falcon auth context and records raw I/O."""
+        mock_environ_get.side_effect = lambda key, default=None: {
+            "FALCON_CLIENT_ID": "test-client-id",
+            "FALCON_CLIENT_SECRET": "test-client-secret",
+            "FALCON_MCP_HTTP_TIMEOUT_SECONDS": "7",
+        }.get(key, default)
+        mock_instance = MagicMock()
+        mock_instance.token_valid = True
+        mock_instance.auth_headers = {"Authorization": "Bearer test-token"}
+        mock_apiharness.return_value = mock_instance
+
+        response = MagicMock()
+        response.status_code = 200
+        response.headers = {"Content-Type": "application/json", "x-cs-traceid": "trace-raw"}
+        response.json.return_value = {"resources": [{"id": "playbook"}]}
+        mock_requests_get.return_value = response
+
+        client = FalconClient(
+            base_url="https://api.us-2.crowdstrike.com",
+            proxy="http://proxy.example.com:8080",
+        )
+        with client.tool_context("falcon_get_fusion_playbook", {"playbook_id": "a" * 32}):
+            result = client.raw_get_allowed(
+                "FusionPlaybookReadExperimental",
+                f"/workflow/fusion/playbooks/{'a' * 32}",
+                parameters={"sanitize": True},
+                allowed_path_patterns=(r"/workflow/fusion/playbooks/[a-fA-F0-9]{32}",),
+            )
+
+        mock_requests_get.assert_called_once()
+        call_args = mock_requests_get.call_args
+        self.assertEqual(
+            call_args.args[0],
+            f"https://api.us-2.crowdstrike.com/workflow/fusion/playbooks/{'a' * 32}",
+        )
+        self.assertEqual(call_args.kwargs["headers"]["Authorization"], "Bearer test-token")
+        self.assertIn("falcon-mcp/", call_args.kwargs["headers"]["User-Agent"])
+        self.assertEqual(call_args.kwargs["params"], {"sanitize": True})
+        self.assertEqual(call_args.kwargs["timeout"], 7.0)
+        self.assertEqual(
+            call_args.kwargs["proxies"],
+            {"https": "http://proxy.example.com:8080"},
+        )
+
+        self.assertEqual(result["status_code"], 200)
+        self.assertEqual(result["body"]["resources"][0]["id"], "playbook")
+        history = client.get_tool_io_history()
+        self.assertEqual(len(history), 1)
+        self.assertEqual(history[0]["tool_name"], "falcon_get_fusion_playbook")
+        self.assertEqual(history[0]["falcon_operation"], "FusionPlaybookReadExperimental")
+        self.assertEqual(history[0]["trace_ids"], ["trace-raw"])
+
     @patch("falcon_mcp.client.sleep")
     @patch("falcon_mcp.client.os.environ.get")
     @patch("falcon_mcp.client.APIHarnessV2")

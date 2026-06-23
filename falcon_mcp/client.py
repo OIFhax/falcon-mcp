@@ -7,6 +7,7 @@ This module provides the Falcon API client and authentication utilities for the 
 import contextvars
 import os
 import platform
+import re
 import sys
 from collections import deque
 from contextlib import contextmanager
@@ -18,9 +19,11 @@ from urllib.parse import urlparse
 
 # Import the APIHarnessV2 from FalconPy
 from falconpy import APIHarnessV2  # type: ignore[import-untyped]
+import requests
 from requests.exceptions import Timeout as RequestsTimeout
 
 from falcon_mcp.common.logging import get_logger
+from falcon_mcp.common.utils import prepare_api_parameters
 
 logger = get_logger(__name__)
 
@@ -321,6 +324,94 @@ class FalconClient:
 
         raise RuntimeError(f"Unexpected retry flow termination for operation {operation}")
 
+    def raw_get_allowed(
+        self,
+        operation: str,
+        path: str,
+        *,
+        parameters: dict[str, Any] | None = None,
+        allowed_path_patterns: tuple[str, ...],
+    ) -> dict[str, Any]:
+        """Execute a narrowly allowlisted authenticated Falcon GET request.
+
+        This is intentionally not exposed as a generic MCP tool. It exists for
+        small Falcon API gaps where FalconPy has not published endpoint metadata
+        yet, and callers must provide explicit path regexes for every supported
+        route.
+        """
+        self._validate_raw_get_path(path=path, allowed_path_patterns=allowed_path_patterns)
+
+        if not self.is_authenticated() and not self.authenticate():
+            response = {
+                "status_code": self.token_status or 401,
+                "body": {
+                    "errors": [
+                        {
+                            "message": self.auth_failure_message(),
+                        }
+                    ]
+                },
+            }
+            self._record_tool_io(
+                operation=operation,
+                parameters={"path": path, "parameters": parameters or {}},
+                timestamp=_utc_timestamp(),
+                raw_response=response,
+                error_object=self._extract_error_object(response),
+                attempt=1,
+            )
+            return response
+
+        headers = dict(self.get_headers())
+        headers.setdefault(
+            "Accept",
+            "application/json, application/x-yaml, text/yaml, text/plain, */*",
+        )
+        headers.setdefault("User-Agent", self.get_user_agent())
+
+        request_kwargs: dict[str, Any] = {
+            "headers": headers,
+            "params": prepare_api_parameters(parameters or {}),
+            "timeout": self.http_timeout,
+        }
+        if self.proxy:
+            request_kwargs["proxies"] = {"https": self.proxy}
+
+        timestamp = _utc_timestamp()
+        url = f"{self.base_url.rstrip('/')}{path}"
+        try:
+            raw_response = requests.get(url, **request_kwargs)
+            response = self._normalize_raw_response(raw_response)
+        except RequestsTimeout as exc:
+            response = self._build_timeout_response(
+                operation=operation,
+                timeout_seconds=self.http_timeout,
+                exc=exc,
+            )
+        except Exception as exc:
+            self._record_tool_io(
+                operation=operation,
+                parameters={"path": path, "parameters": parameters or {}},
+                timestamp=timestamp,
+                raw_response=None,
+                error_object={
+                    "type": type(exc).__name__,
+                    "message": str(exc),
+                },
+                attempt=1,
+            )
+            raise
+
+        self._record_tool_io(
+            operation=operation,
+            parameters={"path": path, "parameters": parameters or {}},
+            timestamp=timestamp,
+            raw_response=response,
+            error_object=self._extract_error_object(response),
+            attempt=1,
+        )
+        return response
+
     def get_user_agent(self) -> str:
         """Get RFC-compliant user agent string for API requests.
 
@@ -352,6 +443,41 @@ class FalconClient:
         )
 
         return f"falcon-mcp/{falcon_mcp_version} ({'; '.join(comment_parts)})"
+
+    def _validate_raw_get_path(
+        self,
+        *,
+        path: str,
+        allowed_path_patterns: tuple[str, ...],
+    ) -> None:
+        """Validate that a raw path is relative to Falcon and explicitly allowlisted."""
+        if not allowed_path_patterns:
+            raise ValueError("raw GET requests require at least one allowlisted path pattern")
+
+        parsed = urlparse(path)
+        if parsed.scheme or parsed.netloc or parsed.query or parsed.fragment or not path.startswith("/"):
+            raise ValueError("raw GET path must be an absolute Falcon API path without host/query/fragment")
+
+        if not any(re.fullmatch(pattern, path) for pattern in allowed_path_patterns):
+            raise ValueError(f"raw GET path is not allowlisted: {path}")
+
+    def _normalize_raw_response(self, response: requests.Response) -> dict[str, Any]:
+        """Convert a requests response into the FalconPy-like response shape."""
+        headers = dict(response.headers)
+        content_type = headers.get("Content-Type", headers.get("content-type", ""))
+        if "json" in content_type.lower():
+            try:
+                body: Any = response.json()
+            except ValueError:
+                body = {"raw": response.text}
+        else:
+            body = {"raw": response.text}
+
+        return {
+            "status_code": response.status_code,
+            "headers": headers,
+            "body": body,
+        }
 
     def _build_api_client(self, timeout: float | None) -> APIHarnessV2:
         """Create a FalconPy client with the configured transport timeout."""
