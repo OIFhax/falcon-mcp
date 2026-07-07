@@ -165,6 +165,14 @@ API_SCOPE_REQUIREMENTS = {
     "createUserV1": ["User Management:write"],
     "deleteUserV1": ["User Management:write"],
     "userRolesActionV1": ["User Management:write"],
+    # API Client Management operations
+    "GetAccessibleScopes": ["api-client-mgmt:read"],
+    "GetAllAPIClientIdsForCustomer": ["api-client-mgmt:read"],
+    "GetAPIClients": ["api-client-mgmt:read"],
+    "UpdateAPIClient": ["api-client-mgmt:write"],
+    # Access Scopes operations
+    "ListAccessScopesExternal": ["access-scope:read"],
+    "QueryAccessScopesExternal": ["access-scope:read"],
     # Sensor Usage operations
     "GetSensorUsageWeekly": ["Sensor Usage:read"],
     # Sensor Download operations

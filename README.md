@@ -27,6 +27,8 @@
   - [Exposure Management Module](#exposure-management-module)
   - [Hosts Module](#hosts-module)
   - [Identity Protection Module](#identity-protection-module)
+  - [API Clients Module](#api-clients-module)
+  - [Access Scopes Module](#access-scopes-module)
   - [User Management Module](#user-management-module)
   - [Incidents Module](#incidents-module)
   - [Installation Tokens Module](#installation-tokens-module)
@@ -109,6 +111,8 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Exposure Management** | `Exposure Management:read`<br>`Exposure Management:write` | Search external assets and perform controlled asset inventory/triage updates |
 | **Hosts** | `Hosts:read`<br>`Host Groups:read`<br>`Host Groups:write`<br>`Host Migration:read`<br>`Host Migration:write` | Search hosts, manage host groups, and orchestrate migration workflows |
 | **Identity Protection** | `Identity Protection Entities:read`<br>`Identity Protection Timeline:read`<br>`Identity Protection Detections:read`<br>`Identity Protection Assessment:read`<br>`Identity Protection GraphQL:write` | Comprehensive entity investigation and identity protection analysis |
+| **API Clients** | `api-client-mgmt:read`<br>`api-client-mgmt:write` | List API clients, inspect accessible API-client scopes, and perform controlled API-client scope updates |
+| **Access Scopes** | `access-scope:read` | Search and retrieve Falcon access-scope definitions |
 | **User Management** | `User Management:read`<br>`User Management:write` | Search users and roles, review grants, and perform controlled user/role assignment changes |
 | **Incidents** | `Incidents:read` | Analyze security incidents and coordinated activities |
 | **Installation Tokens** | `Installation Tokens:read`<br>`Installation Tokens:write`<br>`Installation Tokens Settings:write` | Search and manage installation tokens, inspect audit events, and control tenant token settings |
@@ -318,6 +322,45 @@ Provides tools for accessing and managing CrowdStrike Falcon Identity Protection
 - `idp_investigate_entity`: Entity investigation tool for analyzing users, endpoints, and other entities with support for timeline analysis, relationship mapping, and risk assessment
 
 **Use Cases**: Entity investigation, identity protection analysis, user behavior analysis, endpoint security assessment, relationship mapping, risk assessment
+
+### API Clients Module
+
+**API Scopes Required**:
+
+- `api-client-mgmt:read`
+- `api-client-mgmt:write`
+
+Provides tools for Falcon API client management workflows:
+
+- `falcon_get_accessible_api_client_scopes`: List API-client scopes available to a target CID
+- `falcon_list_api_client_ids`: List API client IDs for the current CID or a Flight Control child CID
+- `falcon_get_api_clients`: Retrieve API client definitions by ID with secret-like fields redacted
+- `falcon_find_api_clients`: Find API clients by name substring
+- `falcon_update_api_client_scopes`: Replace one API client's scope list (`confirm_execution=true` required)
+- `falcon_copy_api_client_scopes_to_matching_clients`: Copy a source client's scopes to matching API clients across specified child CIDs (`confirm_execution=true` required)
+
+**Resources**:
+
+- `falcon://api-clients/usage-guide`: Operational guidance for API client management tools
+
+**Use Cases**: API client inventory, Flight Control child CID scope alignment, least-privilege API-client updates, and controlled permission replication
+
+### Access Scopes Module
+
+**API Scopes Required**:
+
+- `access-scope:read`
+
+Provides tools for Falcon access-scope lookup:
+
+- `falcon_query_access_scopes`: Search access-scope IDs with FQL
+- `falcon_list_access_scopes`: Retrieve access-scope definitions by ID
+
+**Resources**:
+
+- `falcon://access-scopes/fql-guide`: FQL guidance for access-scope lookup
+
+**Use Cases**: Access-scope discovery, API-client permission analysis, and access governance support workflows
 
 ### User Management Module
 

@@ -175,6 +175,9 @@ class TestApiScopes(unittest.TestCase):
         )
         self.assertEqual(get_required_scopes("queryUserV1"), ["User Management:read"])
         self.assertEqual(get_required_scopes("userRolesActionV1"), ["User Management:write"])
+        self.assertEqual(get_required_scopes("GetAPIClients"), ["api-client-mgmt:read"])
+        self.assertEqual(get_required_scopes("UpdateAPIClient"), ["api-client-mgmt:write"])
+        self.assertEqual(get_required_scopes("QueryAccessScopesExternal"), ["access-scope:read"])
 
         # Test with unknown operation
         self.assertEqual(get_required_scopes("UnknownOperation"), [])
@@ -200,7 +203,7 @@ class TestApiScopes(unittest.TestCase):
         self.assertEqual(
             len(unmapped_operations),
             0,
-            f"The following operations are missing scope mappings: {sorted(unmapped_operations)}"
+            f"The following operations are missing scope mappings: {sorted(unmapped_operations)}",
         )
 
     def test_no_unused_scope_mappings(self):
@@ -220,7 +223,7 @@ class TestApiScopes(unittest.TestCase):
             warnings.warn(
                 f"The following scope mappings may be unused: {sorted(unused_mappings)}",
                 UserWarning,
-                stacklevel=2
+                stacklevel=2,
             )
 
     def test_scope_format_validation(self):
@@ -246,12 +249,8 @@ class TestApiScopes(unittest.TestCase):
                 self.assertEqual(
                     len(parts), 2, f"Invalid scope format '{scope}' - should have exactly one colon"
                 )
-                self.assertGreater(
-                    len(parts[0]), 0, f"Empty resource name in scope '{scope}'"
-                )
-                self.assertGreater(
-                    len(parts[1]), 0, f"Empty permission name in scope '{scope}'"
-                )
+                self.assertGreater(len(parts[0]), 0, f"Empty resource name in scope '{scope}'")
+                self.assertGreater(len(parts[1]), 0, f"Empty permission name in scope '{scope}'")
 
     def test_error_handling_integration(self):
         """Test that get_required_scopes integrates properly with error handling."""
@@ -296,13 +295,19 @@ class TestApiScopes(unittest.TestCase):
             ("RTRAuditSessions", ["Real Time Response Audit:read"]),
             ("queryUserV1", ["User Management:read"]),
             ("userRolesActionV1", ["User Management:write"]),
-            ("api_preempt_proxy_post_graphql", [
-                "Identity Protection Entities:read",
-                "Identity Protection Timeline:read",
-                "Identity Protection Detections:read",
-                "Identity Protection Assessment:read",
-                "Identity Protection GraphQL:write"
-            ])
+            ("GetAPIClients", ["api-client-mgmt:read"]),
+            ("UpdateAPIClient", ["api-client-mgmt:write"]),
+            ("QueryAccessScopesExternal", ["access-scope:read"]),
+            (
+                "api_preempt_proxy_post_graphql",
+                [
+                    "Identity Protection Entities:read",
+                    "Identity Protection Timeline:read",
+                    "Identity Protection Detections:read",
+                    "Identity Protection Assessment:read",
+                    "Identity Protection GraphQL:write",
+                ],
+            ),
         ]
 
         for operation, expected_scopes in test_cases:
@@ -345,10 +350,18 @@ class TestApiScopes(unittest.TestCase):
 
         # Validate that most resources use consistent permission patterns
         read_only_resources = [
-            "Alerts", "Hosts", "Incidents", "Vulnerabilities",
-            "Assets", "Sensor Usage", "Scheduled Reports",
-            "Real Time Response", "Real Time Response Audit", "CAO Hunting",
-            "Zero Trust Assessment", "Sensor Download",
+            "Alerts",
+            "Hosts",
+            "Incidents",
+            "Vulnerabilities",
+            "Assets",
+            "Sensor Usage",
+            "Scheduled Reports",
+            "Real Time Response",
+            "Real Time Response Audit",
+            "CAO Hunting",
+            "Zero Trust Assessment",
+            "Sensor Download",
         ]
 
         for resource in read_only_resources:
@@ -356,7 +369,7 @@ class TestApiScopes(unittest.TestCase):
                 self.assertEqual(
                     scope_patterns[resource],
                     {"read"},
-                    f"Resource '{resource}' should only use 'read' permission"
+                    f"Resource '{resource}' should only use 'read' permission",
                 )
 
         read_write_resources = [
@@ -384,7 +397,7 @@ class TestApiScopes(unittest.TestCase):
                 self.assertEqual(
                     scope_patterns[resource],
                     {"read", "write"},
-                    f"Resource '{resource}' should use both 'read' and 'write' permissions"
+                    f"Resource '{resource}' should use both 'read' and 'write' permissions",
                 )
 
     def test_comprehensive_module_coverage(self):
@@ -424,8 +437,19 @@ class TestApiScopes(unittest.TestCase):
                 "ITAutomationCancelTaskExecution",
                 "ITAutomationRerunTaskExecution",
             ],
-            "incidents": ["QueryIncidents", "GetIncidents", "QueryBehaviors", "GetBehaviors", "CrowdScore"],
-            "intel": ["QueryIntelActorEntities", "QueryIntelIndicatorEntities", "QueryIntelReportEntities", "GetMitreReport"],
+            "incidents": [
+                "QueryIncidents",
+                "GetIncidents",
+                "QueryBehaviors",
+                "GetBehaviors",
+                "CrowdScore",
+            ],
+            "intel": [
+                "QueryIntelActorEntities",
+                "QueryIntelIndicatorEntities",
+                "QueryIntelReportEntities",
+                "GetMitreReport",
+            ],
             "spotlight": ["combinedQueryVulnerabilities"],
             "cloud": ["ReadContainerCombined", "ReadContainerCount", "ReadCombinedVulnerabilities"],
             "discover": ["combined_applications", "combined_hosts"],
@@ -457,10 +481,24 @@ class TestApiScopes(unittest.TestCase):
                 "deleteUserV1",
                 "userRolesActionV1",
             ],
+            "api_clients": [
+                "GetAccessibleScopes",
+                "GetAllAPIClientIdsForCustomer",
+                "GetAPIClients",
+                "UpdateAPIClient",
+            ],
+            "access_scopes": [
+                "ListAccessScopesExternal",
+                "QueryAccessScopesExternal",
+            ],
             "sensor_usage": ["GetSensorUsageWeekly"],
             "scheduled_reports": [
-                "scheduled_reports_query", "scheduled_reports_get", "scheduled_reports_launch",
-                "report_executions_query", "report_executions_get", "report_executions_download_get"
+                "scheduled_reports_query",
+                "scheduled_reports_get",
+                "scheduled_reports_launch",
+                "report_executions_query",
+                "report_executions_get",
+                "report_executions_download_get",
             ],
             "sensor_download": [
                 "GetCombinedSensorInstallersByQuery",
@@ -667,14 +705,16 @@ class TestApiScopes(unittest.TestCase):
         # All expected operations should be mapped
         missing_operations = all_expected_operations - mapped_operations
         self.assertEqual(
-            len(missing_operations), 0,
-            f"Expected operations missing from scope mappings: {sorted(missing_operations)}"
+            len(missing_operations),
+            0,
+            f"Expected operations missing from scope mappings: {sorted(missing_operations)}",
         )
 
         # Should have reasonable coverage (at least 11 different modules)
         self.assertGreaterEqual(
-            len(module_patterns), 11,
-            "Should have scope mappings for at least 11 different functional modules"
+            len(module_patterns),
+            11,
+            "Should have scope mappings for at least 11 different functional modules",
         )
 
 
