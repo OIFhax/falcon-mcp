@@ -57,7 +57,6 @@ GENERATED_SERVICE_COLLECTIONS: tuple[str, ...] = (
     "network_scan_templates",
     "network_scan_zones",
     "ods",
-    "recon",
     "report_executions",
     "saas_security",
     "sample_uploads",

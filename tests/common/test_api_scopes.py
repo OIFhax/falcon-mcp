@@ -1152,7 +1152,7 @@ class TestApiScopes(unittest.TestCase):
         """Test that we have reasonable coverage across expected modules."""
         # Count operations by likely module based on operation patterns
         module_patterns = {
-            "alerts": ["GetQueriesAlertsV2", "PostEntitiesAlertsV2"],
+            "alerts": ["GetQueriesAlertsV2", "PostEntitiesAlertsV2", "PatchEntitiesAlertsV3"],
             "hosts": ["QueryDevicesByFilter", "PostDeviceDetailsV2"],
             "host_groups": [
                 "queryHostGroups",

@@ -134,7 +134,7 @@ class ExposureManagementModule(BaseModule):
         ),
     ) -> list[dict[str, Any]] | dict[str, Any]:
         """Search external assets and return full detail records."""
-        asset_ids = self._base_search_api_call(
+        asset_ids, pagination = self._base_search_with_meta(
             operation="query_external_assets_v2",
             search_params={
                 "filter": filter,
@@ -151,11 +151,7 @@ class ExposureManagementModule(BaseModule):
             )
 
         if not asset_ids:
-            if filter:
-                return self._format_fql_error_response(
-                    [], filter, SEARCH_EXPOSURE_ASSETS_FQL_DOCUMENTATION
-                )
-            return []
+            return self._build_pagination_envelope([], pagination, filter)
 
         details = self._base_get_by_ids(
             operation="get_external_assets",
@@ -167,7 +163,8 @@ class ExposureManagementModule(BaseModule):
         if self._is_error(details):
             return [details]
 
-        return details
+        details = self._reorder_by_ids(asset_ids, details, id_field="id")
+        return self._build_pagination_envelope(details, pagination, filter)
 
     def get_exposure_asset_details(
         self,

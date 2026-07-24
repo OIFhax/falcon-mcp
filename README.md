@@ -2021,12 +2021,20 @@ Integration tests make real API calls to validate FalconPy operation names, HTTP
 - [End-to-End Testing Guide](docs/development/e2e_testing.md): Guide for running and understanding E2E tests
 - [Integration Testing Guide](docs/development/integration_testing.md): Guide for running integration tests with real API calls
 
+## Registries
+
+falcon-mcp is published to public MCP catalogs for discovery and one-click setup in compatible clients:
+
+- [MCP Registry](https://registry.modelcontextprotocol.io/?q=io.github.CrowdStrike%2Ffalcon-mcp&all=1)
+- [GitHub MCP Registry](https://github.com/mcp/CrowdStrike/falcon-mcp)
+- [Gemini CLI Extensions](https://geminicli.com/extensions/?name=CrowdStrikefalcon-mcp)
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Support
 
-This is a community-driven, open source project. While it is not an official CrowdStroke product, it is actively maintained by CrowdStrike and supported in collaboration with the open source developer community.
+This is a community-driven, open source project. While it is not an official CrowdStrike product, it is actively maintained by CrowdStrike and supported in collaboration with the open source developer community.
 
 For more information, please see our [SUPPORT](SUPPORT.md) file.

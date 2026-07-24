@@ -26,6 +26,7 @@ API_SCOPE_REQUIREMENTS = {
     "QueryDevicesByFilter": ["Hosts:read"],
     "PostDeviceDetailsV2": ["Hosts:read"],
     # Host Groups operations
+    "queryCombinedHostGroups": ["Host Groups:read"],
     "queryHostGroups": ["Host Groups:read"],
     "getHostGroups": ["Host Groups:read"],
     "queryCombinedGroupMembers": ["Host Groups:read"],
@@ -33,6 +34,10 @@ API_SCOPE_REQUIREMENTS = {
     "updateHostGroups": ["Host Groups:write"],
     "deleteHostGroups": ["Host Groups:write"],
     "performGroupAction": ["Host Groups:write"],
+    # Cloud Security Risks and Cloud Groups operations
+    "combined_cloud_risks": ["Cloud Security API Risks:read"],
+    "ListCloudGroupsExternal": ["Cloud Groups V2:read"],
+    "ListCloudGroupsByIDExternal": ["Cloud Groups V2:read"],
     # Host Migration operations
     "GetMigrationIDsV1": ["Host Migration:read"],
     "GetMigrationsV1": ["Host Migration:read"],
@@ -738,6 +743,35 @@ API_SCOPE_REQUIREMENTS = {
     "create_rule": ["Custom IOA Rules:write"],
     "update_rules_v2": ["Custom IOA Rules:write"],
     "delete_rules": ["Custom IOA Rules:write"],
+    # Recon (Falcon Intelligence Recon) operations
+    "AggregateNotificationsExposedDataRecordsV1": [
+        "Monitoring rules (Falcon Intelligence Recon):read"
+    ],
+    "AggregateNotificationsV1": ["Monitoring rules (Falcon Intelligence Recon):read"],
+    "PreviewRuleV1": ["Monitoring rules (Falcon Intelligence Recon):read"],
+    "GetActionsV1": ["Monitoring rules (Falcon Intelligence Recon):read"],
+    "GetExportJobsV1": ["Monitoring rules (Falcon Intelligence Recon):read"],
+    "GetFileContentForExportJobsV1": ["Monitoring rules (Falcon Intelligence Recon):read"],
+    "QueryNotificationsV1": ["Monitoring rules (Falcon Intelligence Recon):read"],
+    "GetNotificationsV1": ["Monitoring rules (Falcon Intelligence Recon):read"],
+    "GetNotificationsDetailedV1": ["Monitoring rules (Falcon Intelligence Recon):read"],
+    "GetNotificationsTranslatedV1": ["Monitoring rules (Falcon Intelligence Recon):read"],
+    "GetNotificationsDetailedTranslatedV1": ["Monitoring rules (Falcon Intelligence Recon):read"],
+    "QueryRulesV1": ["Monitoring rules (Falcon Intelligence Recon):read"],
+    "GetRulesV1": ["Monitoring rules (Falcon Intelligence Recon):read"],
+    "QueryNotificationsExposedDataRecordsV1": ["Monitoring rules (Falcon Intelligence Recon):read"],
+    "GetNotificationsExposedDataRecordsV1": ["Monitoring rules (Falcon Intelligence Recon):read"],
+    "QueryActionsV1": ["Monitoring rules (Falcon Intelligence Recon):read"],
+    "CreateExportJobsV1": ["Monitoring rules (Falcon Intelligence Recon):read"],
+    "DeleteExportJobsV1": ["Monitoring rules (Falcon Intelligence Recon):write"],
+    "CreateActionsV1": ["Monitoring rules (Falcon Intelligence Recon):write"],
+    "DeleteActionV1": ["Monitoring rules (Falcon Intelligence Recon):write"],
+    "UpdateActionV1": ["Monitoring rules (Falcon Intelligence Recon):write"],
+    "CreateRulesV1": ["Monitoring rules (Falcon Intelligence Recon):write"],
+    "DeleteRulesV1": ["Monitoring rules (Falcon Intelligence Recon):write"],
+    "UpdateRulesV1": ["Monitoring rules (Falcon Intelligence Recon):write"],
+    "DeleteNotificationsV1": ["Monitoring rules (Falcon Intelligence Recon):write"],
+    "UpdateNotificationsV1": ["Monitoring rules (Falcon Intelligence Recon):write"],
     # Add more mappings as needed
 }
 

@@ -140,7 +140,9 @@ class TestFirewallModule(TestModules):
 
         self.assertIsInstance(result, dict)
         self.assertEqual(result["results"], [])
-        self.assertIn("fql_guide", result)
+        self.assertIsNone(result["pagination"]["total"])
+        self.assertEqual(result["filter_used"], "name:'missing*'")
+        self.assertNotIn("fql_guide", result)
 
     def test_get_firewall_rules_validation_and_success(self):
         """Test get rules validation and success path."""
@@ -154,7 +156,9 @@ class TestFirewallModule(TestModules):
         }
         success_result = self.module.get_firewall_rules(ids=["rule-1"])
 
-        self.mock_client.command.assert_called_once_with("get_rules", parameters={"ids": ["rule-1"]})
+        self.mock_client.command.assert_called_once_with(
+            "get_rules", parameters={"ids": ["rule-1"]}
+        )
         self.assertEqual(len(success_result), 1)
         self.assertEqual(success_result[0]["id"], "rule-1")
 
@@ -259,7 +263,8 @@ class TestFirewallModule(TestModules):
 
         self.assertIsInstance(result, dict)
         self.assertEqual(result["results"], [])
-        self.assertIn("fql_guide", result)
+        self.assertIn("pagination", result)
+        self.assertNotIn("fql_guide", result)
 
     def test_validate_firewall_filepath_pattern_validation_and_success(self):
         """Test filepath validation input checks and success path."""

@@ -170,8 +170,9 @@ class CustomIOAModule(BaseModule):
         Use this to find rule groups by platform, name, or enabled state. Consult
         falcon://custom-ioa/rule-groups/fql-guide before constructing filter expressions.
         Returns rule group objects with their contained behavioral detection rules.
+        Responses include `pagination.total` (the total number of records matching the filter, or null when the API does not report a count) — use it to answer "how many" questions.
         """
-        result = self._base_search_api_call(
+        result, pagination = self._base_search_with_meta(
             operation="query_rule_groups_full",
             search_params={
                 "filter": filter,
@@ -188,12 +189,7 @@ class CustomIOAModule(BaseModule):
                 [result], filter, SEARCH_IOA_RULE_GROUPS_FQL_DOCUMENTATION
             )
 
-        if not result:
-            return self._format_fql_error_response(
-                [], filter, SEARCH_IOA_RULE_GROUPS_FQL_DOCUMENTATION
-            )
-
-        return result
+        return self._build_pagination_envelope(result or [], pagination, filter)
 
     def get_ioa_platforms(self) -> list[dict[str, Any]] | dict[str, Any]:
         """Get all available platforms for Custom IOA rule groups.
@@ -222,7 +218,8 @@ class CustomIOAModule(BaseModule):
         if self._is_error(details):
             return [details]
 
-        return details
+        # Preserve the query-step order in case the details endpoint reorders results.
+        return self._reorder_by_ids(platform_ids, details, id_field="id")
 
     def get_ioa_rule_types(
         self,
@@ -267,7 +264,8 @@ class CustomIOAModule(BaseModule):
         if self._is_error(details):
             return [details]
 
-        return details
+        # Preserve the query-step order in case the details endpoint reorders results.
+        return self._reorder_by_ids(rule_type_ids, details, id_field="id")
 
     def create_ioa_rule_group(
         self,

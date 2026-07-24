@@ -104,11 +104,11 @@ class TestUserManagementModule(TestModules):
         self.assertEqual(second_call[0][0], "retrieveUsersGETV1")
         self.assertEqual(second_call[1]["body"]["ids"], ["user-uuid-1", "user-uuid-2"])
 
-        self.assertEqual(len(result), 2)
-        self.assertEqual(result[0]["uuid"], "user-uuid-1")
+        self.assertEqual(len(result["results"]), 2)
+        self.assertEqual(result["results"][0]["uuid"], "user-uuid-1")
 
-    def test_search_users_empty_results_returns_fql_guide(self):
-        """Test user search empty results include FQL guide context."""
+    def test_search_users_empty_results_returns_envelope(self):
+        """Test user search empty results use the standard pagination envelope."""
         self.mock_client.command.return_value = {
             "status_code": 200,
             "body": {"resources": []},
@@ -118,8 +118,8 @@ class TestUserManagementModule(TestModules):
 
         self.assertIsInstance(result, dict)
         self.assertEqual(result["results"], [])
-        self.assertIn("fql_guide", result)
-        self.assertIn("No results matched", result["hint"])
+        self.assertIn("pagination", result)
+        self.assertNotIn("fql_guide", result)
 
     def test_search_users_error_returns_fql_guide(self):
         """Test user search errors include FQL guide context."""

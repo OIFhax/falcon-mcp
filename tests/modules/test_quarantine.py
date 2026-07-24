@@ -25,6 +25,10 @@ class TestQuarantineModule(TestModules):
             "falcon_get_quarantine_action_update_count",
             "falcon_update_quarantine_files_by_ids",
             "falcon_update_quarantine_files_by_query",
+            "falcon_search_quarantined_files",
+            "falcon_preview_quarantine_actions",
+            "falcon_update_quarantined_files",
+            "falcon_delete_quarantined_files",
         ]
         self.assert_tools_registered(expected_tools)
 
@@ -34,6 +38,7 @@ class TestQuarantineModule(TestModules):
             "falcon_search_quarantine_files_fql_guide",
             "falcon_quarantine_aggregation_guide",
             "falcon_quarantine_safety_guide",
+            "falcon_search_quarantined_files_fql_guide",
         ]
         self.assert_resources_registered(expected_resources)
 
@@ -73,8 +78,8 @@ class TestQuarantineModule(TestModules):
             self.mock_client.command.call_args_list[1][1]["body"],
             {"ids": ["qf-1"]},
         )
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]["id"], "qf-1")
+        self.assertEqual(len(result["results"]), 1)
+        self.assertEqual(result["results"][0]["id"], "qf-1")
 
     def test_search_quarantine_files_empty_with_filter_returns_guide(self):
         """Test empty results with filter include FQL helper response."""
@@ -93,7 +98,8 @@ class TestQuarantineModule(TestModules):
 
         self.assertIsInstance(result, dict)
         self.assertEqual(result["results"], [])
-        self.assertIn("fql_guide", result)
+        self.assertIn("pagination", result)
+        self.assertNotIn("fql_guide", result)
 
     def test_get_quarantine_file_details_validation_error(self):
         """Test file detail retrieval requires IDs."""

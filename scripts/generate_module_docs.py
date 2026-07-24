@@ -43,6 +43,9 @@ MODULE_METADATA: dict[str, dict[str, Any]] = {
     "dataprotection": {
         "slug": "data-protection",
     },
+    "hostgroups": {
+        "slug": "host-groups",
+    },
     "idp": {
         "title": "Identity Protection",
     },
@@ -137,6 +140,20 @@ TOOL_EXAMPLES: dict[str, list[str]] = {
         "Delete CSPM suppression rule abc-123",
         "Remove the CSPM IOM suppression rule for the S3 public access finding",
     ],
+    "falcon_search_cloud_risks": [
+        "Show me all open critical cloud risks in AWS",
+        "Which account has the most unresolved critical risks?",
+        "What new cloud risks appeared in the last 7 days?",
+        "Show me risks for the production cloud group",
+        "What cloud risks have been suppressed and why?",
+    ],
+    "falcon_search_cloud_groups": [
+        "What cloud groups are configured in my environment?",
+        "List all cloud groups tagged as production",
+    ],
+    "falcon_get_cloud_groups": [
+        "Get the details for cloud group abc-123",
+    ],
     # Custom IOA
     "falcon_search_ioa_rule_groups": [
         "Find enabled Windows Custom IOA rule groups",
@@ -186,6 +203,13 @@ TOOL_EXAMPLES: dict[str, list[str]] = {
     "falcon_get_detection_details": [
         "Get me the details for this detection",
     ],
+    "falcon_update_detections": [
+        "Mark detection abc123 as in_progress",
+        "Assign detection abc123 to analyst@example.com",
+        "Close these detections and add a comment: resolved via playbook",
+        "Mark detection abc123 as a true positive and close it",
+        "Remove all fc/ prefixed tags from this detection",
+    ],
     # Discover
     "falcon_search_applications": [
         "Find all Chrome installations across my environment",
@@ -218,6 +242,30 @@ TOOL_EXAMPLES: dict[str, list[str]] = {
     "falcon_get_host_details": [
         "Get the full details for host device abc123",
     ],
+    # Host Groups
+    "falcon_search_host_groups": [
+        "Show me all static host groups",
+        "Find host groups created in the last 30 days",
+    ],
+    "falcon_search_host_group_members": [
+        "List the Windows hosts in host group abc123",
+        "Show me the members of the Production Servers group",
+    ],
+    "falcon_create_host_group": [
+        "Create a static host group called 'Critical Servers'",
+        "Create a dynamic host group for all Windows hosts",
+    ],
+    "falcon_update_host_group": [
+        "Rename host group abc123 to 'Decommissioned'",
+        "Update the assignment rule for the dynamic Windows group",
+    ],
+    "falcon_delete_host_groups": [
+        "Delete host group abc123",
+    ],
+    "falcon_perform_host_group_action": [
+        "Add the hosts matching platform_name Windows to group abc123",
+        "Remove host device xyz from host group abc123",
+    ],
     # Identity Protection
     "falcon_idp_investigate_entity": [
         "Investigate user john.doe@company.com and show their risk assessment",
@@ -237,6 +285,24 @@ TOOL_EXAMPLES: dict[str, list[str]] = {
     "falcon_get_mitre_report": [
         "Generate MITRE ATT&CK report for FANCY BEAR",
     ],
+    # Exclusions
+    "falcon_search_exclusions": [
+        "Show me my most recent IOA and machine learning exclusions",
+        "List sensor visibility exclusions created in the last 7 days",
+    ],
+    "falcon_create_exclusion": [
+        "Create an ML exclusion for /tmp/foo.sh applied to all hosts",
+        "Add a sensor visibility exclusion for C:\\Temp\\* on the Workstations group",
+    ],
+    "falcon_update_exclusion": [
+        "Update IOA exclusion abc123 to also match a new command line regex",
+    ],
+    "falcon_delete_exclusions": [
+        "Delete the certificate exclusion with ID abc123",
+    ],
+    "falcon_get_certificate_details": [
+        "Look up the signing certificate for SHA256 3dd9a...",
+    ],
     # IOC
     "falcon_search_iocs": [
         "Find all active domain IOCs",
@@ -255,6 +321,31 @@ TOOL_EXAMPLES: dict[str, list[str]] = {
         "Run this CQL query for the last 24 hours: #event_simpleName=ProcessRollup2",
         "Search NGSIEM for DNS events from January 2025",
     ],
+    # Policies
+    "falcon_search_policies": [
+        "List all firewall policies",
+        "Show enabled sensor update policies for Windows",
+        "Find prevention policies whose name contains 'default'",
+    ],
+    "falcon_search_policy_members": [
+        "What hosts are assigned to firewall policy 1a2b3c?",
+    ],
+    "falcon_create_policy": [
+        "Create a disabled firewall policy named 'Test FW' for Windows",
+    ],
+    "falcon_update_policy": [
+        "Rename prevention policy 1a2b3c to 'Servers - Strict'",
+    ],
+    "falcon_delete_policies": [
+        "Delete firewall policy 1a2b3c",
+    ],
+    "falcon_perform_policy_action": [
+        "Disable prevention policy 1a2b3c",
+        "Add host group 9z8y7x to sensor update policy 1a2b3c",
+    ],
+    "falcon_set_policy_precedence": [
+        "Set the precedence order of these Windows prevention policies: 1a2b3c, 4d5e6f, 7g8h9i",
+    ],
     # Quarantine
     "falcon_search_quarantined_files": [
         "Show me quarantined files on host SE-DAO-WIN10-CO",
@@ -272,6 +363,25 @@ TOOL_EXAMPLES: dict[str, list[str]] = {
     "falcon_delete_quarantined_files": [
         "Delete quarantine records for host SE-DAO-WIN10-CO",
         "Delete quarantine record abc123",
+    ],
+    # Recon
+    "falcon_search_recon_notifications": [
+        "Show me recon alerts from the past 7 days",
+        "Show me new recon alerts with high priority",
+        "Find recon notifications for domain monitoring rules",
+        "Show typosquatting recon alerts",
+        "Find leaked credential notifications from stealer logs",
+    ],
+    "falcon_search_recon_rules": [
+        "List all active Recon monitoring rules",
+        "Show typosquatting monitoring rules",
+        "Find Recon rules with breach monitoring enabled",
+        "List high priority domain monitoring rules",
+    ],
+    "falcon_search_recon_exposed_data_records": [
+        "Find exposed credentials for example.com",
+        "Show leaked credentials from the past 7 days",
+        "Find exposed data records for a specific notification",
     ],
     # Scheduled Reports
     "falcon_search_scheduled_reports": [
@@ -578,6 +688,47 @@ def extract_registered_tool_names(module_cls: type) -> dict[str, str]:
     return registered
 
 
+def _extract_kwarg_string(block: str, kwarg: str) -> str:
+    """Extract a string-valued kwarg, joining adjacent/parenthesized literals.
+
+    Handles both `description="..."` single literals and reflowed
+    `description=(\n    "part one "\n    "part two"\n)` concatenations, which
+    Python joins into one string at runtime.
+    """
+    m = re.search(rf"{kwarg}\s*=\s*", block)
+    if not m:
+        return ""
+    rest = block[m.end() :]
+
+    # Parenthesized group: capture everything up to the matching close paren,
+    # then join every quoted literal inside it.
+    if rest.startswith("("):
+        depth = 0
+        for i, ch in enumerate(rest):
+            if ch == "(":
+                depth += 1
+            elif ch == ")":
+                depth -= 1
+                if depth == 0:
+                    inner = rest[1:i]
+                    break
+        else:
+            inner = rest
+        pairs = re.findall(r'"([^"]*)"|\'([^\']*)\'', inner)
+        return "".join(dq or sq for dq, sq in pairs)
+
+    # Bare value: join only the leading run of adjacent string literals
+    # (implicit concatenation), stopping at the first non-literal token so we
+    # don't swallow later kwargs' strings.
+    literals: list[str] = []
+    scan = rest
+    lit = re.compile(r'^\s*(?:"([^"]*)"|\'([^\']*)\')')
+    while match := lit.match(scan):
+        literals.append(match.group(1) if match.group(1) is not None else match.group(2))
+        scan = scan[match.end() :]
+    return "".join(literals)
+
+
 def extract_resource_info(module_cls: type) -> list[dict[str, str]]:
     """Extract resource URIs and descriptions by inspecting register_resources."""
     try:
@@ -602,14 +753,14 @@ def extract_resource_info(module_cls: type) -> list[dict[str, str]]:
 
         uri_m = re.search(r'uri=AnyUrl\(["\']([^"\']+)["\']\)', block)
         name_m = re.search(r'name=["\']([^"\']+)["\']', block)
-        desc_m = re.search(r'description=["\']([^"\']+)["\']', block)
+        description = _extract_kwarg_string(block, "description")
 
         if uri_m:
             resources.append(
                 {
                     "uri": uri_m.group(1),
                     "name": name_m.group(1) if name_m else "",
-                    "description": desc_m.group(1) if desc_m else "",
+                    "description": description,
                 }
             )
 

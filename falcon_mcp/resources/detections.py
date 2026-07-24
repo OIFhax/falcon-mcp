@@ -369,10 +369,11 @@ SEARCH_DETECTIONS_FQL_FILTERS = [
         "tags",
         "Array",
         """
-        Contains a separated list of FalconGroupingTags
-        and SensorGroupingTags (array field).
-        Ex: ["fc/offering/falcon_complete",
-        "fc/exclusion/pre-epp-migration", "fc/exclusion/nonlive"]
+        Contains FalconGroupingTags, SensorGroupingTags, and resolution tags (array field).
+        Resolution tags added via the falcon_update_detections add_tags param: true_positive, false_positive, ignored.
+        Use to filter by resolution: tags:'true_positive'
+        Exact match only — wildcards and ~ are not supported on array fields.
+        Ex: true_positive, false_positive, ignored, fc/offering/falcon_complete
         """
     ),
     (
@@ -888,6 +889,7 @@ field_name:[operator]'value'
 === WILDCARDS ===
 ✅ **String & Number fields**: field_name:'pattern*' (prefix), field_name:'*pattern' (suffix), field_name:'*pattern*' (contains)
 ❌ **Timestamp fields**: Not supported (causes errors)
+❌ **Array fields**: Only exact-match ('value') supported; wildcards and ~ are not valid on Array fields (e.g. use tags:'true_positive', not tags:'true_positive*' or tags:~'positive')
 ⚠️ **Number wildcards**: Require quotes: pattern_id:'123*'
 
 === COMBINING ===
@@ -939,7 +941,9 @@ Examples: 'severity.desc', 'timestamp.desc'
 • Severity (by range): severity:>=80 (Critical+) | severity:>=60 (High+) | severity:>=40 (Medium+) | severity:>=20 (Low+)
 • Product: product:'epp' | product:'idp' | product:'xdr' | product:'overwatch' (see field table for all)
 • Assignment: assigned_to_name:!'*' (unassigned) | assigned_to_name:'user.name'
+• Resolution tags: tags:'true_positive' | tags:'false_positive' | tags:'ignored'
 • Timestamps: created_timestamp:>'2025-01-01T00:00:00Z' | created_timestamp:>='date1'+created_timestamp:<='date2'
+  Relative dates supported: timestamp:>'now-24h' | timestamp:>'now-7d' | timestamp:>'now-30d' (lowercase 'now', quoted)
 • Wildcards: name:'EICAR*' | description:'*credential*' | agent_id:'77d11725*' | pattern_id:'301*'
 • Combinations: status:'new'+severity_name:'High'+product:'epp' | status:'new'+severity:>=70+product:'epp' | product:'epp',product:'xdr'
 

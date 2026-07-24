@@ -75,11 +75,11 @@ class TestExposureManagementModule(TestModules):
         self.assertEqual(second_call[0][0], "get_external_assets")
         self.assertEqual(second_call[1]["parameters"]["ids"], ["asset-id-1", "asset-id-2"])
 
-        self.assertEqual(len(result), 2)
-        self.assertEqual(result[0]["id"], "asset-id-1")
+        self.assertEqual(len(result["results"]), 2)
+        self.assertEqual(result["results"][0]["id"], "asset-id-1")
 
-    def test_search_exposure_assets_empty_results_returns_fql_guide(self):
-        """Test empty search results include FQL guide context."""
+    def test_search_exposure_assets_empty_results_returns_envelope(self):
+        """Test empty search results use the standard pagination envelope."""
         self.mock_client.command.return_value = {
             "status_code": 200,
             "body": {"resources": []},
@@ -89,8 +89,8 @@ class TestExposureManagementModule(TestModules):
 
         self.assertIsInstance(result, dict)
         self.assertEqual(result["results"], [])
-        self.assertIn("fql_guide", result)
-        self.assertIn("No results matched", result["hint"])
+        self.assertIn("pagination", result)
+        self.assertNotIn("fql_guide", result)
 
     def test_get_exposure_asset_details_validation_error(self):
         """Test get_exposure_asset_details requires ids."""
@@ -300,4 +300,3 @@ class TestExposureManagementModule(TestModules):
 
 if __name__ == "__main__":
     unittest.main()
-

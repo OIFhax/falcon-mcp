@@ -5,6 +5,7 @@ import unittest
 from falcon_mcp.modules.base import READ_ONLY_ANNOTATIONS
 from falcon_mcp.modules.correlation_rules import (
     DESTRUCTIVE_WRITE_ANNOTATIONS,
+    UPDATE_ANNOTATIONS,
     WRITE_ANNOTATIONS,
     CorrelationRulesModule,
 )
@@ -19,6 +20,7 @@ class TestCorrelationRulesModule(TestModules):
 
     def test_register_tools(self):
         expected_tools = [
+            "falcon_search_correlation_rules",
             "falcon_search_correlation_rules_v1",
             "falcon_search_correlation_rules_v2",
             "falcon_query_correlation_rule_ids",
@@ -39,6 +41,7 @@ class TestCorrelationRulesModule(TestModules):
 
     def test_register_resources(self):
         expected_resources = [
+            "falcon_search_correlation_rules_fql_guide",
             "falcon_correlation_rules_fql_guide",
             "falcon_correlation_rules_safety_guide",
         ]
@@ -48,7 +51,10 @@ class TestCorrelationRulesModule(TestModules):
         self.module.register_tools(self.mock_server)
         self.assert_tool_annotations("falcon_search_correlation_rules_v1", READ_ONLY_ANNOTATIONS)
         self.assert_tool_annotations("falcon_create_correlation_rule", WRITE_ANNOTATIONS)
-        self.assert_tool_annotations("falcon_delete_correlation_rules", DESTRUCTIVE_WRITE_ANNOTATIONS)
+        self.assert_tool_annotations("falcon_update_correlation_rule", UPDATE_ANNOTATIONS)
+        self.assert_tool_annotations(
+            "falcon_delete_correlation_rules", DESTRUCTIVE_WRITE_ANNOTATIONS
+        )
 
     def test_create_correlation_rule_confirm_required(self):
         result = self.module.create_correlation_rule(confirm_execution=False, body={"name": "x"})
@@ -56,7 +62,9 @@ class TestCorrelationRulesModule(TestModules):
 
     def test_query_correlation_rule_ids_empty_filter_returns_guide(self):
         self.mock_client.command.return_value = {"status_code": 200, "body": {"resources": []}}
-        result = self.module.query_correlation_rule_ids(filter="name:'missing'", q=None, sort=None, offset=0, limit=10)
+        result = self.module.query_correlation_rule_ids(
+            filter="name:'missing'", q=None, sort=None, offset=0, limit=10
+        )
         self.assertIsInstance(result, dict)
         self.assertIn("fql_guide", result)
 

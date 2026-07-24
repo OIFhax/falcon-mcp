@@ -248,3 +248,125 @@ Use either `field.asc` / `field.desc` or `field|asc` / `field|desc`.
 - Set `with_command_info=true` in `falcon_search_rtr_audit_sessions` to include command details.
 - Validate filters in a test environment before production use.
 """
+
+EMBEDDED_FQL_SYNTAX = """FQL filter string for querying RTR sessions.
+
+SYNTAX:
+- Equals: field:'value'
+- Not equals: field:!'value'
+- Comparison: field:>50, field:>=50, field:<50, field:<=50
+- Contains (case-insensitive): field:~'partial'
+- Wildcard: field:'prefix*', field:'*suffix'
+
+COMBINING:
+- AND (all must match): field1:'value1'+field2:'value2'
+- OR (any can match): field:'value1',field:'value2'
+- Grouping: (field1:'v1',field1:'v2')+field2:'v3'
+
+COMMON FIELDS:
+- aid: Host agent ID
+- hostname: Host name
+- user_id: API user who created the session ('@me' for current user)
+- origin: Session origin label (e.g., 'falcon-mcp')
+- created_at: Session creation timestamp (ISO 8601)
+- updated_at: Last update timestamp (ISO 8601)
+- base_command: RTR command name (e.g., 'ls', 'ps', 'cat')
+- command_string: Full command line executed
+- offline_queued: Whether session was queued offline (true/false)
+
+EXAMPLES:
+- Sessions for a host: hostname:'BRR-WB-LIB-22'
+- Sessions by agent ID: aid:'2c5c4e7738004deaa9dfcdb86f633f3e'
+- Current user sessions: user_id:'@me'
+- Offline-queued sessions: offline_queued:true+hostname:'DC*'
+"""
+
+AUDIT_RTR_SESSIONS_EMBEDDED_FQL_SYNTAX = """FQL filter string for querying RTR audit sessions.
+
+SYNTAX:
+- Equals: field:'value'
+- Not equals: field:!'value'
+- Comparison: field:>'2025-01-01T00:00:00Z'
+- Contains (case-insensitive): field:~'partial'
+- Wildcard: field:'prefix*', field:'*suffix'
+
+COMMON STARTING POINTS:
+- Use created_at or updated_at filters to keep audit searches time-bound.
+- Set with_command_info=true when you need command IDs and command log context.
+- If a field is rejected by Falcon, reduce to a timestamp-bounded search and inspect returned fields.
+
+EXAMPLES:
+- Recent RTR audit sessions: created_at:>'now-7d'
+- RTR audit sessions for a host pattern: hostname:'DC*'+created_at:>'now-7d'
+- RTR audit sessions for current API user: user_id:'@me'+created_at:>'now-7d'
+"""
+
+# List of tuples containing filter options data: (name, type, description)
+
+AGGREGATE_RTR_SESSIONS_GUIDE = """RTR Session Aggregation Guide
+
+Use falcon_aggregate_rtr_sessions to summarize RTR session activity without pulling every
+individual session record.
+
+Recommended aggregation fields:
+- hostname: Which hosts have the most RTR activity
+- aid: Which host agent IDs have RTR activity
+- user_id: Which Falcon users or API clients created sessions
+- origin: Which integration or source created sessions
+- base_command: Which RTR commands are most common
+- created_at: Time-based activity buckets with aggregate_type=date_range
+
+Recommended filters:
+- created_at:>'now-7d'
+- user_id:'@me'
+- hostname:'DC*'
+- offline_queued:true
+- commands_queued:true
+
+Example terms aggregation:
+- aggregate_type: terms
+- field: base_command
+- filter: created_at:>'now-7d'
+- size: 10
+
+Example date range aggregation:
+- aggregate_type: date_range
+- field: created_at
+- date_ranges: [{"from": "now-7d", "to": "now"}]
+
+Use this before detailed searches when the user asks "how much", "which hosts", "which users",
+or "what commands" across many RTR sessions.
+"""
+
+READ_ONLY_RTR_INVESTIGATION_GUIDE = """Read-only RTR Investigation Guide
+
+This guide helps agents use RTR safely for endpoint triage. The current RTR MCP module exposes
+the read-only RTR command endpoint for host investigation. It does not expose RTR Admin,
+Active Responder, remediation, or arbitrary script execution.
+
+Recommended sequence:
+1. Use Falcon detections, incidents, hosts, or NGSIEM to identify the host AID.
+2. Use falcon_init_rtr_session to open or reuse a single-host RTR session.
+3. Use falcon_run_rtr_read_only_command_and_wait for simple focused evidence collection.
+4. Use falcon_execute_rtr_read_only_command plus falcon_check_rtr_command_status when you
+   need manual control over request IDs, polling, or output sequence chunks.
+5. Use falcon_search_rtr_audit_sessions when accountability or session history matters.
+6. Use falcon_delete_rtr_session when the session is no longer needed.
+
+Useful read-only command patterns:
+- Processes: base_command=ps, command_string="ps"
+- Directory listing: base_command=ls, command_string="ls C:\\Path"
+- File hash: base_command=filehash, command_string="filehash C:\\Path\\file.exe"
+- File preview: base_command=cat, command_string="cat C:\\Path\\file.txt"
+- Registry query: base_command=reg, command_string="reg query HKLM\\Software\\..."
+- Network state: base_command=netstat, command_string="netstat"
+- Event log review: base_command=eventlog, command_string="eventlog view Security 50"
+
+Model behavior guidance:
+- Prefer one host and one question at a time.
+- Keep commands narrow and explain what evidence each command is collecting.
+- Use audit and aggregation tools before broad RTR activity conclusions.
+- Treat offline or queued behavior as a telemetry state, not proof the host is powered off.
+- Do not attempt remediation, deletion, script execution, or active-response behavior through
+  the read-only RTR tool.
+"""

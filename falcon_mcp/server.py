@@ -63,6 +63,7 @@ class FalconMCPServer:
         port: int = 8000,
         member_cid: str | None = None,
         proxy: str | None = None,
+        dynamic: bool = False,
     ):
         """Initialize the Falcon MCP server.
 
@@ -88,6 +89,7 @@ class FalconMCPServer:
         self.api_key = api_key
         self.host = host
         self.port = port
+        self.dynamic = dynamic
 
         self.enabled_modules = enabled_modules or set(registry.get_module_names())
 
@@ -149,7 +151,7 @@ class FalconMCPServer:
         module_word = "module" if module_count == 1 else "modules"
 
         logger.info(
-            "Falcon MCP v%s — %d %s, %d %s, %d %s",
+            "Falcon MCP v%s — %d %s, %d %s, %d %s%s",
             get_version(),
             module_count,
             module_word,
@@ -157,6 +159,7 @@ class FalconMCPServer:
             tool_word,
             resource_count,
             resource_word,
+            " (dynamic mode)" if self.dynamic else "",
         )
 
     def _register_tools(self) -> int:
@@ -165,15 +168,32 @@ class FalconMCPServer:
         Returns:
             int: Number of tools registered
         """
+        self.server.add_tool(
+            self.list_enabled_modules,
+            name="falcon_list_enabled_modules",
+            annotations=READ_ONLY_ANNOTATIONS,
+            structured_output=False,
+        )
+
+        if self.dynamic:
+            from falcon_mcp.dynamic import DynamicMode
+
+            DynamicMode(self.modules, self.server).register()
+            self.core_tools = [
+                "falcon_list_enabled_modules",
+                "falcon_search_tools",
+                "falcon_execute_tool",
+            ]
+            self.declared_tools = list(self.core_tools)
+            return len(self.declared_tools)
+
         core_tools = [
             ("falcon_check_connectivity", self.falcon_check_connectivity),
-            ("falcon_list_enabled_modules", self.list_enabled_modules),
             ("falcon_list_modules", self.list_modules),
             ("falcon_startup_check", self.falcon_startup_check),
             ("falcon_get_tool_io_history", self.falcon_get_tool_io_history),
             ("falcon_generate_support_bundle", self.falcon_generate_support_bundle),
         ]
-
         for tool_name, tool_method in core_tools:
             self.server.add_tool(
                 tool_method,
@@ -182,10 +202,10 @@ class FalconMCPServer:
                 structured_output=False,
             )
 
-        self.core_tools = [tool_name for tool_name, _ in core_tools]
+        self.core_tools = ["falcon_list_enabled_modules"] + [
+            tool_name for tool_name, _ in core_tools
+        ]
         self.declared_tools = list(self.core_tools)
-
-        # Register tools from modules
         for module in self.modules.values():
             module.register_tools(self.server)
             self.declared_tools.extend(getattr(module, "tools", []))
@@ -462,6 +482,15 @@ def parse_args() -> argparse.Namespace:
         help="HTTP/HTTPS proxy URL for outbound Falcon API connections (env: FALCON_PROXY_URL)",
     )
 
+    # Dynamic mode
+    parser.add_argument(
+        "--dynamic",
+        action="store_true",
+        default=os.environ.get("FALCON_MCP_DYNAMIC", "").lower() == "true",
+        help="Enable dynamic mode: exposes 3 tools (list-modules + search + execute) instead of "
+        "all module tools (env: FALCON_MCP_DYNAMIC)",
+    )
+
     return parser.parse_args()
 
 
@@ -486,6 +515,7 @@ def main() -> None:
             port=args.port,
             member_cid=args.member_cid,
             proxy=args.proxy,
+            dynamic=args.dynamic,
         )
         logger.info("Starting server with %s transport", args.transport)
         server.run(args.transport)

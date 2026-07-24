@@ -716,5 +716,137 @@ class TestBaseModule(TestModules):
         self.assertFalse(call_kwargs["structured_output"])
 
 
+class TestBaseModuleReorderByIds(TestModules):
+    """Test cases for BaseModule._reorder_by_ids."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        self.setup_module(ConcreteBaseModule)
+
+    def test_reorder_restores_sorted_order(self):
+        """Entities are reordered to match the query-step ID order."""
+        ordered_ids = ["c", "a", "b"]
+        entities = [{"id": "a"}, {"id": "b"}, {"id": "c"}]
+        result = self.module._reorder_by_ids(ordered_ids, entities, "id")
+        self.assertEqual([e["id"] for e in result], ["c", "a", "b"])
+
+    def test_reorder_custom_id_field(self):
+        """The id_field argument selects which key to match on."""
+        ordered_ids = ["dev2", "dev1"]
+        entities = [{"device_id": "dev1"}, {"device_id": "dev2"}]
+        result = self.module._reorder_by_ids(ordered_ids, entities, "device_id")
+        self.assertEqual([e["device_id"] for e in result], ["dev2", "dev1"])
+
+    def test_reorder_extra_entity_appended_at_end(self):
+        """Entities not present in ordered_ids are appended, never dropped."""
+        ordered_ids = ["a", "b"]
+        entities = [{"id": "b"}, {"id": "a"}, {"id": "extra"}]
+        result = self.module._reorder_by_ids(ordered_ids, entities, "id")
+        self.assertEqual([e["id"] for e in result], ["a", "b", "extra"])
+
+    def test_reorder_missing_entity_skipped(self):
+        """IDs with no matching entity are skipped silently."""
+        ordered_ids = ["a", "missing", "b"]
+        entities = [{"id": "b"}, {"id": "a"}]
+        result = self.module._reorder_by_ids(ordered_ids, entities, "id")
+        self.assertEqual([e["id"] for e in result], ["a", "b"])
+
+    def test_reorder_empty_entities_returns_empty(self):
+        """An empty entity list returns an empty list."""
+        result = self.module._reorder_by_ids(["a", "b"], [], "id")
+        self.assertEqual(result, [])
+
+    def test_reorder_empty_ordered_ids_appends_all(self):
+        """With no ordered IDs, all entities are returned in original order."""
+        entities = [{"id": "a"}, {"id": "b"}]
+        result = self.module._reorder_by_ids([], entities, "id")
+        self.assertEqual([e["id"] for e in result], ["a", "b"])
+
+    def test_reorder_duplicate_id_in_ordered_ids_yields_no_extra_slot(self):
+        """A duplicate ID in ordered_ids yields one slot, not a repeated entity.
+
+        Query endpoints return primary-key IDs, so a repeat is degenerate; the
+        second occurrence is skipped like a missing-entity ID.
+        """
+        ordered_ids = ["a", "a", "b"]
+        entities = [{"id": "a"}, {"id": "b"}]
+        result = self.module._reorder_by_ids(ordered_ids, entities, "id")
+        self.assertEqual([e["id"] for e in result], ["a", "b"])
+
+    def test_reorder_extra_entity_appended_even_when_first_in_input(self):
+        """An unmatched entity is appended at the tail regardless of input position."""
+        ordered_ids = ["a", "b"]
+        entities = [{"id": "extra"}, {"id": "b"}, {"id": "a"}]
+        result = self.module._reorder_by_ids(ordered_ids, entities, "id")
+        self.assertEqual([e["id"] for e in result], ["a", "b", "extra"])
+
+    def test_reorder_already_ordered_is_noop(self):
+        """When entities already match ordered_ids, output is unchanged."""
+        ordered_ids = ["a", "b", "c"]
+        entities = [{"id": "a"}, {"id": "b"}, {"id": "c"}]
+        result = self.module._reorder_by_ids(ordered_ids, entities, "id")
+        self.assertEqual([e["id"] for e in result], ["a", "b", "c"])
+
+
+class TestBuildPaginationEnvelope(TestModules):
+    """Test cases for _build_pagination_envelope, focused on total honesty and cursors."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        self.setup_module(ConcreteBaseModule)
+
+    def test_offset_pagination_round_trips(self):
+        """offset/limit/total from the API are surfaced verbatim; next is null."""
+        envelope = self.module._build_pagination_envelope(
+            [{"id": "a"}],
+            {"total": 42, "offset": 0, "limit": 10},
+            filter_used="name:'x'",
+        )
+        self.assertEqual(
+            envelope["pagination"],
+            {"total": 42, "offset": 0, "limit": 10, "next": None},
+        )
+        self.assertEqual(envelope["filter_used"], "name:'x'")
+
+    def test_cursor_after_maps_to_next(self):
+        """A non-null `after` cursor round-trips into `next`."""
+        envelope = self.module._build_pagination_envelope(
+            [{"id": "a"}],
+            {"total": 500, "after": "CURSOR_TOKEN"},
+        )
+        self.assertEqual(envelope["pagination"]["next"], "CURSOR_TOKEN")
+        self.assertEqual(envelope["pagination"]["total"], 500)
+        # No offset/limit keys when the API doesn't send them (cursor endpoints).
+        self.assertNotIn("offset", envelope["pagination"])
+        self.assertNotIn("limit", envelope["pagination"])
+
+    def test_missing_total_key_reports_none_not_page_size(self):
+        """A pagination dict without a `total` key reports None, never the page size."""
+        envelope = self.module._build_pagination_envelope(
+            [{"id": "a"}, {"id": "b"}],
+            {"offset": 0, "limit": 2},
+        )
+        self.assertIsNone(envelope["pagination"]["total"])
+
+    def test_no_meta_nonempty_page_reports_none(self):
+        """No pagination meta + a non-empty page: total is unknown, so None (not len)."""
+        envelope = self.module._build_pagination_envelope(
+            [{"id": "a"}, {"id": "b"}, {"id": "c"}],
+            None,
+        )
+        self.assertIsNone(envelope["pagination"]["total"])
+        self.assertIsNone(envelope["pagination"]["next"])
+
+    def test_no_meta_empty_page_reports_none(self):
+        """No pagination meta: the API gave no count, so total is None even when empty."""
+        envelope = self.module._build_pagination_envelope([], None)
+        self.assertIsNone(envelope["pagination"]["total"])
+
+    def test_filter_used_omitted_when_none(self):
+        """Tools with no filter param omit filter_used entirely."""
+        envelope = self.module._build_pagination_envelope([{"id": "a"}], {"total": 1})
+        self.assertNotIn("filter_used", envelope)
+
+
 if __name__ == "__main__":
     unittest.main()

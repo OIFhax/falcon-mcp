@@ -94,7 +94,7 @@ class SpotlightModule(BaseModule):
             default=None,
             description="Pagination token from previous response.",
         ),
-        facet: str | None = Field(
+        facet: str | list[str] | None = Field(
             default=None,
             description="Optional detail block. Example: `host_info`, `cve`, `remediation`, or `evaluation_logic`.",
         ),

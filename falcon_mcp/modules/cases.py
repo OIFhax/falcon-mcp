@@ -137,8 +137,9 @@ class CasesModule(BaseModule):
         evidence attributes. Consult falcon://cases/search/fql-guide before
         constructing filter expressions. Returns full case records including
         status, severity, evidence, assigned user, and analysis results.
+        Responses include `pagination.total` (the total number of records matching the filter, or null when the API does not report a count) — use it to answer "how many" questions.
         """
-        case_ids = self._base_search_api_call(
+        case_ids, pagination = self._base_search_with_meta(
             operation="queries_cases_get_v1",
             search_params={
                 "filter": filter,
@@ -156,9 +157,7 @@ class CasesModule(BaseModule):
             )
 
         if not case_ids:
-            return self._format_fql_error_response(
-                [], filter, SEARCH_CASES_FQL_DOCUMENTATION
-            )
+            return self._build_pagination_envelope([], pagination, filter)
 
         details = self._base_get_by_ids(
             operation="entities_cases_post_v2",
@@ -168,7 +167,10 @@ class CasesModule(BaseModule):
         if self._is_error(details):
             return [details]
 
-        return details
+        # entities_cases_post_v2 returns cases in arbitrary order; restore the sort
+        # applied by the query step (validated against live API: field is id).
+        details = self._reorder_by_ids(case_ids, details, id_field="id")
+        return self._build_pagination_envelope(details, pagination, filter)
 
     def get_cases(
         self,
@@ -506,4 +508,5 @@ class CasesModule(BaseModule):
         if self._is_error(details):
             return [details]
 
-        return details
+        # Preserve the query-step order in case the details endpoint reorders results.
+        return self._reorder_by_ids(template_ids, details, id_field="id")

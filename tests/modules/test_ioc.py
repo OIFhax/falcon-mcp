@@ -38,7 +38,10 @@ class TestIOCModule(TestModules):
         """Test searching IOCs and fetching full details."""
         search_response = {
             "status_code": 200,
-            "body": {"resources": ["ioc-id-1", "ioc-id-2"]},
+            "body": {
+                "resources": ["ioc-id-1", "ioc-id-2"],
+                "meta": {"pagination": {"offset": 0, "limit": 100, "total": 2}},
+            },
         }
         details_response = {
             "status_code": 200,
@@ -71,11 +74,42 @@ class TestIOCModule(TestModules):
         self.assertEqual(second_call[0][0], "indicator_get_v1")
         self.assertEqual(second_call[1]["parameters"]["ids"], ["ioc-id-1", "ioc-id-2"])
 
-        self.assertEqual(len(result), 2)
-        self.assertEqual(result[0]["id"], "ioc-id-1")
+        self.assertIn("results", result)
+        self.assertEqual(len(result["results"]), 2)
+        self.assertEqual(result["results"][0]["id"], "ioc-id-1")
+        self.assertEqual(result["pagination"]["total"], 2)
+
+    def test_search_iocs_reorders_to_match_sorted_ids(self):
+        """When indicator_get_v1 returns IOCs out of order, the result is reordered
+        to match the sorted ID order from indicator_search_v1."""
+        query_response = {
+            "status_code": 200,
+            "body": {"resources": ["ioc-id-b", "ioc-id-a"]},
+        }
+        details_response = {
+            "status_code": 200,
+            "body": {
+                "resources": [
+                    {"id": "ioc-id-a", "type": "domain", "value": "a.example"},
+                    {"id": "ioc-id-b", "type": "ipv4", "value": "1.2.3.4"},
+                ]
+            },
+        }
+        self.mock_client.command.side_effect = [query_response, details_response]
+
+        result = self.module.search_iocs(
+            filter=None,
+            limit=25,
+            offset=0,
+            sort="modified_on.desc",
+        )
+
+        self.assertEqual(len(result["results"]), 2)
+        self.assertEqual(result["results"][0]["id"], "ioc-id-b")
+        self.assertEqual(result["results"][1]["id"], "ioc-id-a")
 
     def test_search_iocs_empty_results_returns_fql_guide(self):
-        """Test IOC search empty results include FQL guide context."""
+        """Test IOC search empty results return clean empty response."""
         self.mock_client.command.return_value = {
             "status_code": 200,
             "body": {"resources": []},
@@ -85,8 +119,9 @@ class TestIOCModule(TestModules):
 
         self.assertIsInstance(result, dict)
         self.assertEqual(result["results"], [])
-        self.assertIn("fql_guide", result)
-        self.assertIn("No results matched", result["hint"])
+        self.assertIsNone(result["pagination"]["total"])
+        self.assertEqual(result["filter_used"], "value:'nothing-here'")
+        self.assertNotIn("fql_guide", result)
 
     def test_search_iocs_error_returns_fql_guide(self):
         """Test IOC search errors include FQL guide context."""
@@ -262,7 +297,7 @@ class TestIOCModule(TestModules):
         """Test removing IOCs by explicit IDs."""
         self.mock_client.command.return_value = {
             "status_code": 200,
-            "body": {"resources": [{"id": "ioc-id-1"}]},
+            "body": {"resources": ["ioc-id-1"]},
         }
 
         result = self.module.remove_iocs(
@@ -273,14 +308,15 @@ class TestIOCModule(TestModules):
             "indicator_delete_v1",
             parameters={"ids": ["ioc-id-1"], "comment": "cleanup"},
         )
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]["id"], "ioc-id-1")
+        self.assertEqual(result["status"], "deleted")
+        self.assertEqual(result["deleted_ids"], ["ioc-id-1"])
+        self.assertEqual(result["count"], 1)
 
     def test_remove_iocs_by_filter(self):
         """Test removing IOCs by FQL filter."""
         self.mock_client.command.return_value = {
             "status_code": 200,
-            "body": {"resources": [{"id": "ioc-id-1"}, {"id": "ioc-id-2"}]},
+            "body": {"resources": ["ioc-id-1", "ioc-id-2"]},
         }
 
         result = self.module.remove_iocs(
@@ -296,7 +332,8 @@ class TestIOCModule(TestModules):
             call_args[1]["parameters"]["filter"], "source:'mcp'+expired:true"
         )
         self.assertEqual(call_args[1]["parameters"]["comment"], "cleanup expired IOCs")
-        self.assertEqual(len(result), 2)
+        self.assertEqual(result["deleted_ids"], ["ioc-id-1", "ioc-id-2"])
+        self.assertEqual(result["count"], 2)
 
     def test_remove_iocs_validation_error(self):
         """Test remove_iocs requires either ids or filter."""
@@ -454,8 +491,31 @@ class TestIOCModule(TestModules):
             ),
         )
 
+    def test_remove_iocs_success_returns_envelope_not_validation_error(self):
+        """Regression test: remove_iocs must return a typed success envelope on success.
+
+        indicator_delete_v1 returns resources as a list of plain ID strings, not
+        objects. The tool was previously annotated -> list[dict[str, Any]], so a
+        list[str] response caused a Pydantic ValidationError on the success path
+        (GitHub issue #443). The fix wraps the deleted IDs in a structured dict
+        so the return type is always valid and the success/failure signal is
+        unambiguous.
+        """
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": ["ioc-id-1", "ioc-id-2"]},
+        }
+
+        result = self.module.remove_iocs(
+            ids=["ioc-id-1", "ioc-id-2"], filter=None, comment=None, from_parent=None
+        )
+
+        # Must be a dict, not a list[str] (which would fail output-schema validation)
+        self.assertIsInstance(result, dict)
+        self.assertEqual(result["status"], "deleted")
+        self.assertEqual(sorted(result["deleted_ids"]), ["ioc-id-1", "ioc-id-2"])
+        self.assertEqual(result["count"], 2)
+
 
 if __name__ == "__main__":
     unittest.main()
-
-

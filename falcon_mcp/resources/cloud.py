@@ -2,56 +2,14 @@
 Contains Cloud resources.
 """
 
+from falcon_mcp.common.fql import FQL_BASE_OPERATORS
 from falcon_mcp.common.utils import generate_md_table
 
-FQL_DOCUMENTATION = """Falcon Query Language (FQL)
-
-=== BASIC SYNTAX ===
-property_name:[operator]'value'
-
-=== AVAILABLE OPERATORS ===
-• No operator = equals (default)
-• ! = not equal
-• > = greater than
-• >= = greater than or equal
-• < = less than
-• <= = less than or equal
-• ~ = text match (ignores case, spaces, punctuation)
-• !~ = not text match
-• * = wildcard (one or more characters)
-• !* = not wildcard (one or more characters)
-
-=== COMBINING CONDITIONS ===
-• + = AND condition
-• , = OR condition
-• ( ) = Group expressions
-
-=== DATA TYPES & SUPPORTED OPERATORS ===
-• String: equal, not equal, wildcard.
-• Date, Timestamp: equal, not equal, less than, less than or equal, greater than, greater than or equal.
-• Boolean: equal, not equal.
-• Number: equal, not equal, less than, less than or equal, greater than, greater than or equal.
-
-=== DATA TYPES & SYNTAX ===
-• String: 'value' or ['value1', 'value2'] for a list of values. Wildcards: 'partial*' or '*partial' or '*partial*'.
-• Date, Timestamp: 'YYYY-MM-DDTHH:MM:SSZ' (UTC format).
-• Boolean: true or false (no quotes).
-• Number: 123 (no quotes).
-
-=== IMPORTANT NOTES ===
-• Use single quotes around string values: 'value'
-• Use square brackets for list of string values: ['value 1', 'value 2']
-• Use wildcard operator to determine if a property contains or not a substring. Ex: `property:*'*sub*'`, `property:!*'*sub*'`
-• Dates and timestamps format must be UTC: 'YYYY-MM-DDTHH:MM:SSZ'
-"""
+FQL_DOCUMENTATION = FQL_BASE_OPERATORS
 
 # List of tuples containing filter options data: (name, type, description)
 KUBERNETES_CONTAINERS_FQL_FILTERS = [
-    (
-        "Name",
-        "Type",
-        "Description"
-    ),
+    ("Name", "Type", "Description"),
     (
         "agent_id",
         "String",
@@ -59,7 +17,7 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         The sensor agent ID running in the container.
 
         Ex: agent_id:'3c1ca4a114504ca89af51fd126991efd'
-        """
+        """,
     ),
     (
         "agent_type",
@@ -68,7 +26,7 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         The sensor agent type running in the container.
 
         Ex: agent_type:'Falcon sensor for linux'
-        """
+        """,
     ),
     (
         "ai_related",
@@ -77,7 +35,7 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         Determines if the container hosts AI related packages.
 
         Ex: ai_related:true
-        """
+        """,
     ),
     (
         "cloud_account_id",
@@ -86,7 +44,7 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         The cloud provider account ID.
 
         Ex: cloud_account_id:'171998889118'
-        """
+        """,
     ),
     (
         "cloud_name",
@@ -95,7 +53,7 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         The cloud provider name.
 
         Ex: cloud_name:'AWS'
-        """
+        """,
     ),
     (
         "cloud_region",
@@ -104,7 +62,7 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         The cloud region.
 
         Ex: cloud_region:'us-1'
-        """
+        """,
     ),
     (
         "cluster_id",
@@ -113,7 +71,7 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         The kubernetes cluster ID of the container.
 
         Ex: cluster_id:'6055bde7-acfe-48ae-9ee0-0ac1a60d8eac'
-        """
+        """,
     ),
     (
         "cluster_name",
@@ -122,7 +80,7 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         The kubernetes cluster that manages the container.
 
         Ex: cluster_name:'prod-cluster'
-        """
+        """,
     ),
     (
         "container_id",
@@ -131,7 +89,7 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         The kubernetes container ID.
 
         Ex: container_id:'c30c45f9-4702-4663-bce8-cca9f2237d1d'
-        """
+        """,
     ),
     (
         "container_name",
@@ -140,7 +98,7 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         The kubernetes container name.
 
         Ex: container_name:'prod-cluster'
-        """
+        """,
     ),
     (
         "cve_id",
@@ -149,7 +107,7 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         The CVE ID found in the container image.
 
         Ex: cve_id:'CVE-2025-1234'
-        """
+        """,
     ),
     (
         "detection_name",
@@ -158,7 +116,7 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         The name of the detection found in the container image.
 
         Ex: detection_name:'RunningAsRootContainer'
-        """
+        """,
     ),
     (
         "first_seen",
@@ -167,7 +125,7 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         Timestamp when the kubernetes container was first seen in UTC date format ("YYYY-MM-DDTHH:MM:SSZ").
 
         Ex: first_seen:'2025-01-19T11:14:15Z'
-        """
+        """,
     ),
     (
         "image_detection_count",
@@ -176,7 +134,7 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         Number of images detections found in the container image.
 
         Ex: image_detection_count:5
-        """
+        """,
     ),
     (
         "image_digest",
@@ -185,7 +143,7 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         The digest of the container image.
 
         Ex: image_digest:'sha256:a08d3ee8ee68ebd8a78525a710c6479270692259e'
-        """
+        """,
     ),
     (
         "image_has_been_assessed",
@@ -194,7 +152,7 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         Tells whether the container image has been assessed.
 
         Ex: image_has_been_assessed:true
-        """
+        """,
     ),
     (
         "image_id",
@@ -203,14 +161,14 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         The ID of the container image.
 
         Ex: image_id:'a90f484d134848af858cd409801e213e'
-        """
+        """,
     ),
     (
         "image_registry",
         "String",
         """
         The registry of the container image.
-        """
+        """,
     ),
     (
         "image_repository",
@@ -219,7 +177,7 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         The repository of the container image.
 
         Ex: image_repository:'my-app'
-        """
+        """,
     ),
     (
         "image_tag",
@@ -228,7 +186,7 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         The tag of the container image.
 
         Ex: image_tag:'v1.0.0'
-        """
+        """,
     ),
     (
         "image_vulnerability_count",
@@ -237,7 +195,7 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         Number of image vulnerabilities found in the container image.
 
         Ex: image_vulnerability_count:1
-        """
+        """,
     ),
     (
         "insecure_mount_source",
@@ -246,7 +204,7 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         File path of the insecure mount in the container.
 
         Ex: insecure_mount_source:'/var/data'
-        """
+        """,
     ),
     (
         "insecure_mount_type",
@@ -255,7 +213,7 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         Type of the insecure mount in the container.
 
         Ex: insecure_mount_type:'hostPath'
-        """
+        """,
     ),
     (
         "insecure_propagation_mode",
@@ -264,7 +222,7 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         Tells whether the container has an insecure mount propagation mode.
 
         Ex: insecure_propagation_mode:false
-        """
+        """,
     ),
     (
         "interactive_mode",
@@ -273,7 +231,7 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         Tells whether the container is running in interactive mode.
 
         Ex: interactive_mode:true
-        """
+        """,
     ),
     (
         "ipv4",
@@ -282,7 +240,7 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         The IPv4 of the container.
 
         Ex: ipv4:'10.10.1.5'
-        """
+        """,
     ),
     (
         "ipv6",
@@ -291,7 +249,7 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         The IPv6 of the container.
 
         Ex: ipv6:'2001:db8::ff00:42:8329'
-        """
+        """,
     ),
     (
         "last_seen",
@@ -300,7 +258,7 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         Timestamp when the kubernetes container was last seen in UTC date format ("YYYY-MM-DDTHH:MM:SSZ").
 
         Ex: last_seen:'2025-01-19T11:14:15Z'
-        """
+        """,
     ),
     (
         "namespace",
@@ -309,7 +267,7 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         The kubernetes namespace name.
 
         Ex: namespace:'default'
-        """
+        """,
     ),
     (
         "node_name",
@@ -318,7 +276,7 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         The name of the kubernetes node.
 
         Ex: node_name:'k8s-pool'
-        """
+        """,
     ),
     (
         "node_uid",
@@ -327,7 +285,7 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         The kubernetes node UID of the container.
 
         Ex: node_uid:'79f1741e7db542bdaaecac11a7f7b7ae'
-        """
+        """,
     ),
     (
         "pod_id",
@@ -336,21 +294,21 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         The kubernetes pod ID of the container.
 
         Ex: pod_id:'6ab0fffa-2662-440b-8e95-2be93e11da3c'
-        """
+        """,
     ),
     (
         "pod_name",
         "String",
         """
         The kubernetes pod name of the container.
-        """
+        """,
     ),
     (
         "port",
         "String",
         """
         The port that the container exposes.
-        """
+        """,
     ),
     (
         "privileged",
@@ -359,7 +317,7 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         Tells whether the container is running with elevated privileges.
 
         Ex: privileged:false
-        """
+        """,
     ),
     (
         "root_write_access",
@@ -368,21 +326,21 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         Tells whether the container has root write access.
 
         Ex: root_write_access:false
-        """
+        """,
     ),
     (
         "run_as_root_group",
         "Boolean",
         """
         Tells whether the container is running as root group.
-        """
+        """,
     ),
     (
         "run_as_root_user",
         "Boolean",
         """
         Tells whether the container is running as root user.
-        """
+        """,
     ),
     (
         "running_status",
@@ -391,7 +349,7 @@ KUBERNETES_CONTAINERS_FQL_FILTERS = [
         Tells whether the container is running.
 
         Ex: running_status:true
-        """
+        """,
     ),
 ]
 
@@ -400,7 +358,9 @@ KUBERNETES_CONTAINERS_FQL_DOCUMENTATION = (
     + """
 === falcon_search_kubernetes_containers FQL filter available fields ===
 
-""" + generate_md_table(KUBERNETES_CONTAINERS_FQL_FILTERS) + """
+"""
+    + generate_md_table(KUBERNETES_CONTAINERS_FQL_FILTERS)
+    + """
 
 === falcon_search_kubernetes_containers FQL filter examples ===
 
@@ -431,11 +391,7 @@ agent_type:'Kubernetes'
 
 # List of tuples containing filter options data: (name, type, description)
 IMAGES_VULNERABILITIES_FQL_FILTERS = [
-    (
-        "Name",
-        "Type",
-        "Description"
-    ),
+    ("Name", "Type", "Description"),
     (
         "ai_related",
         "Boolean",
@@ -443,7 +399,7 @@ IMAGES_VULNERABILITIES_FQL_FILTERS = [
         Tells whether the image has AI related packages.
 
         Ex: ai_related:true
-        """
+        """,
     ),
     (
         "base_os",
@@ -452,7 +408,7 @@ IMAGES_VULNERABILITIES_FQL_FILTERS = [
         The base operating system of the image.
 
         Ex: base_os:'ubuntu'
-        """
+        """,
     ),
     (
         "container_id",
@@ -461,7 +417,7 @@ IMAGES_VULNERABILITIES_FQL_FILTERS = [
         The kubernetes container id in which the image vulnerability was detected.
 
         Ex: container_id:'515f976c43eaa3edf51590e7217ac8191a7e50c59'
-        """
+        """,
     ),
     (
         "container_running_status",
@@ -470,7 +426,7 @@ IMAGES_VULNERABILITIES_FQL_FILTERS = [
         The running status of the kubernetes container in which the image vulnerability was detected.
 
         Ex: container_running_status:true
-        """
+        """,
     ),
     (
         "cps_rating",
@@ -480,7 +436,7 @@ IMAGES_VULNERABILITIES_FQL_FILTERS = [
         Possible values: Low, Medium, High, Critical
 
         Ex: cps_rating:'Critical'
-        """
+        """,
     ),
     (
         "cve_id",
@@ -489,7 +445,7 @@ IMAGES_VULNERABILITIES_FQL_FILTERS = [
         The CVE ID of the image vulnerability.
 
         Ex: cve_id:'CVE-2025-1234'
-        """
+        """,
     ),
     (
         "cvss_score",
@@ -498,7 +454,7 @@ IMAGES_VULNERABILITIES_FQL_FILTERS = [
         The CVSS Score of the image vulnerability. The value must be between 0 and 10.
 
         Ex: cvss_score:8
-        """
+        """,
     ),
     (
         "image_digest",
@@ -507,7 +463,7 @@ IMAGES_VULNERABILITIES_FQL_FILTERS = [
         The digest of the image.
 
         Ex: image_digest:'sha256:a08d3ee8ee68ebd8a78525a710c6479270692259e'
-        """
+        """,
     ),
     (
         "image_id",
@@ -516,7 +472,7 @@ IMAGES_VULNERABILITIES_FQL_FILTERS = [
         The ID of the image.
 
         Ex: image_id:'a90f484d134848af858cd409801e213e'
-        """
+        """,
     ),
     (
         "registry",
@@ -525,7 +481,7 @@ IMAGES_VULNERABILITIES_FQL_FILTERS = [
         The image registry of the image in which the vulnerability was detected.
 
         Ex: registry:'docker.io'
-        """
+        """,
     ),
     (
         "repository",
@@ -534,7 +490,7 @@ IMAGES_VULNERABILITIES_FQL_FILTERS = [
         The image repository of the image in which the vulnerability was detected.
 
         Ex: repository:'my-app'
-        """
+        """,
     ),
     (
         "severity",
@@ -544,7 +500,7 @@ IMAGES_VULNERABILITIES_FQL_FILTERS = [
         Available values: Low, Medium, High, Critical.
 
         Ex: severity:'High'
-        """
+        """,
     ),
     (
         "tag",
@@ -553,7 +509,7 @@ IMAGES_VULNERABILITIES_FQL_FILTERS = [
         The image tag of the image in which the vulnerability was detected.
 
         Ex: tag:'v1.0.0'
-        """
+        """,
     ),
 ]
 
@@ -562,7 +518,9 @@ IMAGES_VULNERABILITIES_FQL_DOCUMENTATION = (
     + """
 === falcon_search_images_vulnerabilities FQL filter options ===
 
-""" + generate_md_table(IMAGES_VULNERABILITIES_FQL_FILTERS) + """
+"""
+    + generate_md_table(IMAGES_VULNERABILITIES_FQL_FILTERS)
+    + """
 
 === falcon_search_images_vulnerabilities FQL filter examples ===
 
@@ -577,5 +535,833 @@ cvss_score:>5+container_running_status:true
 
 # Find images vulnerabilities by image registry using wildcard
 registry:*'*docker*'
+"""
+)
+
+# List of tuples containing filter options data: (name, type, description)
+SEARCH_CSPM_ASSETS_FQL_FILTERS = [
+    ("Name", "Type", "Description"),
+    (
+        "account_id",
+        "String",
+        """
+        The cloud provider account ID.
+
+        Ex: account_id:'123456789012'
+        """,
+    ),
+    (
+        "account_name",
+        "String",
+        """
+        The cloud provider account name.
+
+        Ex: account_name:'production-account'
+        """,
+    ),
+    (
+        "cloud_provider",
+        "String",
+        """
+        The cloud provider hosting the resource.
+        Values: AWS, Azure, GCP (case-sensitive).
+
+        Ex: cloud_provider:'AWS'
+        Ex: cloud_provider:['AWS', 'Azure']
+        """,
+    ),
+    (
+        "resource_type",
+        "String",
+        """
+        The cloud resource type in ARN format or short format.
+        Examples: AWS::EC2::Instance, ec2-instance, AWS::S3::Bucket.
+
+        Ex: resource_type:'AWS::EC2::Instance'
+        Ex: resource_type:'ec2-instance'
+        Ex: resource_type:*'*S3*'
+        """,
+    ),
+    (
+        "resource_id",
+        "String",
+        """
+        The unique identifier of the cloud resource.
+
+        Ex: resource_id:'//ec2.amazonaws.com/i-1234567890abcdef0'
+        """,
+    ),
+    (
+        "region",
+        "String",
+        """
+        The cloud region where the resource is deployed.
+
+        Ex: region:'us-east-1'
+        Ex: region:['us-east-1', 'us-west-2']
+        """,
+    ),
+    (
+        "tag_key",
+        "String",
+        """
+        Filter by cloud resource tag key name.
+
+        Ex: tag_key:'Environment'
+        Ex: tag_key:'CostCenter'
+        """,
+    ),
+    (
+        "tag_value",
+        "String",
+        """
+        Filter by cloud resource tag value.
+
+        Ex: tag_value:'Production'
+        Ex: tag_value:'*web*'
+        """,
+    ),
+    (
+        "tags",
+        "String",
+        """
+        Filter by tag in key:value format.
+
+        Ex: tags:'Environment:Production'
+        Ex: tags:'CostCenter:12345'
+        """,
+    ),
+    (
+        "tags_string",
+        "String",
+        """
+        Filter by tag string representation. Supports wildcards.
+
+        Ex: tags_string:'*Production*'
+        Ex: tags_string:'*Environment*'
+        """,
+    ),
+    (
+        "creation_time",
+        "Timestamp",
+        """
+        Timestamp when the cloud resource was created in UTC format.
+
+        Ex: creation_time:>'2025-01-01T00:00:00Z'
+        Ex: creation_time:<='2024-12-31T23:59:59Z'
+        """,
+    ),
+    (
+        "updated_at",
+        "Timestamp",
+        """
+        Timestamp when the asset was last updated in CrowdStrike in UTC format.
+
+        Ex: updated_at:>'2025-03-01T00:00:00Z'
+        """,
+    ),
+    (
+        "active",
+        "Boolean",
+        """
+        Indicates if the asset is currently active.
+
+        Ex: active:true
+        """,
+    ),
+    (
+        "service",
+        "String",
+        """
+        The cloud service category.
+        Examples: EC2, S3, API Gateway, Lambda, VPC.
+
+        Ex: service:'EC2'
+        Ex: service:*'*Gateway*'
+        """,
+    ),
+    (
+        "service_category",
+        "String",
+        """
+        The broader service category.
+        Examples: Compute, Storage, Networking, Database.
+
+        Ex: service_category:'Compute'
+        """,
+    ),
+    (
+        "location",
+        "String",
+        """
+        The geographic location of the resource (may differ from region).
+
+        Ex: location:'us-central1'
+        Ex: location:'global'
+        """,
+    ),
+    (
+        "highest_severity",
+        "String",
+        """
+        Highest severity finding associated with the asset.
+        Values: critical, high, medium, informational.
+
+        Ex: highest_severity:'critical'
+        Ex: highest_severity:['critical', 'high']
+        """,
+    ),
+    (
+        "publicly_exposed",
+        "Boolean",
+        """
+        Whether the resource is publicly exposed.
+
+        Ex: publicly_exposed:true
+        """,
+    ),
+    (
+        "status",
+        "String",
+        """
+        Asset lifecycle status.
+        Values: ResourceDiscovered, ResourceUpdated, ResourceDeleted.
+
+        Ex: status:'ResourceDiscovered'
+        """,
+    ),
+    (
+        "instance_state",
+        "String",
+        """
+        Instance state for compute resources.
+
+        Ex: instance_state:'running'
+        Ex: instance_state:'stopped'
+        """,
+    ),
+    (
+        "managed_by",
+        "String",
+        """
+        How the asset is managed by CrowdStrike.
+        Values: Sensor, Snapshot, Unmanaged.
+
+        Ex: managed_by:'Sensor'
+        Ex: managed_by:'Unmanaged'
+        """,
+    ),
+    (
+        "instance_id",
+        "String",
+        """
+        Cloud instance identifier.
+
+        Ex: instance_id:'i-0abc123def456'
+        """,
+    ),
+    (
+        "platform_name",
+        "String",
+        """
+        OS platform name.
+
+        Ex: platform_name:'Linux'
+        Ex: platform_name:'Windows'
+        """,
+    ),
+    (
+        "ioa_count",
+        "Number",
+        """
+        Count of Indicators of Attack associated with the asset.
+
+        Ex: ioa_count:>0
+        Ex: ioa_count:>=5
+        """,
+    ),
+    (
+        "iom_count",
+        "Number",
+        """
+        Count of Indicators of Misconfiguration associated with the asset.
+
+        Ex: iom_count:>0
+        Ex: iom_count:>=10
+        """,
+    ),
+]
+
+CSPM_IOM_FINDINGS_FQL_FILTERS = [
+    ("Name", "Type", "Description"),
+    (
+        "account_id",
+        "String",
+        """
+        The cloud provider account ID.
+
+        Ex: account_id:'123456789012'
+        """,
+    ),
+    (
+        "account_name",
+        "String",
+        """
+        The cloud provider account name.
+
+        Ex: account_name:'production-account'
+        """,
+    ),
+    (
+        "cloud_provider",
+        "String",
+        """
+        The cloud provider. Values: aws, azure, gcp.
+
+        Ex: cloud_provider:'aws'
+        Ex: cloud_provider:['aws', 'azure']
+        """,
+    ),
+    (
+        "severity",
+        "String",
+        """
+        The severity of the misconfiguration finding.
+        Values: critical, high, medium, low, informational.
+
+        Ex: severity:'critical'
+        Ex: severity:['critical', 'high']
+        """,
+    ),
+    (
+        "status",
+        "String",
+        """
+        The status of the finding.
+        Values: open, suppressed, pass.
+
+        Ex: status:'open'
+        """,
+    ),
+    (
+        "service",
+        "String",
+        """
+        The cloud service (e.g., EC2, S3, IAM, KeyVault, Compute Engine).
+
+        Ex: service:'S3'
+        Ex: service:'IAM'
+        """,
+    ),
+    (
+        "service_category",
+        "String",
+        """
+        Broader service category.
+        Examples: Compute, Storage, Networking, Identity.
+
+        Ex: service_category:'Identity'
+        """,
+    ),
+    (
+        "region",
+        "String",
+        """
+        The cloud region where the finding was detected.
+
+        Ex: region:'us-east-1'
+        Ex: region:['us-east-1', 'eu-west-1']
+        """,
+    ),
+    (
+        "resource_id",
+        "String",
+        """
+        The unique identifier of the affected resource.
+
+        Ex: resource_id:'arn:aws:s3:::my-bucket'
+        """,
+    ),
+    (
+        "resource_type",
+        "String",
+        """
+        The type of cloud resource affected.
+
+        Ex: resource_type:'AWS::S3::Bucket'
+        Ex: resource_type:*'*EC2*'
+        """,
+    ),
+    (
+        "resource_type_name",
+        "String",
+        """
+        Human-readable resource type name.
+
+        Ex: resource_type_name:'S3 Bucket'
+        """,
+    ),
+    (
+        "rule_name",
+        "String",
+        """
+        The name of the misconfiguration rule that triggered the finding.
+
+        Ex: rule_name:*'*encryption*'
+        Ex: rule_name:*'*public*'
+        """,
+    ),
+    (
+        "rule_id",
+        "String",
+        """
+        The unique rule identifier.
+
+        Ex: rule_id:'CS-001'
+        """,
+    ),
+    (
+        "policy_name",
+        "String",
+        """
+        The policy name containing the rule.
+
+        Ex: policy_name:*'*CIS*'
+        """,
+    ),
+    (
+        "policy_id",
+        "String",
+        """
+        The policy identifier.
+
+        Ex: policy_id:'123'
+        """,
+    ),
+    (
+        "benchmark_name",
+        "String",
+        """
+        Compliance benchmark name (e.g., CIS, NIST, SOC2).
+
+        Ex: benchmark_name:*'*CIS*'
+        """,
+    ),
+    (
+        "framework",
+        "String",
+        """
+        Compliance framework the finding maps to.
+
+        Ex: framework:'CIS'
+        """,
+    ),
+    (
+        "attack_type",
+        "String",
+        """
+        MITRE ATT&CK attack type classification.
+
+        Ex: attack_type:*'*credential*'
+        """,
+    ),
+    (
+        "tactic_name",
+        "String",
+        """
+        MITRE ATT&CK tactic name.
+
+        Ex: tactic_name:'Credential Access'
+        """,
+    ),
+    (
+        "technique_name",
+        "String",
+        """
+        MITRE ATT&CK technique name.
+
+        Ex: technique_name:*'*Brute Force*'
+        """,
+    ),
+    (
+        "first_detected",
+        "Timestamp",
+        """
+        When the finding was first detected in UTC format.
+
+        Ex: first_detected:>'2025-01-01T00:00:00Z'
+        """,
+    ),
+    (
+        "last_detected",
+        "Timestamp",
+        """
+        When the finding was last detected in UTC format.
+
+        Ex: last_detected:>'2025-04-01T00:00:00Z'
+        """,
+    ),
+    (
+        "suppressed_by",
+        "String",
+        """
+        The user or rule that suppressed this finding.
+
+        Ex: suppressed_by:*'*admin*'
+        """,
+    ),
+    (
+        "suppression_reason",
+        "String",
+        """
+        The reason the finding was suppressed.
+        Values: accept-risk, compensating-control, false-positive.
+
+        Ex: suppression_reason:'accept-risk'
+        """,
+    ),
+    (
+        "tag_key",
+        "String",
+        """
+        Cloud resource tag key.
+
+        Ex: tag_key:'Environment'
+        """,
+    ),
+    (
+        "tag_value",
+        "String",
+        """
+        Cloud resource tag value.
+
+        Ex: tag_value:'Production'
+        """,
+    ),
+    (
+        "cloud_group",
+        "String",
+        """
+        Cloud group identifier for organizational grouping.
+
+        Ex: cloud_group:'prod-group'
+        """,
+    ),
+]
+
+CSPM_IOM_FINDINGS_FQL_DOCUMENTATION = (
+    FQL_DOCUMENTATION
+    + """
+=== falcon_search_iom_findings FQL filter available fields ===
+
+"""
+    + generate_md_table(CSPM_IOM_FINDINGS_FQL_FILTERS)
+    + """
+
+=== falcon_search_iom_findings FQL filter examples ===
+
+# Find critical and high severity open findings
+severity:['critical', 'high']+status:'open'
+
+# Find open findings in AWS for a specific service
+cloud_provider:'aws'+service:'S3'+status:'open'
+
+# Find findings detected in the last 7 days
+first_detected:>'2025-05-05T00:00:00Z'+status:'open'
+
+# Find IAM-related misconfigurations across all clouds
+service_category:'Identity'+severity:['critical', 'high']
+
+# Find findings for a specific rule by name
+rule_name:*'*encryption*'+status:'open'
+
+# Find suppressed findings with a specific reason
+status:'suppressed'+suppression_reason:'accept-risk'
+
+# Find findings mapped to CIS benchmark
+benchmark_name:*'*CIS*'+severity:'critical'
+
+# Find findings for specific cloud accounts
+account_id:['123456789012', '987654321098']+status:'open'
+
+# Find findings by MITRE ATT&CK tactic
+tactic_name:'Credential Access'+severity:['critical', 'high']
+
+# Find findings in specific regions
+region:['us-east-1', 'eu-west-1']+cloud_provider:'aws'+status:'open'
+
+# Find findings by resource tag
+tag_key:'Environment'+tag_value:'Production'+severity:'critical'
+"""
+)
+
+SEARCH_CSPM_ASSETS_FQL_DOCUMENTATION = (
+    FQL_DOCUMENTATION
+    + """
+=== falcon_search_cspm_assets FQL filter available fields ===
+
+"""
+    + generate_md_table(SEARCH_CSPM_ASSETS_FQL_FILTERS)
+    + """
+
+=== falcon_search_cspm_assets FQL filter examples ===
+
+# Find AWS production assets by tag
+tag_key:'Environment'+tag_value:'Production'+cloud_provider:'AWS'
+
+# Find EC2 instances
+resource_type:'AWS::EC2::Instance'
+
+# Find assets by multiple tags (AND condition)
+tag_key:'Owner'+tag_value:'CloudOps'
+
+# Find assets using combined tag format
+tags:'Environment:Production'
+
+# Find assets by cloud provider and region
+cloud_provider:'AWS'+region:['us-east-1', 'us-west-2']
+
+# Find assets created in the last 30 days
+creation_time:>'2025-02-16T00:00:00Z'
+
+# Find assets by service category and active status
+service_category:'Compute'+active:true
+
+# Find assets with wildcard on resource type
+resource_type:*'*S3*'
+
+# Find assets by account and service
+account_name:'production-account'+service:'Lambda'
+
+# Find publicly exposed critical-severity assets
+publicly_exposed:true+highest_severity:'critical'
+
+# Find running instances managed by Sensor
+instance_state:'running'+managed_by:'Sensor'
+
+# Find assets with active misconfigurations
+iom_count:>0+cloud_provider:'AWS'
+
+=== Cloud Resource Tag Filtering Syntax ===
+
+Cloud resource tags (AWS/Azure/GCP) use separate filter fields for keys and values.
+
+AVAILABLE TAG FIELDS:
+• tag_key — Filter by tag key name: tag_key:'Environment'
+• tag_value — Filter by tag value: tag_value:'Production'
+• tags — Filter by key:value pair: tags:'Environment:Production'
+• tags_string — Filter by tag string with wildcards: tags_string:'*Production*'
+
+EXAMPLES:
+tag_key:'Environment'+tag_value:'Production'   # Key + value match
+tags:'Environment:Production'                  # Combined key:value format
+tags_string:'*Production*'                     # Wildcard tag search
+tag_key:'CostCenter'                           # Any asset with this tag key
+tag_key:'Env'+tag_value:'Prod'+cloud_provider:'AWS'  # Tags + provider
+
+=== Common Use Cases ===
+
+# Compliance: Find production assets for audit
+tag_key:'Environment'+tag_value:'Production'+tag_key:'Compliance'+tag_value:'PCI'
+
+# Cost Management: Find resources by cost center
+tags:'CostCenter:12345'+active:true
+
+# Security: Find publicly exposed compute resources
+service_category:'Compute'+publicly_exposed:true+cloud_provider:'AWS'
+
+# Security: Find assets with critical findings
+highest_severity:'critical'+managed_by:'Sensor'
+
+# Multi-region inventory
+cloud_provider:'AWS'+region:['us-east-1', 'eu-west-1']
+
+# Recent changes: Assets updated in last 7 days
+updated_at:>'2025-03-11T00:00:00Z'
+
+# Find unmanaged assets with IOAs
+managed_by:'Unmanaged'+ioa_count:>0
+"""
+)
+
+CLOUD_RISKS_FQL_FILTERS = [
+    (
+        "Name",
+        "Type",
+        "Description",
+    ),
+    (
+        "account_id",
+        "String",
+        "Cloud account identifier.\n\nEx: account_id:'123456789012'",
+    ),
+    (
+        "account_name",
+        "String",
+        "Cloud account display name.\n\nEx: account_name:'prod-account'",
+    ),
+    (
+        "adversary",
+        "String",
+        "Associated adversary or threat group name.\n\nEx: adversary:'COZY BEAR'",
+    ),
+    (
+        "asset_gcrn",
+        "String",
+        "Global cloud resource name identifier.\n\nEx: asset_gcrn:'arn:aws:ec2:us-east-1:123456789012:instance/i-1234'",
+    ),
+    (
+        "asset_id",
+        "String",
+        "Asset identifier.\n\nEx: asset_id:'abc123'",
+    ),
+    (
+        "asset_name",
+        "String",
+        "Asset display name.\n\nEx: asset_name:'my-ec2-instance'",
+    ),
+    (
+        "asset_region",
+        "String",
+        "Cloud region where the asset resides.\n\nEx: asset_region:'us-east-1'",
+    ),
+    (
+        "asset_type",
+        "String",
+        "Type of cloud asset.\n\nEx: asset_type:'AWS::EC2::Instance'",
+    ),
+    (
+        "cloud_group",
+        "String",
+        "Cloud group identifier the asset belongs to.\n\nEx: cloud_group:'my-group-id'",
+    ),
+    (
+        "cloud_provider",
+        "String",
+        "Cloud provider name.\n\nEx: cloud_provider:'aws'",
+    ),
+    (
+        "first_seen",
+        "Timestamp",
+        "When the risk was first observed. Supports range operators. Use absolute ISO-8601 timestamps only.\n\nEx: first_seen:>'2024-01-01T00:00:00Z'",
+    ),
+    (
+        "groups",
+        "String",
+        "Cloud group associated with this risk.\n\nEx: groups:'my-group-id'",
+    ),
+    (
+        "groups.business_impact",
+        "String",
+        "Business impact level of the associated cloud group.\n\nEx: groups.business_impact:'high'",
+    ),
+    (
+        "groups.business_unit",
+        "String",
+        "Business unit of the associated cloud group.\n\nEx: groups.business_unit:'engineering'",
+    ),
+    (
+        "groups.environment",
+        "String",
+        "Environment tag of the associated cloud group.\n\nEx: groups.environment:'production'",
+    ),
+    (
+        "last_seen",
+        "Timestamp",
+        "When the risk was last observed. Supports range operators. Use absolute ISO-8601 timestamps only.\n\nEx: last_seen:>'2024-01-01T00:00:00Z'",
+    ),
+    (
+        "resolved_at",
+        "Timestamp",
+        "When the risk was resolved. Supports range operators.\n\nEx: resolved_at:>'2024-01-01T00:00:00Z'",
+    ),
+    (
+        "risk_factor",
+        "String",
+        "Risk factor identifier.\n\nEx: risk_factor:'PUBLIC_ACCESS'",
+    ),
+    (
+        "rule_id",
+        "String",
+        "ID of the rule that triggered the risk.\n\nEx: rule_id:'ABC-001'",
+    ),
+    (
+        "rule_name",
+        "String",
+        "Name of the rule that triggered the risk.\n\nEx: rule_name:'S3 Bucket Public Access'",
+    ),
+    (
+        "service_category",
+        "String",
+        "Cloud service category.\n\nEx: service_category:'Storage'",
+    ),
+    (
+        "severity",
+        "String",
+        "Risk severity level.\nValues: Critical, High, Medium, Low, Informational.\n\nEx: severity:'Critical'",
+    ),
+    (
+        "status",
+        "String",
+        "Risk lifecycle status.\nValues: Open, Resolved, Suppressed.\n\nEx: status:'Open'",
+    ),
+    (
+        "suppressed_by",
+        "String",
+        "User or entity who suppressed the risk.\n\nEx: suppressed_by:'analyst@example.com'",
+    ),
+    (
+        "suppressed_reason",
+        "String",
+        "Reason the risk was suppressed.\n\nEx: suppressed_reason:'accepted_risk'",
+    ),
+    (
+        "tags",
+        "String",
+        "Resource tags associated with the asset.\n\nEx: tags:'Environment:Production'",
+    ),
+    (
+        "threat_actors",
+        "String",
+        "Threat actors associated with the risk.\n\nEx: threat_actors:'APT29'",
+    ),
+]
+
+CLOUD_RISKS_FQL_DOCUMENTATION = (
+    FQL_DOCUMENTATION
+    + """
+=== falcon_search_cloud_risks FQL filter available fields ===
+
+"""
+    + generate_md_table(CLOUD_RISKS_FQL_FILTERS)
+    + """
+
+=== falcon_search_cloud_risks FQL filter sort fields ===
+
+Use `field|asc` or `field|desc` suffix:
+
+`account_id`, `account_name`, `asset_id`, `asset_name`, `asset_region`, `asset_type`,
+`cloud_provider`, `first_seen`, `last_seen`, `resolved_at`, `rule_name`,
+`service_category`, `severity`, `status`
+
+=== falcon_search_cloud_risks FQL filter examples ===
+
+# Open critical risks in AWS
+severity:'Critical'+status:'Open'+cloud_provider:'aws'
+
+# Risks in production group
+groups.environment:'production'
+
+# Risks first seen after a specific date (use absolute ISO-8601 only)
+first_seen:>'2025-01-01T00:00:00Z'
+
+# Resolved risks after a specific date
+resolved_at:>'2025-01-01T00:00:00Z'+status:'Resolved'
+
+# Suppressed risks
+status:'Suppressed'
+
+# Risks by service category
+service_category:'Storage'+severity:'Critical'
 """
 )

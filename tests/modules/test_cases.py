@@ -86,7 +86,10 @@ class TestCasesModule(TestModules):
         """Test two-step search: query for IDs then fetch full details."""
         query_response = {
             "status_code": 200,
-            "body": {"resources": ["case-id-1", "case-id-2"]},
+            "body": {
+                "resources": ["case-id-1", "case-id-2"],
+                "meta": {"pagination": {"offset": 0, "limit": 100, "total": 2}},
+            },
         }
         details_response = {
             "status_code": 200,
@@ -111,13 +114,42 @@ class TestCasesModule(TestModules):
         second_call = self.mock_client.command.call_args_list[1]
         self.assertEqual(second_call[0][0], "entities_cases_post_v2")
 
-        self.assertIsInstance(result, list)
-        self.assertEqual(len(result), 2)
-        self.assertEqual(result[0]["id"], "case-id-1")
-        self.assertEqual(result[1]["id"], "case-id-2")
+        self.assertIn("results", result)
+        self.assertEqual(len(result["results"]), 2)
+        self.assertEqual(result["results"][0]["id"], "case-id-1")
+        self.assertEqual(result["results"][1]["id"], "case-id-2")
+        self.assertEqual(result["pagination"]["total"], 2)
+
+    def test_search_cases_reorders_to_match_sorted_ids(self):
+        """When entities_cases_post_v2 returns cases out of order, the result is
+        reordered to match the sorted ID order from queries_cases_get_v1.
+
+        Live API validated: the details endpoint scrambles order; entities carry
+        their ID in the ``id`` field.
+        """
+        query_response = {
+            "status_code": 200,
+            "body": {"resources": ["case-b", "case-a"]},
+        }
+        details_response = {
+            "status_code": 200,
+            "body": {
+                "resources": [
+                    {"id": "case-a", "name": "Case A"},
+                    {"id": "case-b", "name": "Case B"},
+                ]
+            },
+        }
+        self.mock_client.command.side_effect = [query_response, details_response]
+
+        result = self.module.search_cases(sort="created_timestamp.desc")
+
+        self.assertEqual(len(result["results"]), 2)
+        self.assertEqual(result["results"][0]["id"], "case-b")
+        self.assertEqual(result["results"][1]["id"], "case-a")
 
     def test_search_cases_empty_results(self):
-        """Test that empty query results return FQL guide response."""
+        """Test that empty query results return clean empty response."""
         self.mock_client.command.return_value = {
             "status_code": 200,
             "body": {"resources": []},
@@ -126,11 +158,10 @@ class TestCasesModule(TestModules):
         result = self.module.search_cases(filter="status:'nonexistent'")
 
         self.assertIsInstance(result, dict)
-        self.assertIn("results", result)
         self.assertEqual(result["results"], [])
-        self.assertIn("fql_guide", result)
-        self.assertIn("hint", result)
-        self.assertIn("No results matched", result["hint"])
+        self.assertIsNone(result["pagination"]["total"])
+        self.assertEqual(result["filter_used"], "status:'nonexistent'")
+        self.assertNotIn("fql_guide", result)
 
     def test_search_cases_search_error(self):
         """Test that query API error returns FQL guide response."""
@@ -536,6 +567,30 @@ class TestCasesModule(TestModules):
         self.assertIsInstance(result, list)
         self.assertEqual(len(result), 2)
         self.assertEqual(result[0]["id"], "tmpl-id-1")
+
+    def test_list_templates_reorders_to_match_sorted_ids(self):
+        """When entities_templates_get_v1 returns templates out of order, the result
+        is reordered to match the query-step ID order."""
+        query_response = {
+            "status_code": 200,
+            "body": {"resources": ["tmpl-id-2", "tmpl-id-1"]},
+        }
+        details_response = {
+            "status_code": 200,
+            "body": {
+                "resources": [
+                    {"id": "tmpl-id-1", "name": "Incident Template"},
+                    {"id": "tmpl-id-2", "name": "Alert Template"},
+                ]
+            },
+        }
+        self.mock_client.command.side_effect = [query_response, details_response]
+
+        result = self.module.list_case_templates(limit=50)
+
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0]["id"], "tmpl-id-2")
+        self.assertEqual(result[1]["id"], "tmpl-id-1")
 
     def test_list_templates_empty(self):
         """Test that empty template query returns an empty list (no FQL guide)."""

@@ -180,6 +180,48 @@ class BaseModule(ABC):
             default_result=[],
         )
 
+    def _reorder_by_ids(
+        self,
+        ordered_ids: list[str],
+        entities: list[dict[str, Any]],
+        id_field: str,
+    ) -> list[dict[str, Any]]:
+        """Reorder hydrated entities to match the sorted ID order from the query step.
+
+        Search tools query entity IDs first (honoring the requested sort) and then
+        hydrate full details by ID. Some "get entities by IDs" endpoints return
+        resources in arbitrary order, discarding the sort. This restores the order
+        of ``ordered_ids``. It is a no-op for endpoints that already preserve order.
+
+        Entities whose ID is not in ``ordered_ids`` are appended in their original
+        order (never dropped); IDs with no matching entity are skipped.
+
+        Args:
+            ordered_ids: Entity IDs from the query step, in the desired order.
+            entities: Hydrated entity dicts from the get-by-IDs step.
+            id_field: The key inside each entity dict that holds its ID.
+
+        Returns:
+            The entities reordered to match ordered_ids.
+        """
+        by_id = {str(entity.get(id_field, "")): entity for entity in entities}
+
+        result: list[dict[str, Any]] = []
+        placed: set[str] = set()
+        for entity_id in ordered_ids:
+            key = str(entity_id)
+            if key in by_id and key not in placed:
+                result.append(by_id[key])
+                placed.add(key)
+
+        # Preserve entities not referenced by ordered_ids rather than dropping them
+        result.extend(
+            entity for entity in entities
+            if str(entity.get(id_field, "")) not in placed
+        )
+
+        return result
+
     def _base_search_api_call(
         self,
         operation: str,
@@ -334,6 +376,87 @@ class BaseModule(ABC):
             default_result=[],
         )
 
+    def _base_search_with_meta(
+        self,
+        operation: str,
+        search_params: dict[str, Any],
+        error_message: str = "Search operation failed",
+    ) -> tuple[list[dict[str, Any]] | dict[str, Any], dict[str, Any] | None]:
+        """Like _base_search_api_call but also returns the response's pagination metadata.
+
+        Hydration (fetching full entity details by ID) discards `body.meta.pagination`
+        from the query-step response, so callers that need `total`/`after` must capture
+        it here, before calling `_base_get_by_ids`.
+
+        Args:
+            operation: The API operation name (e.g., "QueryDevicesByFilter")
+            search_params: Dictionary of search parameters (filter, limit, offset, sort, etc.)
+            error_message: Custom error message for failed operations
+
+        Returns:
+            Tuple of (resources or error dict, pagination dict or None)
+        """
+        prepared_params = prepare_api_parameters(search_params)
+
+        logger.debug("Executing %s with params: %s", operation, prepared_params)
+
+        response = self.client.command(operation, parameters=prepared_params)
+
+        result = handle_api_response(
+            response,
+            operation=operation,
+            error_message=error_message,
+            default_result=[],
+        )
+
+        if self._is_error(result):
+            return result, None
+
+        pagination = self._extract_pagination(response)
+        return result, pagination
+
+    @staticmethod
+    def _extract_pagination(response: dict[str, Any]) -> dict[str, Any] | None:
+        """Pull `body.meta.pagination` out of a raw API response, if present."""
+        return ((response.get("body") or {}).get("meta") or {}).get("pagination")
+
+    def _build_pagination_envelope(
+        self,
+        results: list[dict[str, Any]],
+        pagination: dict[str, Any] | None,
+        filter_used: str | None = None,
+    ) -> dict[str, Any]:
+        """Assemble the standard search-tool response envelope.
+
+        Args:
+            results: The full entity details to return to the caller
+            pagination: The raw `body.meta.pagination` dict from the API response, if any
+            filter_used: The FQL filter string that was used, if applicable
+
+        Returns:
+            Dict with `results`, `pagination` (total/offset/limit/next), and
+            optionally `filter_used`
+        """
+        pag: dict[str, Any] = {}
+        if pagination:
+            # `total` may be absent (some endpoints omit it) — report None rather
+            # than inventing a count, so a caller can tell "unknown" from a real total.
+            pag["total"] = pagination.get("total")
+            if "offset" in pagination:
+                pag["offset"] = pagination["offset"]
+            if "limit" in pagination:
+                pag["limit"] = pagination["limit"]
+            pag["next"] = pagination.get("after") or None
+        else:
+            # No pagination metadata: the API gave us no count, so report None rather
+            # than synthesizing one. A non-null `total` always means the API returned it.
+            pag = {"total": None, "next": None}
+
+        envelope: dict[str, Any] = {"results": results, "pagination": pag}
+        if filter_used is not None:
+            envelope["filter_used"] = filter_used
+        return envelope
+
     def _is_error(self, response: Any) -> bool:
         return isinstance(response, dict) and "error" in response
 
@@ -350,34 +473,28 @@ class BaseModule(ABC):
 
     def _format_fql_error_response(
         self,
-        error_or_empty: list[dict[str, Any]],
+        errors: list[dict[str, Any]],
         filter_used: str | None,
         fql_documentation: str,
     ) -> dict[str, Any]:
-        """Format response with FQL guide for search errors or empty results ONLY.
+        """Format response with FQL guide for API errors indicating filter problems.
 
-        Use this helper when the FQL filter itself may be the issue:
-        - Empty results: User may need to refine their filter
-        - Search errors: Likely FQL syntax issues
-
-        Do NOT use for downstream errors (e.g., fetching details after valid IDs)
-        or success cases - those should return results directly.
+        Use ONLY when the API returned an error (400+) that suggests the FQL
+        filter syntax is incorrect. Do NOT use for empty results (200 with 0
+        resources) — empty results use the standard pagination envelope, not
+        this FQL-error shape.
 
         Args:
-            error_or_empty: Empty list or list containing single error dict
+            errors: List containing the error dict from the API
             filter_used: The FQL filter string that was used (can be None)
             fql_documentation: Module-specific FQL documentation constant
 
         Returns:
             Dict with results, filter_used, fql_guide, and contextual hint
         """
-        is_error = error_or_empty and self._is_error(error_or_empty[0])
         return {
-            "results": error_or_empty,
-            "error_type": "malformed_query" if is_error else "empty_result",
+            "results": errors,
             "filter_used": filter_used,
             "fql_guide": fql_documentation,
-            "hint": "Filter error occurred. Review the FQL guide above to correct your query syntax."
-            if is_error
-            else "No results matched your filter. Review the FQL guide above to refine your query.",
+            "hint": "Filter error occurred. Review the FQL guide above to correct your query syntax.",
         }

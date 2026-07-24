@@ -58,6 +58,10 @@ class TestRTRModule(TestModules):
             "falcon_update_rtr_admin_script_v1",
             "falcon_update_rtr_admin_script_v2",
             "falcon_delete_rtr_admin_script",
+            "falcon_get_rtr_session_details",
+            "falcon_execute_rtr_read_only_command",
+            "falcon_run_rtr_read_only_command_and_wait",
+            "falcon_list_rtr_session_files",
         ]
         self.assert_tools_registered(expected_tools)
 
@@ -66,6 +70,8 @@ class TestRTRModule(TestModules):
             "falcon_search_rtr_sessions_fql_guide",
             "falcon_search_rtr_admin_fql_guide",
             "falcon_search_rtr_audit_sessions_fql_guide",
+            "falcon_aggregate_rtr_sessions_guide",
+            "falcon_rtr_read_only_investigation_guide",
         ]
         self.assert_resources_registered(expected_resources)
 
