@@ -670,6 +670,7 @@ API_SCOPE_REQUIREMENTS = {
     "WorkflowExecutionsCombined": ["Workflow:read"],
     "WorkflowTriggersCombined": ["Workflow:read"],
     "WorkflowDefinitionsExport": ["Workflow:read"],
+    "FusionPlaybookReadExperimental": ["Workflow:read"],
     "WorkflowExecutionResults": ["Workflow:read"],
     "WorkflowGetHumanInputV1": ["Workflow:read"],
     "WorkflowDefinitionsAction": ["Workflow:write"],
