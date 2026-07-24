@@ -370,6 +370,18 @@ class FalconClient:
 
         return APIHarnessV2(**api_params)
 
+    def clone_for_member_cid(self, member_cid: str | None) -> "FalconClient":
+        """Create a new Falcon client scoped to a Flight Control child CID."""
+        return FalconClient(
+            base_url=self.base_url,
+            debug=self.debug,
+            user_agent_comment=self.user_agent_comment,
+            client_id=self.client_id,
+            client_secret=self.client_secret,
+            member_cid=member_cid,
+            proxy=self.proxy,
+        )
+
     def _get_operation_client(self, operation: str) -> APIHarnessV2:
         """Return the appropriate Falcon client for a given operation."""
         if operation not in RETRYABLE_OPERATIONS:

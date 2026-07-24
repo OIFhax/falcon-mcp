@@ -8,11 +8,12 @@ import inspect
 from abc import ABC, abstractmethod
 from contextlib import nullcontext
 from functools import wraps
-from typing import Any, Callable
+from typing import Any, Callable, Self
 
 from mcp import Resource
 from mcp.server import FastMCP
 from mcp.types import ToolAnnotations
+from pydantic.fields import FieldInfo
 
 from falcon_mcp.client import FalconClient
 from falcon_mcp.common.errors import handle_api_response
@@ -335,6 +336,17 @@ class BaseModule(ABC):
 
     def _is_error(self, response: Any) -> bool:
         return isinstance(response, dict) and "error" in response
+
+    def _module_for_member_cid(self, member_cid: str | None) -> Self | None:
+        """Return a module instance scoped to a child CID, when requested."""
+        if isinstance(member_cid, FieldInfo):
+            member_cid = None
+
+        current_member_cid = getattr(self.client, "member_cid", None)
+        if not member_cid or member_cid == current_member_cid:
+            return None
+
+        return self.__class__(self.client.clone_for_member_cid(member_cid))
 
     def _format_fql_error_response(
         self,

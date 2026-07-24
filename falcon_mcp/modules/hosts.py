@@ -260,8 +260,22 @@ class HostsModule(BaseModule):
             """).strip(),
             examples={"modified_timestamp.desc", "name|asc"},
         ),
+        member_cid: str | None = Field(
+            default=None,
+            description="Optional Flight Control child CID to scope this host group request.",
+        ),
     ) -> list[dict[str, Any]] | dict[str, Any]:
         """Search host groups and return full host group details."""
+        scoped_module = self._module_for_member_cid(member_cid)
+        if scoped_module:
+            return scoped_module.search_host_groups(
+                filter=filter,
+                limit=limit,
+                offset=offset,
+                sort=sort,
+                member_cid=None,
+            )
+
         host_group_ids = self._base_search_api_call(
             operation="queryHostGroups",
             search_params={
@@ -319,8 +333,23 @@ class HostsModule(BaseModule):
             default=None,
             description="Sort expression in FQL syntax.",
         ),
+        member_cid: str | None = Field(
+            default=None,
+            description="Optional Flight Control child CID to scope this host group request.",
+        ),
     ) -> list[dict[str, Any]] | dict[str, Any]:
         """Search members in a host group and return full host details."""
+        scoped_module = self._module_for_member_cid(member_cid)
+        if scoped_module:
+            return scoped_module.search_host_group_members(
+                group_id=group_id,
+                filter=filter,
+                limit=limit,
+                offset=offset,
+                sort=sort,
+                member_cid=None,
+            )
+
         members = self._base_search_api_call(
             operation="queryCombinedGroupMembers",
             search_params={
@@ -367,8 +396,23 @@ class HostsModule(BaseModule):
             default=None,
             description="Full request body override. If provided, convenience fields are ignored.",
         ),
+        member_cid: str | None = Field(
+            default=None,
+            description="Optional Flight Control child CID to scope this host group request.",
+        ),
     ) -> list[dict[str, Any]]:
         """Create a host group."""
+        scoped_module = self._module_for_member_cid(member_cid)
+        if scoped_module:
+            return scoped_module.add_host_group(
+                name=name,
+                group_type=group_type,
+                description=description,
+                assignment_rule=assignment_rule,
+                body=body,
+                member_cid=None,
+            )
+
         request_body = body
         if request_body is None:
             if not name:
@@ -428,8 +472,24 @@ class HostsModule(BaseModule):
             default=None,
             description="Full request body override. If provided, convenience fields are ignored.",
         ),
+        member_cid: str | None = Field(
+            default=None,
+            description="Optional Flight Control child CID to scope this host group request.",
+        ),
     ) -> list[dict[str, Any]]:
         """Update a host group."""
+        scoped_module = self._module_for_member_cid(member_cid)
+        if scoped_module:
+            return scoped_module.update_host_group(
+                id=id,
+                name=name,
+                group_type=group_type,
+                description=description,
+                assignment_rule=assignment_rule,
+                body=body,
+                member_cid=None,
+            )
+
         request_body = body
         if request_body is None:
             if not id:
@@ -479,8 +539,16 @@ class HostsModule(BaseModule):
             default=None,
             description="Host group IDs to delete.",
         ),
+        member_cid: str | None = Field(
+            default=None,
+            description="Optional Flight Control child CID to scope this host group request.",
+        ),
     ) -> list[dict[str, Any]]:
         """Delete host groups by IDs."""
+        scoped_module = self._module_for_member_cid(member_cid)
+        if scoped_module:
+            return scoped_module.remove_host_groups(ids=ids, member_cid=None)
+
         if not ids:
             return [
                 _format_error_response(
@@ -529,8 +597,24 @@ class HostsModule(BaseModule):
             default=None,
             description="Full request body override. If provided, convenience fields are ignored.",
         ),
+        member_cid: str | None = Field(
+            default=None,
+            description="Optional Flight Control child CID to scope this host group request.",
+        ),
     ) -> list[dict[str, Any]]:
         """Perform an action against one or more host groups."""
+        scoped_module = self._module_for_member_cid(member_cid)
+        if scoped_module:
+            return scoped_module.perform_host_group_action(
+                action_name=action_name,
+                group_ids=group_ids,
+                filter=filter,
+                action_parameters=action_parameters,
+                disable_hostname_check=disable_hostname_check,
+                body=body,
+                member_cid=None,
+            )
+
         if not action_name:
             return [
                 _format_error_response(

@@ -3,9 +3,11 @@ Tests for the Hosts module.
 """
 
 import unittest
+from unittest.mock import MagicMock
 
 from mcp.types import ToolAnnotations
 
+from falcon_mcp.client import FalconClient
 from falcon_mcp.modules.base import READ_ONLY_ANNOTATIONS
 from falcon_mcp.modules.hosts import HostsModule
 from tests.modules.utils.test_modules import TestModules
@@ -160,6 +162,31 @@ class TestHostsModule(TestModules):
             ["group-1", "group-2"],
         )
         self.assertEqual(len(result), 2)
+
+    def test_search_host_groups_scopes_to_member_cid(self):
+        """Test host group search delegates to a child-CID client."""
+        self.mock_client.member_cid = None
+        scoped_client = MagicMock(spec=FalconClient)
+        scoped_client.member_cid = "child-cid"
+        scoped_client.command.side_effect = [
+            {"status_code": 200, "body": {"resources": ["group-1"]}},
+            {
+                "status_code": 200,
+                "body": {"resources": [{"id": "group-1", "name": "Child Group"}]},
+            },
+        ]
+        self.mock_client.clone_for_member_cid.return_value = scoped_client
+
+        result = self.module.search_host_groups(
+            filter=None,
+            limit=10,
+            offset=None,
+            sort="name.asc",
+            member_cid="child-cid",
+        )
+
+        self.mock_client.clone_for_member_cid.assert_called_once_with("child-cid")
+        self.assertEqual(result[0]["name"], "Child Group")
 
     def test_search_host_groups_empty_results_with_filter(self):
         """Test host group search empty results with filter return FQL guide context."""
@@ -349,6 +376,31 @@ class TestHostsModule(TestModules):
             },
         )
         self.assertEqual(len(result), 1)
+
+    def test_perform_host_group_action_scopes_to_member_cid(self):
+        """Test host group mutation delegates to a child-CID client."""
+        self.mock_client.member_cid = None
+        scoped_client = MagicMock(spec=FalconClient)
+        scoped_client.member_cid = "child-cid"
+        scoped_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "group-1"}]},
+        }
+        self.mock_client.clone_for_member_cid.return_value = scoped_client
+
+        result = self.module.perform_host_group_action(
+            action_name="add-hosts",
+            group_ids=["group-1"],
+            filter="device_id:'device-1'",
+            action_parameters=None,
+            disable_hostname_check=None,
+            body=None,
+            member_cid="child-cid",
+        )
+
+        self.mock_client.clone_for_member_cid.assert_called_once_with("child-cid")
+        scoped_client.command.assert_called_once()
+        self.assertEqual(result[0]["id"], "group-1")
 
     def test_perform_host_group_action_validation(self):
         """Test perform_host_group_action validation requirements."""
