@@ -90,13 +90,6 @@ API_SCOPE_REQUIREMENTS = {
     "ITAutomationSearchTaskExecutions": ["IT Automation:read"],
     "ITAutomationSearchTaskGroups": ["IT Automation:read"],
     "ITAutomationSearchTasks": ["IT Automation:read"],
-    # Incidents operations
-    "QueryIncidents": ["Incidents:read"],
-    "CrowdScore": ["Incidents:read"],
-    "GetIncidents": ["Incidents:read"],
-    "GetBehaviors": ["Incidents:read"],
-    "QueryBehaviors": ["Incidents:read"],
-    "PerformIncidentAction": ["Incidents:write"],
     # Intel operations
     "QueryIntelActorIds": ["Actors (Falcon Intelligence):read"],
     "QueryIntelActorEntities": ["Actors (Falcon Intelligence):read"],

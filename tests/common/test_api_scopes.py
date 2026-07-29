@@ -71,8 +71,6 @@ class TestApiScopes(unittest.TestCase):
         self.assertEqual(get_required_scopes("PatchEntitiesAlertsV1"), ["Alerts:write"])
         self.assertEqual(get_required_scopes("PatchEntitiesAlertsV2"), ["Alerts:write"])
         self.assertEqual(get_required_scopes("PatchEntitiesAlertsV3"), ["Alerts:write"])
-        self.assertEqual(get_required_scopes("QueryIncidents"), ["Incidents:read"])
-        self.assertEqual(get_required_scopes("PerformIncidentAction"), ["Incidents:write"])
         self.assertEqual(get_required_scopes("combined_applications"), ["Assets:read"])
         self.assertEqual(get_required_scopes("query_accounts"), ["Assets:read"])
         self.assertEqual(get_required_scopes("query_iot_hostsV2"), ["Assets:read"])
@@ -820,8 +818,6 @@ class TestApiScopes(unittest.TestCase):
             ("PatchEntitiesAlertsV1", ["Alerts:write"]),
             ("PatchEntitiesAlertsV2", ["Alerts:write"]),
             ("PatchEntitiesAlertsV3", ["Alerts:write"]),
-            ("QueryIncidents", ["Incidents:read"]),
-            ("PerformIncidentAction", ["Incidents:write"]),
             ("combined_applications", ["Assets:read"]),
             ("query_accounts", ["Assets:read"]),
             ("query_iot_hostsV2", ["Assets:read"]),
@@ -1217,7 +1213,6 @@ class TestApiScopes(unittest.TestCase):
                 "ITAutomationCancelTaskExecution",
                 "ITAutomationRerunTaskExecution",
             ],
-            "incidents": ["QueryIncidents", "GetIncidents", "QueryBehaviors", "GetBehaviors", "CrowdScore"],
             "intel": [
                 "QueryIntelActorIds",
                 "QueryIntelActorEntities",

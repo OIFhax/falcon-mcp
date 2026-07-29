@@ -222,6 +222,15 @@ class IdpModule(BaseModule):
                 )
             investigation_results[investigation_type] = result
 
+        entity_details = investigation_results.get("entity_details")
+        if entity_details is not None and entity_details.get("entity_count", 0) == 0:
+            return self._create_error_response(
+                "Entity identifiers were accepted, but Falcon returned no entity details",
+                0,
+                investigation_types,
+                search_criteria,
+            )
+
         # Step 4: Synthesize comprehensive response
         return self._synthesize_investigation_response(
             resolved_entity_ids,

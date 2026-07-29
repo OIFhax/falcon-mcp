@@ -311,6 +311,23 @@ class TestIdpModule(TestModules):
         self.assertEqual(result["investigation_summary"]["entity_count"], 0)
         self.assertIn("search_criteria", result)
 
+    def test_investigate_entity_ids_require_returned_entity_details(self):
+        """Direct IDs must not produce a false completed result when details are empty."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"data": {"entities": {"nodes": []}}},
+        }
+
+        result = self.module.investigate_entity(
+            entity_ids=["unresolved-entity-id"],
+            investigation_types=["entity_details"],
+        )
+
+        self.assertIn("error", result)
+        self.assertEqual(result["investigation_summary"]["status"], "failed")
+        self.assertEqual(result["investigation_summary"]["entity_count"], 0)
+        self.assertIn("no entity details", result["error"].lower())
+
     def test_investigate_entity_error_response_has_no_fieldinfo(self):
         """Error responses must not leak raw Pydantic FieldInfo objects (issue #384)."""
         # Empty entity resolution so the error path builds search_criteria

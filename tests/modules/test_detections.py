@@ -97,6 +97,39 @@ class TestDetectionsModule(TestModules):
         self.assertEqual(len(result["results"]), 2)
         self.assertEqual(result["results"][0]["composite_id"], "composite-1")
 
+    def test_search_detections_batches_large_detail_requests(self):
+        """Detection hydration must stay below the Falcon request-body limit."""
+        detection_ids = [f"composite-{index}" for index in range(501)]
+        query_response = {
+            "status_code": 200,
+            "body": {"resources": detection_ids},
+        }
+        first_details = {
+            "status_code": 200,
+            "body": {
+                "resources": [
+                    {"composite_id": detection_id} for detection_id in detection_ids[:500]
+                ]
+            },
+        }
+        second_details = {
+            "status_code": 200,
+            "body": {"resources": [{"composite_id": detection_ids[500]}]},
+        }
+        self.mock_client.command.side_effect = [query_response, first_details, second_details]
+
+        result = self.module.search_detections(limit=501, include_hidden=True)
+
+        self.assertEqual(self.mock_client.command.call_count, 3)
+        first_body = self.mock_client.command.call_args_list[1].kwargs["body"]
+        second_body = self.mock_client.command.call_args_list[2].kwargs["body"]
+        self.assertEqual(len(first_body["composite_ids"]), 500)
+        self.assertEqual(second_body["composite_ids"], ["composite-500"])
+        self.assertEqual(
+            [item["composite_id"] for item in result["results"]],
+            detection_ids,
+        )
+
     def test_query_detection_ids_v2_error_returns_fql_guide(self):
         """Test v2 ID query returns FQL guide wrapping on API error."""
         self.mock_client.command.return_value = {

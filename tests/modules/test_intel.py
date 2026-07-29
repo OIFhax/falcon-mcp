@@ -1,5 +1,6 @@
 """Tests for the Intel module."""
 
+import inspect
 import unittest
 
 from falcon_mcp.modules.base import READ_ONLY_ANNOTATIONS
@@ -150,6 +151,11 @@ class TestIntelModule(TestModules):
             },
         )
         self.assertEqual(result[0]["id"], "ioc-1")
+
+    def test_search_indicators_does_not_expose_unsupported_fields(self):
+        """Falcon rejects fields on QueryIntelIndicatorEntities."""
+        parameters = inspect.signature(self.module.search_indicators).parameters
+        self.assertNotIn("fields", parameters)
 
     def test_query_indicator_ids_success(self):
         """Test query_indicator_ids uses QueryIntelIndicatorIds."""

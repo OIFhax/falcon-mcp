@@ -345,7 +345,7 @@ the read-only RTR command endpoint for host investigation. It does not expose RT
 Active Responder, remediation, or arbitrary script execution.
 
 Recommended sequence:
-1. Use Falcon detections, incidents, hosts, or NGSIEM to identify the host AID.
+1. Use Falcon detections, cases, hosts, or NGSIEM to identify the host AID.
 2. Use falcon_init_rtr_session to open or reuse a single-host RTR session.
 3. Use falcon_run_rtr_read_only_command_and_wait for simple focused evidence collection.
 4. Use falcon_execute_rtr_read_only_command plus falcon_check_rtr_command_status when you

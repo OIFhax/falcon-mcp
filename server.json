@@ -53,7 +53,7 @@
           "name": "FALCON_MCP_MODULES",
           "description": "Comma-separated list of modules to enable",
           "format": "string",
-          "placeholder": "detections,incidents,hosts",
+          "placeholder": "detections,hosts,intel",
           "isRequired": false,
           "isSecret": false
         },

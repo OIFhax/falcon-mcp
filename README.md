@@ -7,7 +7,7 @@
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/falcon-mcp)](https://pypi.org/project/falcon-mcp/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**falcon-mcp** is a Model Context Protocol (MCP) server that connects AI agents with the CrowdStrike Falcon platform, powering intelligent security analysis in your agentic workflows. It delivers programmatic access to essential security capabilities—including detections, incidents, and behaviors—establishing the foundation for advanced security operations and automation.
+**falcon-mcp** is a Model Context Protocol (MCP) server that connects AI agents with the CrowdStrike Falcon platform, powering intelligent security analysis in your agentic workflows. It delivers programmatic access to essential security capabilities—including detections, threat intelligence, and host management—establishing the foundation for advanced security operations and automation.
 
 > [!IMPORTANT]
 > **🚧 Public Preview**: This project is currently in public preview and under active development. Features and functionality may change before the stable 1.0 release. While we encourage exploration and testing, please avoid production deployments. We welcome your feedback through [GitHub Issues](https://github.com/crowdstrike/falcon-mcp/issues) to help shape the final release.
@@ -40,7 +40,6 @@
   - [Hosts Module](#hosts-module)
   - [Identity Protection Module](#identity-protection-module)
   - [User Management Module](#user-management-module)
-  - [Incidents Module](#incidents-module)
   - [Installation Tokens Module](#installation-tokens-module)
   - [Prevention Policies Module](#prevention-policies-module)
   - [Response Policies Module](#response-policies-module)
@@ -143,7 +142,6 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Hosts** | `Hosts:read`<br>`Host Groups:read`<br>`Host Groups:write`<br>`Host Migration:read`<br>`Host Migration:write` | Search hosts, manage host groups, and orchestrate migration workflows |
 | **Identity Protection** | `Identity Protection Entities:read`<br>`Identity Protection Timeline:read`<br>`Identity Protection Detections:read`<br>`Identity Protection Assessment:read`<br>`Identity Protection GraphQL:write` | Comprehensive entity investigation and identity protection analysis |
 | **User Management** | `User Management:read`<br>`User Management:write` | Full User Management coverage for aggregation, user/role discovery, grants, and controlled user/role actions |
-| **Incidents** | `Incidents:read`<br>`Incidents:write` | Full incidents coverage for crowd score, incident/behavior query+details, and controlled incident action workflows |
 | **Installation Tokens** | `Installation Tokens:read`<br>`Installation Tokens:write`<br>`Installation Tokens Settings:write` | Search and manage installation tokens, inspect audit events, and control tenant token settings |
 | **Prevention Policies** | `Prevention Policies:read`<br>`Prevention Policies:write` | Search and manage prevention policies, policy members, policy actions, and precedence ordering |
 | **Response Policies** | `Response Policies:read`<br>`Response Policies:write` | Search and manage response policies, policy members, policy actions, and precedence ordering |
@@ -685,33 +683,6 @@ Provides full User Management service collection coverage:
 - `falcon://user-management/safety-guide`: Safety and operational guidance for IAM write actions
 
 **Use Cases**: IAM automation with guardrails, user access review, role assignment governance, least-privilege enforcement
-
-### Incidents Module
-
-**API Scopes Required**:
-
-- `Incidents:read`
-- `Incidents:write`
-
-Provides full Incidents service collection coverage:
-
-- `falcon_show_crowd_score`: View calculated CrowdScore records with environment-level score summaries
-- `falcon_search_incidents`: Search incidents and return full incident details (two-step query + detail retrieval)
-- `falcon_query_incident_ids`: Query incident IDs directly from FQL criteria
-- `falcon_get_incident_details`: Retrieve full incident records by ID
-- `falcon_search_behaviors`: Search incident behaviors and return full behavior details
-- `falcon_query_behavior_ids`: Query behavior IDs directly from FQL criteria
-- `falcon_get_behavior_details`: Retrieve full behavior records by ID
-- `falcon_perform_incident_action`: Apply incident update actions (`confirm_execution=true` required)
-
-**Resources**:
-
-- `falcon://incidents/crowd-score/fql-guide`: Comprehensive FQL documentation for CrowdScore queries
-- `falcon://incidents/search/fql-guide`: Comprehensive FQL documentation and examples for incident searches
-- `falcon://incidents/behaviors/fql-guide`: Comprehensive FQL documentation and examples for behavior searches
-- `falcon://incidents/actions/guide`: Incident action safety and parameter guidance
-
-**Use Cases**: Incident management, threat assessment, attack pattern analysis, analyst assignment/status updates, SOC triage workflow automation
 
 ### Installation Tokens Module
 
@@ -1587,7 +1558,7 @@ FALCON_CLIENT_SECRET=your-client-secret
 FALCON_BASE_URL=https://api.crowdstrike.com
 
 # Optional Configuration (uncomment and modify as needed)
-#FALCON_MCP_MODULES=detections,incidents,intel
+#FALCON_MCP_MODULES=detections,hosts,intel
 #FALCON_MCP_TRANSPORT=stdio
 #FALCON_MCP_DEBUG=false
 #FALCON_MCP_HOST=127.0.0.1
@@ -1611,7 +1582,7 @@ export FALCON_CLIENT_SECRET="your-client-secret"
 export FALCON_BASE_URL="https://api.crowdstrike.com"
 
 # Optional Configuration
-export FALCON_MCP_MODULES="detections,incidents,intel"  # Comma-separated list (default: all modules)
+export FALCON_MCP_MODULES="detections,hosts,intel"  # Comma-separated list (default: all modules)
 export FALCON_MCP_TRANSPORT="stdio"                     # Transport method: stdio, sse, streamable-http
 export FALCON_MCP_DEBUG="false"                         # Enable debug logging: true, false
 export FALCON_MCP_HOST="127.0.0.1"                      # Host for HTTP transports
@@ -1703,7 +1674,7 @@ Specify modules using comma-separated lists:
 
 ```bash
 # Enable specific modules
-falcon-mcp --modules detections,incidents,intel,spotlight,idp
+falcon-mcp --modules detections,hosts,intel,spotlight,idp
 
 # Enable only one module
 falcon-mcp --modules detections
@@ -1715,11 +1686,11 @@ Set the `FALCON_MCP_MODULES` environment variable:
 
 ```bash
 # Export environment variable
-export FALCON_MCP_MODULES=detections,incidents,intel,spotlight,idp
+export FALCON_MCP_MODULES=detections,hosts,intel,spotlight,idp
 falcon-mcp
 
 # Or set inline
-FALCON_MCP_MODULES=detections,incidents,intel,spotlight,idp falcon-mcp
+FALCON_MCP_MODULES=detections,hosts,intel,spotlight,idp falcon-mcp
 ```
 
 #### 3. Default Behavior (all modules)
@@ -1749,7 +1720,7 @@ from falcon_mcp.server import FalconMCPServer
 server = FalconMCPServer(
     base_url="https://api.us-2.crowdstrike.com",  # Optional, defaults to env var
     debug=True,  # Optional, enable debug logging
-    enabled_modules=["detections", "incidents", "spotlight", "idp"],  # Optional, defaults to all modules
+    enabled_modules=["detections", "hosts", "spotlight", "idp"],  # Optional, defaults to all modules
     api_key="your-api-key"  # Optional: API key for HTTP transport auth
 )
 
@@ -1783,7 +1754,7 @@ server = FalconMCPServer(
     client_id="your-client-id",           # Or retrieved from vault/secrets manager
     client_secret="your-client-secret",   # Or retrieved from vault/secrets manager
     base_url="https://api.us-2.crowdstrike.com",  # Optional
-    enabled_modules=["detections", "incidents"]   # Optional
+    enabled_modules=["detections", "hosts"]   # Optional
 )
 
 server.run()
@@ -1831,7 +1802,7 @@ docker run --rm -p 8080:8080 --env-file /path/to/.env \
 
 # Run with .env file and specific modules (stdio transport - requires -i flag)
 docker run -i --rm --env-file /path/to/.env \
-  quay.io/crowdstrike/falcon-mcp:latest --modules detections,incidents,spotlight,idp
+  quay.io/crowdstrike/falcon-mcp:latest --modules detections,hosts,spotlight,idp
 
 # Use a specific version instead of latest (stdio transport - requires -i flag)
 docker run -i --rm --env-file /path/to/.env \
@@ -1890,7 +1861,7 @@ You can integrate the Falcon MCP server with your editor or AI assistant. Here a
         "/path/to/.env",
         "falcon-mcp",
         "--modules",
-        "detections,incidents,intel"
+        "detections,hosts,intel"
       ]
     }
   }

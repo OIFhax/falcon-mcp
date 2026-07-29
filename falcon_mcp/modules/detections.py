@@ -29,6 +29,8 @@ WRITE_ANNOTATIONS = ToolAnnotations(
 
 logger = get_logger(__name__)
 
+DETECTION_DETAIL_BATCH_SIZE = 500
+
 
 class DetectionsModule(BaseModule):
     """Module for accessing and managing CrowdStrike Falcon detections."""
@@ -188,14 +190,17 @@ class DetectionsModule(BaseModule):
         if not detection_ids:
             return self._build_pagination_envelope([], pagination, filter)
 
-        details = self._base_get_by_ids(
-            operation="PostEntitiesAlertsV2",
-            ids=detection_ids,
-            id_key="composite_ids",
-            include_hidden=include_hidden,
-        )
-        if self._is_error(details):
-            return [details]
+        details = []
+        for start in range(0, len(detection_ids), DETECTION_DETAIL_BATCH_SIZE):
+            detail_batch = self._base_get_by_ids(
+                operation="PostEntitiesAlertsV2",
+                ids=detection_ids[start : start + DETECTION_DETAIL_BATCH_SIZE],
+                id_key="composite_ids",
+                include_hidden=include_hidden,
+            )
+            if self._is_error(detail_batch):
+                return [detail_batch]
+            details.extend(detail_batch)
 
         details = self._reorder_by_ids(detection_ids, details, id_field="composite_id")
         return self._build_pagination_envelope(details, pagination, filter)

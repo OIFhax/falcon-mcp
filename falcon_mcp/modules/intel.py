@@ -214,10 +214,6 @@ class IntelModule(BaseModule):
             default=False,
             description="Include related indicators.",
         ),
-        fields: list[str] | None = Field(
-            default=None,
-            description="Specific fields to return (or collection alias such as `__full__`).",
-        ),
     ) -> list[dict[str, Any]]:
         """Query indicator entities (QueryIntelIndicatorEntities)."""
         return self._run_search(
@@ -230,7 +226,6 @@ class IntelModule(BaseModule):
                 "q": q,
                 "include_deleted": include_deleted,
                 "include_relations": include_relations,
-                "fields": fields,
             },
             error_message="Failed to search indicators",
         )
