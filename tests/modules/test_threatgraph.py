@@ -1,6 +1,8 @@
 """Tests for the ThreatGraph module."""
 
+import inspect
 import unittest
+from typing import get_args
 
 from falcon_mcp.modules.base import READ_ONLY_ANNOTATIONS
 from falcon_mcp.modules.threatgraph import ThreatGraphModule
@@ -39,6 +41,57 @@ class TestThreatGraphModule(TestModules):
     def test_get_threatgraph_ran_on_validation(self):
         result = self.module.get_threatgraph_ran_on(type=None, value=None)
         self.assertIn("error", result[0])
+
+    def test_get_threatgraph_ran_on_indicator_types_are_constrained(self):
+        annotation = (
+            inspect.signature(self.module.get_threatgraph_ran_on).parameters["type"].annotation
+        )
+        union_args = get_args(annotation)
+        literal_args = next(args for args in union_args if get_args(args))
+
+        self.assertEqual(
+            set(get_args(literal_args)),
+            {"domain", "ipv4", "ipv6", "md5", "sha1", "sha256"},
+        )
+
+    def test_get_threatgraph_ran_on_success(self):
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "vertex-1"}]},
+        }
+
+        result = self.module.get_threatgraph_ran_on(
+            type="ipv4",
+            value="192.0.2.1",
+            limit=10,
+            offset=0,
+            nano=False,
+        )
+
+        self.mock_client.command.assert_called_once_with(
+            "combined_ran_on_get",
+            parameters={
+                "type": "ipv4",
+                "value": "192.0.2.1",
+                "limit": 10,
+                "offset": 0,
+                "nano": False,
+            },
+        )
+        self.assertEqual(result, [{"id": "vertex-1"}])
+
+    def test_get_threatgraph_ran_on_404_is_empty_result(self):
+        self.mock_client.command.return_value = {
+            "status_code": 404,
+            "body": {"errors": [{"message": "resource not found"}]},
+        }
+
+        result = self.module.get_threatgraph_ran_on(
+            type="domain",
+            value="example.invalid",
+        )
+
+        self.assertEqual(result, [])
 
 
 if __name__ == "__main__":
