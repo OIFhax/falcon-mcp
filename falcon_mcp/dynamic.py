@@ -50,23 +50,32 @@ class DynamicToolCatalog:
 
     def _build(self, modules: dict[str, BaseModule]) -> None:
         scratch = FastMCP("scratch")
-
-        for module_name, module in modules.items():
-            module.register_tools(scratch)
-
-        all_tools: dict[str, Tool] = scratch._tool_manager._tools
-
         module_tool_names: dict[str, str] = {}
-        for module_name, module in modules.items():
-            for tool_name in module.tools:
-                module_tool_names[tool_name] = module_name
 
-        for tool_name, tool_obj in all_tools.items():
-            module_name = module_tool_names.get(tool_name, "unknown")
-            self._entries[tool_name] = ToolEntry(tool=tool_obj, module=module_name)
+        try:
+            for module_name, module in modules.items():
+                module.register_tools(scratch)
+                module_tools = module.tools
+                duplicates = set(module_tools).intersection(module_tool_names)
+                if duplicates:
+                    duplicate_list = ", ".join(sorted(duplicates))
+                    raise RuntimeError(
+                        f"Duplicate Falcon MCP tool name(s) registered by module "
+                        f"'{module_name}': {duplicate_list}"
+                    )
+                if len(module_tools) != len(set(module_tools)):
+                    raise RuntimeError(
+                        f"Module '{module_name}' registered the same Falcon MCP tool more than once"
+                    )
+                module_tool_names.update({tool_name: module_name for tool_name in module_tools})
 
-        for module in modules.values():
-            module.tools.clear()
+            all_tools: dict[str, Tool] = scratch._tool_manager._tools
+            for tool_name, tool_obj in all_tools.items():
+                module_name = module_tool_names.get(tool_name, "unknown")
+                self._entries[tool_name] = ToolEntry(tool=tool_obj, module=module_name)
+        finally:
+            for module in modules.values():
+                module.tools.clear()
 
         logger.debug("Dynamic catalog built with %d tools", len(self._entries))
 

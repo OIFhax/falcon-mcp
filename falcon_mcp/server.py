@@ -206,11 +206,24 @@ class FalconMCPServer:
             tool_name for tool_name, _ in core_tools
         ]
         self.declared_tools = list(self.core_tools)
-        for module in self.modules.values():
+        registered_tools = set(self.declared_tools)
+        for module_name, module in self.modules.items():
             module.register_tools(self.server)
-            self.declared_tools.extend(getattr(module, "tools", []))
+            module_tools = getattr(module, "tools", [])
+            duplicates = registered_tools.intersection(module_tools)
+            if duplicates:
+                duplicate_list = ", ".join(sorted(duplicates))
+                raise RuntimeError(
+                    f"Duplicate Falcon MCP tool name(s) registered by module "
+                    f"'{module_name}': {duplicate_list}"
+                )
+            if len(module_tools) != len(set(module_tools)):
+                raise RuntimeError(
+                    f"Module '{module_name}' registered the same Falcon MCP tool more than once"
+                )
+            registered_tools.update(module_tools)
+            self.declared_tools.extend(module_tools)
 
-        self.declared_tools = list(dict.fromkeys(self.declared_tools))
         return len(self.declared_tools)
 
     def _register_resources(self) -> int:
@@ -252,7 +265,7 @@ class FalconMCPServer:
         """Run the recommended session-start validation checks."""
         return {
             "timestamp": _utc_timestamp(),
-            "connected": self.falcon_client.is_authenticated(),
+            "connected": self.falcon_check_connectivity()["connected"],
             "base_url": self.falcon_client.base_url,
             "region": self.falcon_client.get_region(),
             "enabled_modules": sorted(self.modules.keys()),

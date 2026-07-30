@@ -26,12 +26,26 @@ class DiscoverModule(BaseModule):
     def register_tools(self, server: FastMCP) -> None:
         """Register tools with the MCP server."""
         self._add_tool(server=server, method=self.search_applications, name="search_applications")
-        self._add_tool(server=server, method=self.query_application_ids, name="query_application_ids")
-        self._add_tool(server=server, method=self.get_application_details, name="get_application_details")
-        self._add_tool(server=server, method=self.search_hosts_combined, name="search_hosts_combined")
+        self._add_tool(
+            server=server, method=self.query_application_ids, name="query_application_ids"
+        )
+        self._add_tool(
+            server=server, method=self.get_application_details, name="get_application_details"
+        )
+        self._add_tool(
+            server=server, method=self.search_hosts_combined, name="search_hosts_combined"
+        )
         self._add_tool(server=server, method=self.query_host_ids, name="query_host_ids")
-        self._add_tool(server=server, method=self.get_host_details, name="get_host_details")
-        self._add_tool(server=server, method=self.search_hosts, name="search_hosts")
+        self._add_tool(
+            server=server,
+            method=self.get_host_details,
+            name="get_discover_host_details",
+        )
+        self._add_tool(
+            server=server,
+            method=self.search_hosts,
+            name="search_discover_hosts",
+        )
         self._add_tool(
             server=server,
             method=self.search_unmanaged_assets,
@@ -44,7 +58,9 @@ class DiscoverModule(BaseModule):
         self._add_tool(server=server, method=self.get_login_details, name="get_login_details")
         self._add_tool(server=server, method=self.search_logins, name="search_logins")
         self._add_tool(server=server, method=self.query_iot_host_ids, name="query_iot_host_ids")
-        self._add_tool(server=server, method=self.query_iot_host_ids_v2, name="query_iot_host_ids_v2")
+        self._add_tool(
+            server=server, method=self.query_iot_host_ids_v2, name="query_iot_host_ids_v2"
+        )
         self._add_tool(server=server, method=self.get_iot_host_details, name="get_iot_host_details")
         self._add_tool(server=server, method=self.search_iot_hosts, name="search_iot_hosts")
 

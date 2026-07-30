@@ -52,11 +52,15 @@ class HostsModule(BaseModule):
         self._add_tool(server=server, method=self.search_hosts, name="search_hosts")
         self._add_tool(server=server, method=self.get_host_details, name="get_host_details")
 
-        self._add_tool(server=server, method=self.search_host_groups, name="search_host_groups")
+        self._add_tool(
+            server=server,
+            method=self.search_host_groups,
+            name="search_scoped_host_groups",
+        )
         self._add_tool(
             server=server,
             method=self.search_host_group_members,
-            name="search_host_group_members",
+            name="search_scoped_host_group_members",
         )
         self._add_tool(
             server=server,
@@ -67,7 +71,7 @@ class HostsModule(BaseModule):
         self._add_tool(
             server=server,
             method=self.update_host_group,
-            name="update_host_group",
+            name="update_scoped_host_group",
             annotations=MUTATING_TOOL_ANNOTATIONS,
         )
         self._add_tool(
@@ -79,7 +83,7 @@ class HostsModule(BaseModule):
         self._add_tool(
             server=server,
             method=self.perform_host_group_action,
-            name="perform_host_group_action",
+            name="perform_scoped_host_group_action",
             annotations=MUTATING_TOOL_ANNOTATIONS,
         )
 
@@ -296,7 +300,9 @@ class HostsModule(BaseModule):
 
         if not host_group_ids:
             if filter:
-                return self._format_fql_error_response([], filter, SEARCH_HOST_GROUPS_FQL_DOCUMENTATION)
+                return self._format_fql_error_response(
+                    [], filter, SEARCH_HOST_GROUPS_FQL_DOCUMENTATION
+                )
             return []
 
         details = self._base_get_by_ids(
@@ -712,7 +718,9 @@ class HostsModule(BaseModule):
 
         if not migration_ids:
             if filter:
-                return self._format_fql_error_response([], filter, SEARCH_MIGRATIONS_FQL_DOCUMENTATION)
+                return self._format_fql_error_response(
+                    [], filter, SEARCH_MIGRATIONS_FQL_DOCUMENTATION
+                )
             return []
 
         details = self._base_get_by_ids(

@@ -19,6 +19,17 @@ class TestFalconMCPServer(unittest.TestCase):
         # Ensure modules are discovered before each test
         registry.discover_modules()
 
+    def test_register_tools_rejects_duplicate_names(self):
+        server = FalconMCPServer.__new__(FalconMCPServer)
+        server.server = MagicMock()
+        server.dynamic = False
+        first = MagicMock(tools=["falcon_duplicate"])
+        second = MagicMock(tools=["falcon_duplicate"])
+        server.modules = {"first": first, "second": second}
+
+        with self.assertRaisesRegex(RuntimeError, "falcon_duplicate"):
+            server._register_tools()
+
     @patch("falcon_mcp.server.FalconClient")
     @patch("falcon_mcp.server.FastMCP")
     def test_server_initialization(self, mock_fastmcp, mock_client):
@@ -357,7 +368,6 @@ class TestFalconMCPServer(unittest.TestCase):
         self.assertEqual(call_args["client_id"], "direct-client-id")
         self.assertEqual(call_args["client_secret"], "direct-client-secret")
 
-
     @patch("falcon_mcp.server.FalconClient")
     @patch("falcon_mcp.server.FastMCP")
     def test_server_passes_non_localhost_host_to_fastmcp(self, mock_fastmcp, mock_client):
@@ -453,7 +463,10 @@ class TestFalconMCPServer(unittest.TestCase):
         """Test startup check includes the recommended session-start contract data."""
         mock_client_instance = MagicMock()
         mock_client_instance.authenticate.return_value = True
-        mock_client_instance.is_authenticated.return_value = True
+        # Cached token state can be stale after the server has been idle. Startup
+        # validation must use the same non-mutating active probe as connectivity.
+        mock_client_instance.is_authenticated.return_value = False
+        mock_client_instance.client._login_handler.return_value = {"status_code": 201}
         mock_client_instance.base_url = "https://api.us-2.crowdstrike.com"
         mock_client_instance.get_region.return_value = "us-2"
         mock_client.return_value = mock_client_instance
@@ -468,6 +481,22 @@ class TestFalconMCPServer(unittest.TestCase):
         self.assertIn("detections", result["enabled_modules"])
         self.assertIn("falcon_startup_check", result["declared_tools"])
         self.assertIn("falcon_list_modules", result["declared_tools"])
+        mock_client_instance.client._login_handler.assert_called_once_with(stateful=False)
+
+    @patch("falcon_mcp.server.FalconClient")
+    def test_startup_check_reports_failed_active_probe(self, mock_client):
+        """Startup connectivity is false when the active OAuth2 probe fails."""
+        mock_client_instance = MagicMock()
+        mock_client_instance.authenticate.return_value = True
+        mock_client_instance.is_authenticated.return_value = True
+        mock_client_instance.client._login_handler.return_value = {"status_code": 401}
+        mock_client_instance.base_url = "https://api.us-2.crowdstrike.com"
+        mock_client_instance.get_region.return_value = "us-2"
+        mock_client.return_value = mock_client_instance
+
+        server = FalconMCPServer(enabled_modules={"detections"})
+
+        self.assertFalse(server.falcon_startup_check()["connected"])
 
     @patch("falcon_mcp.server.FalconClient")
     def test_support_bundle_proxies_client_bundle_and_server_context(self, mock_client):
@@ -490,7 +519,6 @@ class TestFalconMCPServer(unittest.TestCase):
         )
         self.assertIn("detections", result["enabled_modules"])
         self.assertIn("falcon_generate_support_bundle", result["declared_tools"])
-
 
     @patch("falcon_mcp.server.FalconClient")
     @patch("falcon_mcp.server.FastMCP")
@@ -532,7 +560,6 @@ class TestFalconMCPServer(unittest.TestCase):
         call_args = mock_client.call_args[1]
         # Should be None (the default)
         self.assertIsNone(call_args["member_cid"])
-
 
     @patch("falcon_mcp.server.FalconClient")
     @patch("falcon_mcp.server.FastMCP")

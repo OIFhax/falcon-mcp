@@ -40,8 +40,8 @@ class TestIntelModule(TestModules):
             "falcon_query_mitre_attacks_for_malware",
             "falcon_get_mitre_attack_details",
             "falcon_get_mitre_report",
-            "falcon_query_vulnerability_ids",
-            "falcon_get_vulnerability_details",
+            "falcon_query_intel_vulnerability_ids",
+            "falcon_get_intel_vulnerability_details",
         ]
         self.assert_tools_registered(expected_tools)
 

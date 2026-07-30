@@ -27,6 +27,11 @@ FILTER_HINTS: dict[str, str] = {
         "Use status:'contained' to find hosts in network containment. "
         "Ex: platform_name:'Windows'+status:'contained'"
     ),
+    "falcon_search_discover_hosts": (
+        "Discover host fields include hostname, entity_type (managed|unmanaged), "
+        "platform_name, last_seen_timestamp, and risk_factor fields. "
+        "Use the Discover host FQL guide because these fields differ from the Hosts API."
+    ),
     # === Cases ===
     "falcon_search_cases": (
         "Common fields: status (new|in_progress|closed|reopened), "
@@ -177,12 +182,27 @@ FILTER_HINTS: dict[str, str] = {
         "created_by, created_timestamp (UTC datetime), "
         "modified_by, modified_timestamp (UTC datetime)."
     ),
+    "falcon_search_scoped_host_groups": (
+        "Common fields: name, group_type (static|dynamic|staticByID), "
+        "created_by, created_timestamp (UTC datetime), "
+        "modified_by, modified_timestamp (UTC datetime)."
+    ),
     "falcon_search_host_group_members": (
         "Filters on HOST (device) attributes: hostname, platform_name (Windows|Linux|Mac), "
         "status (normal|contained), local_ip, external_ip, os_version, last_seen, "
         "product_type_desc (Workstation|Server|Domain Controller)."
     ),
+    "falcon_search_scoped_host_group_members": (
+        "Filters on HOST (device) attributes: hostname, platform_name (Windows|Linux|Mac), "
+        "status (normal|contained), local_ip, external_ip, os_version, last_seen, "
+        "product_type_desc (Workstation|Server|Domain Controller)."
+    ),
     "falcon_perform_host_group_action": (
+        "Filters on HOST (device) attributes to select members for the action: "
+        "hostname, platform_name (Windows|Linux|Mac), status (normal|contained), "
+        "local_ip, external_ip, os_version, product_type_desc (Workstation|Server|Domain Controller)."
+    ),
+    "falcon_perform_scoped_host_group_action": (
         "Filters on HOST (device) attributes to select members for the action: "
         "hostname, platform_name (Windows|Linux|Mac), status (normal|contained), "
         "local_ip, external_ip, os_version, product_type_desc (Workstation|Server|Domain Controller)."
@@ -211,8 +231,7 @@ FILTER_HINTS: dict[str, str] = {
         "is_default (true|false), precedence, created_at (UTC datetime), modified_by."
     ),
     "falcon_search_data_protection_content_patterns": (
-        "Common fields: name, category, type, region, "
-        "example, deleted (true|false)."
+        "Common fields: name, category, type, region, example, deleted (true|false)."
     ),
     # === Recon ===
     "falcon_search_recon_notifications": (

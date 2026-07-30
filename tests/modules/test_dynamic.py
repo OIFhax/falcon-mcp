@@ -43,6 +43,25 @@ class TestDynamicToolCatalog(unittest.TestCase):
         self.assertEqual(catalog.entries["falcon_search_detections"].module, "detections")
         self.assertEqual(catalog.entries["falcon_search_hosts"].module, "hosts")
 
+    def test_catalog_rejects_duplicate_tool_names(self):
+        class DuplicateModule(BaseModule):
+            def register_tools(self, server):
+                self._add_tool(server=server, method=self.run, name="duplicate")
+
+            def run(self):
+                return []
+
+        modules = {
+            "first": DuplicateModule(self.mock_client),
+            "second": DuplicateModule(self.mock_client),
+        }
+
+        with self.assertRaisesRegex(RuntimeError, "falcon_duplicate"):
+            DynamicToolCatalog(modules)
+
+        for module in modules.values():
+            self.assertEqual(module.tools, [])
+
     def test_catalog_clears_module_tools_list(self):
         DynamicToolCatalog(self.modules)
         for module in self.modules.values():

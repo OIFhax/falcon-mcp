@@ -25,12 +25,12 @@ class TestHostsModule(TestModules):
         expected_tools = [
             "falcon_search_hosts",
             "falcon_get_host_details",
-            "falcon_search_host_groups",
-            "falcon_search_host_group_members",
+            "falcon_search_scoped_host_groups",
+            "falcon_search_scoped_host_group_members",
             "falcon_add_host_group",
-            "falcon_update_host_group",
+            "falcon_update_scoped_host_group",
             "falcon_remove_host_groups",
-            "falcon_perform_host_group_action",
+            "falcon_perform_scoped_host_group_action",
             "falcon_search_migrations",
             "falcon_search_host_migrations",
             "falcon_create_migration",
@@ -55,7 +55,7 @@ class TestHostsModule(TestModules):
         self.module.register_tools(self.mock_server)
 
         self.assert_tool_annotations("falcon_search_hosts", READ_ONLY_ANNOTATIONS)
-        self.assert_tool_annotations("falcon_search_host_groups", READ_ONLY_ANNOTATIONS)
+        self.assert_tool_annotations("falcon_search_scoped_host_groups", READ_ONLY_ANNOTATIONS)
         self.assert_tool_annotations("falcon_search_migrations", READ_ONLY_ANNOTATIONS)
         self.assert_tool_annotations(
             "falcon_add_host_group",
@@ -370,9 +370,7 @@ class TestHostsModule(TestModules):
             parameters={"action_name": "add-hosts", "disable_hostname_check": True},
             body={
                 "ids": ["group-1"],
-                "action_parameters": [
-                    {"name": "filter", "value": "platform_name:'Windows'"}
-                ],
+                "action_parameters": [{"name": "filter", "value": "platform_name:'Windows'"}],
             },
         )
         self.assertEqual(len(result), 1)
@@ -461,7 +459,9 @@ class TestHostsModule(TestModules):
         }
         details_response = {
             "status_code": 200,
-            "body": {"resources": [{"host_migration_id": "host-migration-1", "hostname": "host-1"}]},
+            "body": {
+                "resources": [{"host_migration_id": "host-migration-1", "hostname": "host-1"}]
+            },
         }
         self.mock_client.command.side_effect = [query_response, details_response]
 

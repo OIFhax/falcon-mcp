@@ -503,7 +503,7 @@ Provides read-only Device Content tools:
 Provides full Discover read coverage:
 
 - `falcon_search_applications`, `falcon_query_application_ids`, `falcon_get_application_details`
-- `falcon_search_hosts_combined`, `falcon_query_host_ids`, `falcon_get_host_details`, `falcon_search_hosts`
+- `falcon_search_hosts_combined`, `falcon_query_host_ids`, `falcon_get_discover_host_details`, `falcon_search_discover_hosts`
 - `falcon_search_unmanaged_assets` (enforces `entity_type:'unmanaged'`)
 - `falcon_query_account_ids`, `falcon_get_account_details`, `falcon_search_accounts`
 - `falcon_query_login_ids`, `falcon_get_login_details`, `falcon_search_logins`
@@ -621,12 +621,12 @@ Provides tools for hosts, host groups, and host migration workflows:
 
 - `falcon_search_hosts`: Search for hosts in your CrowdStrike environment
 - `falcon_get_host_details`: Retrieve detailed information for specific host device IDs
-- `falcon_search_host_groups`: Search host groups and return full group details
-- `falcon_search_host_group_members`: Search host group members and return full host records
+- `falcon_search_scoped_host_groups`: Search host groups, optionally in a Flight Control member CID
+- `falcon_search_scoped_host_group_members`: Search host group members, optionally in a Flight Control member CID
 - `falcon_add_host_group`: Create a host group
-- `falcon_update_host_group`: Update an existing host group
+- `falcon_update_scoped_host_group`: Update an existing host group, optionally in a Flight Control member CID
 - `falcon_remove_host_groups`: Delete host groups by ID
-- `falcon_perform_host_group_action`: Add/remove hosts in host groups using filters or action parameters
+- `falcon_perform_scoped_host_group_action`: Add/remove hosts in host groups, optionally in a Flight Control member CID
 - `falcon_search_migrations`: Search migration jobs and return full migration details
 - `falcon_search_host_migrations`: Search host migration entities within a migration job
 - `falcon_create_migration`: Create a host migration job
@@ -1043,7 +1043,7 @@ Provides full FalconPy Intel service collection coverage:
 - MITRE:
   - `falcon_query_mitre_attacks`, `falcon_query_mitre_attacks_for_malware`, `falcon_get_mitre_attack_details`, `falcon_get_mitre_report`
 - Vulnerabilities:
-  - `falcon_query_vulnerability_ids`, `falcon_get_vulnerability_details`
+  - `falcon_query_intel_vulnerability_ids`, `falcon_get_intel_vulnerability_details`
 
 **Resources**:
 
