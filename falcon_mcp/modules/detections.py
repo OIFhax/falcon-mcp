@@ -1,7 +1,7 @@
 """Detections module for Falcon MCP Server."""
 
 from textwrap import dedent
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from mcp.server import FastMCP
 from mcp.server.fastmcp.resources import TextResource
@@ -197,11 +197,12 @@ class DetectionsModule(BaseModule):
         if not detection_ids:
             return self._build_pagination_envelope([], pagination, filter)
 
-        details = []
-        for start in range(0, len(detection_ids), DETECTION_DETAIL_BATCH_SIZE):
+        ordered_detection_ids = cast(list[str], detection_ids)
+        details: list[dict[str, Any]] = []
+        for start in range(0, len(ordered_detection_ids), DETECTION_DETAIL_BATCH_SIZE):
             detail_batch = self._base_get_by_ids(
                 operation="PostEntitiesAlertsV2",
-                ids=detection_ids[start : start + DETECTION_DETAIL_BATCH_SIZE],
+                ids=ordered_detection_ids[start : start + DETECTION_DETAIL_BATCH_SIZE],
                 id_key="composite_ids",
                 include_hidden=include_hidden,
             )
@@ -209,7 +210,9 @@ class DetectionsModule(BaseModule):
                 return [detail_batch]
             details.extend(detail_batch)
 
-        details = self._reorder_by_ids(detection_ids, details, id_field="composite_id")
+        details = self._reorder_by_ids(
+            ordered_detection_ids, details, id_field="composite_id"
+        )
         return self._build_pagination_envelope(details, pagination, filter)
 
     def search_detections_combined(

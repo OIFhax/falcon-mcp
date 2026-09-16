@@ -502,7 +502,7 @@ class FirewallPoliciesModule(BaseModule):
                     )
                 ]
 
-            resource = {"id": id}
+            resource: dict[str, Any] = {"id": id}
             if name is not None:
                 resource["name"] = name
             if description is not None:

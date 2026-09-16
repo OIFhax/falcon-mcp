@@ -8,7 +8,7 @@ search jobs, dashboards, lookup files, parsers, and saved queries.
 import asyncio
 import os
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, cast
 
 from mcp.server import FastMCP
 from mcp.server.fastmcp.resources import TextResource
@@ -858,12 +858,13 @@ class NGSIEMModule(BaseModule):
         )
         if isinstance(result, list):
             if all(isinstance(item, str) for item in result):
+                filenames = cast(list[str], result)
                 return [
                     {
                         "filename": item,
                         "name": item,
                     }
-                    for item in result
+                    for item in filenames
                     if item.strip()
                 ]
         return result

@@ -54,7 +54,9 @@ class _SleepingModule(BaseModule):
 
     def slow_tool(self) -> dict[str, Any]:
         """Sleep, then return a canned result (stands in for a slow Falcon call)."""
-        return self.client.command("SlowOperation")
+        result = self.client.command("SlowOperation")
+        assert isinstance(result, dict)
+        return result
 
 
 def _make_sleeping_client() -> MagicMock:

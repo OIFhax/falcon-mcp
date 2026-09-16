@@ -12,11 +12,12 @@ import re
 import sys
 import threading
 from collections import deque
+from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from importlib.metadata import PackageNotFoundError, version
 from time import sleep
-from typing import Any
+from typing import Any, cast
 from urllib.parse import urlparse
 
 import anyio
@@ -94,7 +95,7 @@ def _get_float_env(name: str, default: float) -> float:
 def _get_timeout_env(name: str, default: float | None) -> float | None:
     """Read a positive timeout value from the environment."""
     value = os.environ.get(name)
-    if value in (None, ""):
+    if value is None or value == "":
         return default
 
     try:
@@ -271,7 +272,7 @@ class FalconClient:
         self,
         tool_name: str,
         tool_parameters: dict[str, Any] | None = None,
-    ):
+    ) -> Iterator[None]:
         """Attach MCP tool context to downstream Falcon API calls."""
         token = _TOOL_CONTEXT.set(
             {
@@ -453,8 +454,11 @@ class FalconClient:
         Returns:
             dict[str, Any]: The API response
         """
-        return await anyio.to_thread.run_sync(
-            functools.partial(self.command, operation, **kwargs)
+        return cast(
+            dict[str, Any],
+            await anyio.to_thread.run_sync(
+                functools.partial(self.command, operation, **kwargs)
+            ),
         )
 
     def get_user_agent(self) -> str:

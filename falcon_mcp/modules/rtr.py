@@ -679,7 +679,7 @@ class RTRModule(BaseModule):
         )
 
         if self._is_error(result):
-            fallback_device_ids = []
+            fallback_device_ids: list[str] = []
             if isinstance(request_body, dict) and request_body.get("device_id"):
                 fallback_device_ids = [request_body["device_id"]]
             return [self._attach_rtr_init_fallback(result, fallback_device_ids)]
@@ -1496,7 +1496,7 @@ class RTRModule(BaseModule):
         )
 
         if self._is_error(result):
-            fallback_device_ids = []
+            fallback_device_ids: list[str] = []
             if isinstance(request_body, dict):
                 fallback_device_ids = request_body.get("host_ids", []) or []
             return [self._attach_rtr_init_fallback(result, fallback_device_ids)]
