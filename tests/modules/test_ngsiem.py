@@ -2,16 +2,15 @@
 Tests for the NGSIEM module.
 """
 
+import asyncio
 import unittest
 from unittest.mock import AsyncMock, patch
-
-import asyncio
 
 from falcon_mcp.modules.base import READ_ONLY_ANNOTATIONS
 from falcon_mcp.modules.ngsiem import (
     DESTRUCTIVE_WRITE_ANNOTATIONS,
-    NGSIEMModule,
     WRITE_ANNOTATIONS,
+    NGSIEMModule,
 )
 from tests.modules.utils.test_modules import TestModules
 

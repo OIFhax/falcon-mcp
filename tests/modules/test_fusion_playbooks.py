@@ -6,8 +6,8 @@ from falcon_mcp.modules.base import READ_ONLY_ANNOTATIONS
 from falcon_mcp.modules.fusion_playbooks import (
     DESTRUCTIVE_WRITE_ANNOTATIONS,
     FUSION_PLAYBOOK_PATH_PATTERNS,
-    FusionPlaybooksModule,
     WRITE_ANNOTATIONS,
+    FusionPlaybooksModule,
 )
 from tests.modules.utils.test_modules import TestModules
 

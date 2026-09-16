@@ -5,7 +5,7 @@ Tests for the Quarantine module.
 import unittest
 
 from falcon_mcp.modules.base import READ_ONLY_ANNOTATIONS
-from falcon_mcp.modules.quarantine import QuarantineModule, WRITE_ANNOTATIONS
+from falcon_mcp.modules.quarantine import WRITE_ANNOTATIONS, QuarantineModule
 from tests.modules.utils.test_modules import TestModules
 
 

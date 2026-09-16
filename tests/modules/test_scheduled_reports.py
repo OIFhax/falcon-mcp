@@ -6,8 +6,8 @@ import unittest
 
 from falcon_mcp.modules.base import READ_ONLY_ANNOTATIONS
 from falcon_mcp.modules.scheduled_reports import (
-    ScheduledReportsModule,
     WRITE_ANNOTATIONS,
+    ScheduledReportsModule,
 )
 from tests.modules.utils.test_modules import TestModules
 

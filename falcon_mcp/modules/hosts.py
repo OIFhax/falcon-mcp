@@ -16,9 +16,9 @@ from falcon_mcp.common.errors import _format_error_response
 from falcon_mcp.common.logging import get_logger
 from falcon_mcp.modules.base import BaseModule
 from falcon_mcp.resources.hosts import (
-    SEARCH_HOSTS_FQL_DOCUMENTATION,
     SEARCH_HOST_GROUPS_FQL_DOCUMENTATION,
     SEARCH_HOST_MIGRATIONS_FQL_DOCUMENTATION,
+    SEARCH_HOSTS_FQL_DOCUMENTATION,
     SEARCH_MIGRATIONS_FQL_DOCUMENTATION,
 )
 

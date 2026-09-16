@@ -5,7 +5,7 @@ import unittest
 from mcp.types import ToolAnnotations
 
 from falcon_mcp.modules.base import READ_ONLY_ANNOTATIONS
-from falcon_mcp.modules.detections import DetectionsModule, WRITE_ANNOTATIONS
+from falcon_mcp.modules.detections import WRITE_ANNOTATIONS, DetectionsModule
 from tests.modules.utils.test_modules import TestModules
 
 

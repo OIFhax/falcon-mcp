@@ -16,8 +16,8 @@ from falcon_mcp.common.errors import _format_error_response, handle_api_response
 from falcon_mcp.common.utils import unwrap_field_default
 from falcon_mcp.modules.base import BaseModule
 from falcon_mcp.resources.zero_trust_assessment import (
-    SEARCH_ZTA_COMBINED_ASSESSMENTS_FQL_DOCUMENTATION,
     SEARCH_ZTA_ASSESSMENTS_FQL_DOCUMENTATION,
+    SEARCH_ZTA_COMBINED_ASSESSMENTS_FQL_DOCUMENTATION,
 )
 
 SORT_ORDERS = ("asc", "desc")

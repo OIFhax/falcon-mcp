@@ -4,8 +4,8 @@ Falcon API Client for MCP Server
 This module provides the Falcon API client and authentication utilities for the Falcon MCP server.
 """
 
-import functools
 import contextvars
+import functools
 import os
 import platform
 import re
@@ -20,10 +20,10 @@ from typing import Any
 from urllib.parse import urlparse
 
 import anyio
+import requests
 
 # Import the APIHarnessV2 from FalconPy
 from falconpy import APIHarnessV2  # type: ignore[import-untyped]
-import requests
 from requests.exceptions import Timeout as RequestsTimeout
 
 from falcon_mcp.common.logging import get_logger

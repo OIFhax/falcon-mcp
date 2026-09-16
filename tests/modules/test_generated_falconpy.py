@@ -14,17 +14,17 @@ from falcon_mcp.common.api_scopes import get_required_scopes
 from falcon_mcp.modules import generated_falconpy
 from falcon_mcp.modules.base import READ_ONLY_ANNOTATIONS
 from falcon_mcp.modules.falconpy_operations import WRITE_ANNOTATIONS
-from falcon_mcp.modules.generated_falconpy import (
-    AlertsModule,
-    FalconxSandboxModule,
-    GENERATED_SERVICE_COLLECTIONS,
-    NEW_FALCONPY_SERVICE_COLLECTIONS,
-    SampleUploadsModule,
-)
 from falcon_mcp.modules.falconpy_raw_gaps import (
     RawHostsModule,
     RawOauth2Module,
     RawSensorUpdatePoliciesModule,
+)
+from falcon_mcp.modules.generated_falconpy import (
+    GENERATED_SERVICE_COLLECTIONS,
+    NEW_FALCONPY_SERVICE_COLLECTIONS,
+    AlertsModule,
+    FalconxSandboxModule,
+    SampleUploadsModule,
 )
 from tests.modules.utils.test_modules import TestModules
 

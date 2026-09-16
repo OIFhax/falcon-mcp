@@ -15,7 +15,7 @@ from pydantic import AnyUrl, Field
 
 from falcon_mcp.common.errors import _format_error_response, handle_api_response
 from falcon_mcp.common.utils import prepare_api_parameters
-from falcon_mcp.modules.base import BaseModule, READ_ONLY_ANNOTATIONS
+from falcon_mcp.modules.base import READ_ONLY_ANNOTATIONS, BaseModule
 from falcon_mcp.resources.event_streams import EVENT_STREAMS_USAGE_GUIDE
 
 REFRESH_ANNOTATIONS = ToolAnnotations(
