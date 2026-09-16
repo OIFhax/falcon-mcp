@@ -28,6 +28,7 @@ class TestDetectionsModule(TestModules):
             "falcon_get_detection_details_v2",
             "falcon_aggregate_detections_v1",
             "falcon_aggregate_detections_v2",
+            "falcon_aggregate_detections",
             "falcon_update_detections_v1",
             "falcon_update_detections_v2",
             "falcon_update_detections_v3",
@@ -216,7 +217,8 @@ class TestDetectionsModule(TestModules):
 
         self.mock_client.command.assert_called_once_with(
             "PostEntitiesAlertsV2",
-            body={"composite_ids": ["composite-1"], "include_hidden": False},
+            body={"composite_ids": ["composite-1"]},
+            parameters={"include_hidden": False},
         )
         self.assertEqual(len(success_result), 1)
         self.assertEqual(success_result[0]["composite_id"], "composite-1")
@@ -335,6 +337,284 @@ class TestDetectionsModule(TestModules):
         self.assertEqual(len(result), 1)
         self.assertIn("error", result[0])
         self.mock_client.command.assert_not_called()
+
+    def test_aggregate_detections_builds_minimal_body(self):
+        """Aggregating sends a list-wrapped spec and omits unset keys."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {
+                "resources": [
+                    {
+                        "name": "alert_aggregation",
+                        "buckets": [{"label": "Critical", "count": 7}],
+                    }
+                ]
+            },
+        }
+
+        result = self.module.aggregate_detections(
+            field="severity_name",
+            type="terms",
+            filter=None,
+            size=10,
+            sort=None,
+            interval=None,
+            date_ranges=None,
+            ranges=None,
+            percents=None,
+            missing=None,
+            include=None,
+            name="alert_aggregation",
+            time_zone=None,
+            sub_aggregates=None,
+            include_hidden=True,
+        )
+
+        operation, kwargs = (
+            self.mock_client.command.call_args[0][0],
+            self.mock_client.command.call_args[1],
+        )
+        self.assertEqual(operation, "PostAggregatesAlertsV2")
+
+        # The API rejects a bare object, so the body must be list-wrapped.
+        self.assertEqual(
+            kwargs["body"],
+            [
+                {
+                    "type": "terms",
+                    "field": "severity_name",
+                    "name": "alert_aggregation",
+                    "size": 10,
+                }
+            ],
+        )
+        self.assertEqual(result[0]["buckets"], [{"label": "Critical", "count": 7}])
+
+    def test_aggregate_detections_forwards_include_hidden_as_query_param(self):
+        """include_hidden travels as a query parameter, not inside the body spec."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"name": "alert_aggregation", "buckets": []}]},
+        }
+
+        self.module.aggregate_detections(
+            field="status",
+            type="terms",
+            filter=None,
+            size=None,
+            sort=None,
+            interval=None,
+            date_ranges=None,
+            ranges=None,
+            percents=None,
+            missing=None,
+            include=None,
+            name="alert_aggregation",
+            time_zone=None,
+            sub_aggregates=None,
+            include_hidden=False,
+        )
+
+        kwargs = self.mock_client.command.call_args[1]
+        self.assertEqual(kwargs["parameters"], {"include_hidden": False})
+        self.assertNotIn("include_hidden", kwargs["body"][0])
+
+    def test_aggregate_detections_passes_through_optional_spec_fields(self):
+        """Optional aggregation controls reach the body under their wire names."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"name": "daily", "buckets": []}]},
+        }
+
+        self.module.aggregate_detections(
+            field="timestamp",
+            type="date_histogram",
+            filter="status:'new'",
+            size=None,
+            sort="_count|desc",
+            interval="day",
+            date_ranges=None,
+            ranges=None,
+            percents=None,
+            missing="Unassigned",
+            include="High|Critical",
+            name="daily",
+            time_zone="+00:00",
+            sub_aggregates=[{"type": "terms", "field": "status"}],
+            include_hidden=True,
+        )
+
+        spec = self.mock_client.command.call_args[1]["body"][0]
+        self.assertEqual(spec["type"], "date_histogram")
+        self.assertEqual(spec["interval"], "day")
+        self.assertEqual(spec["filter"], "status:'new'")
+        self.assertEqual(spec["sort"], "_count|desc")
+        self.assertEqual(spec["missing"], "Unassigned")
+        self.assertEqual(spec["include"], "High|Critical")
+        self.assertEqual(spec["time_zone"], "+00:00")
+        self.assertEqual(spec["sub_aggregates"], [{"type": "terms", "field": "status"}])
+
+    def test_aggregate_detections_error(self):
+        """A failed aggregation surfaces an error rather than empty buckets."""
+        self.mock_client.command.return_value = {
+            "status_code": 400,
+            "body": {"errors": [{"message": "failed to validate aggregates query(s)"}]},
+        }
+
+        result = self.module.aggregate_detections(
+            field="severity_name",
+            type="terms",
+            filter=None,
+            size=10,
+            sort=None,
+            interval=None,
+            date_ranges=None,
+            ranges=None,
+            percents=None,
+            missing=None,
+            include=None,
+            name="alert_aggregation",
+            time_zone=None,
+            sub_aggregates=None,
+            include_hidden=True,
+        )
+
+        self.assertIsInstance(result, dict)
+        self.assertIn("error", result)
+
+    def test_aggregate_detections_handles_null_buckets(self):
+        """A zero-match aggregation returns buckets: null, which must pass through."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {
+                "resources": [
+                    {"name": "alert_aggregation", "buckets": None, "sum_other_doc_count": 0}
+                ]
+            },
+        }
+
+        result = self.module.aggregate_detections(
+            field="severity_name",
+            type="terms",
+            filter="status:'nonexistent'",
+            size=10,
+            sort=None,
+            interval=None,
+            date_ranges=None,
+            ranges=None,
+            percents=None,
+            missing=None,
+            include=None,
+            name="alert_aggregation",
+            time_zone=None,
+            sub_aggregates=None,
+            include_hidden=True,
+        )
+
+        self.assertIsNone(result[0]["buckets"])
+
+    def test_aggregate_detections_requires_type_specific_companion(self):
+        """Types needing a companion argument fail fast instead of 500ing upstream."""
+        cases = [
+            ("date_histogram", "interval"),
+            ("date_range", "date_ranges"),
+            ("range", "ranges"),
+        ]
+        for agg_type, companion in cases:
+            with self.subTest(agg_type=agg_type):
+                self.mock_client.command.reset_mock()
+
+                result = self.module.aggregate_detections(
+                    field="timestamp",
+                    type=agg_type,
+                    filter=None,
+                    size=None,
+                    sort=None,
+                    interval=None,
+                    date_ranges=None,
+                    ranges=None,
+                    percents=None,
+                    missing=None,
+                    include=None,
+                    name="alert_aggregation",
+                    time_zone=None,
+                    sub_aggregates=None,
+                    include_hidden=True,
+                )
+
+                self.assertIn("error", result)
+                self.assertIn(companion, result["error"])
+                # The point of the guard: no request is sent at all.
+                self.mock_client.command.assert_not_called()
+
+    def test_aggregate_detections_accepts_type_with_its_companion(self):
+        """Supplying the companion argument lets the request through."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"name": "daily", "buckets": []}]},
+        }
+
+        result = self.module.aggregate_detections(
+            field="timestamp",
+            type="date_histogram",
+            filter=None,
+            size=None,
+            sort=None,
+            interval="day",
+            date_ranges=None,
+            ranges=None,
+            percents=None,
+            missing=None,
+            include=None,
+            name="daily",
+            time_zone=None,
+            sub_aggregates=None,
+            include_hidden=True,
+        )
+
+        self.assertEqual(result[0]["name"], "daily")
+        self.mock_client.command.assert_called_once()
+
+    def test_aggregate_detections_checks_nested_spec_companions(self):
+        """A nested spec missing its companion argument is caught too.
+
+        The API validates sub_aggregates the same way, so a nested
+        date_histogram without an interval must not reach it.
+        """
+        result = self.module.aggregate_detections(
+            field="status",
+            type="terms",
+            filter=None,
+            size=None,
+            sort=None,
+            interval=None,
+            date_ranges=None,
+            ranges=None,
+            percents=None,
+            missing=None,
+            include=None,
+            name="alert_aggregation",
+            time_zone=None,
+            sub_aggregates=[{"type": "date_histogram", "field": "timestamp"}],
+            include_hidden=True,
+        )
+
+        self.assertIn("error", result)
+        self.assertIn("interval", result["error"])
+        self.mock_client.command.assert_not_called()
+
+    def test_aggregate_detections_is_read_only(self):
+        """falcon_aggregate_detections must advertise itself as read-only."""
+        self.module.register_tools(self.mock_server)
+        self.assert_tool_annotations(
+            "falcon_aggregate_detections",
+            ToolAnnotations(
+                readOnlyHint=True,
+                destructiveHint=False,
+                idempotentHint=True,
+                openWorldHint=True,
+            ),
+        )
 
     def test_update_detections_has_write_annotations(self):
         """Verify falcon_update_detections has correct non-read-only annotations."""
@@ -1138,6 +1418,38 @@ class TestDetectionsModule(TestModules):
         self.assertIn("error", result)
         self.assertNotIn("hint", result)
 
+    def test_update_detections_omits_include_hidden(self):
+        """update_detections must not send include_hidden at all.
+
+        PatchEntitiesAlertsV3 declares the parameter, but sending False makes
+        updates to hidden alerts fail outright (live-validated: 400 "no visible
+        alert present in the update query"), which would make it impossible to
+        un-hide an alert previously hidden via show_in_ui=False. Omitting it
+        keeps the endpoint's own default.
+        """
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": []},
+        }
+
+        self.module.update_detections(
+            ids=["id1"],
+            status="new",
+            assign_to_uuid=None,
+            assign_to_user_id=None,
+            assign_to_name=None,
+            unassign=None,
+            append_comment=None,
+            show_in_ui=None,
+            add_tags=None,
+            remove_tags=None,
+            remove_tags_by_prefix=None,
+        )
+
+        kwargs = self.mock_client.command.call_args[1]
+        self.assertNotIn("parameters", kwargs)
+        self.assertNotIn("include_hidden", kwargs["body"])
+
     def test_update_detections_unassign_false_is_noop(self):
         """Test that unassign=False does not add the action parameter."""
         mock_response = {"status_code": 200, "body": {"resources": []}}
@@ -1160,6 +1472,132 @@ class TestDetectionsModule(TestModules):
         call_body = self.mock_client.command.call_args[1]["body"]
         param_names = [p["name"] for p in call_body["action_parameters"]]
         self.assertNotIn("unassign", param_names)
+
+    def test_update_detections_single_batch_no_chunking(self):
+        """Exactly 1000 ids stay in one call (the API cap is inclusive)."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": []},
+        }
+        ids = [f"id{i}" for i in range(1000)]
+
+        result = self.module.update_detections(
+            ids=ids,
+            status="closed",
+            assign_to_uuid=None,
+            assign_to_user_id=None,
+            assign_to_name=None,
+            unassign=None,
+            append_comment=None,
+            show_in_ui=None,
+            add_tags=["true_positive"],
+            remove_tags=None,
+            remove_tags_by_prefix=None,
+        )
+
+        self.assertEqual(self.mock_client.command.call_count, 1)
+        self.assertEqual(
+            self.mock_client.command.call_args[1]["body"]["composite_ids"], ids
+        )
+        self.assertEqual(result, [])
+
+    def test_update_detections_chunks_over_1000_ids(self):
+        """More than 1000 ids are split into batches of the API max and aggregated."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": []},
+        }
+        ids = [f"id{i}" for i in range(2500)]
+
+        result = self.module.update_detections(
+            ids=ids,
+            status="in_progress",
+            assign_to_uuid=None,
+            assign_to_user_id=None,
+            assign_to_name=None,
+            unassign=None,
+            append_comment=None,
+            show_in_ui=None,
+            add_tags=None,
+            remove_tags=None,
+            remove_tags_by_prefix=None,
+        )
+
+        # 2500 ids -> 1000 + 1000 + 500
+        self.assertEqual(self.mock_client.command.call_count, 3)
+        batches = [
+            call.kwargs["body"]["composite_ids"]
+            for call in self.mock_client.command.call_args_list
+        ]
+        self.assertEqual([len(b) for b in batches], [1000, 1000, 500])
+        # Every id is covered exactly once, in order, with no overlap or gaps.
+        self.assertEqual([cid for b in batches for cid in b], ids)
+        # Each batch carries the same action parameters.
+        for call in self.mock_client.command.call_args_list:
+            self.assertEqual(
+                call.kwargs["body"]["action_parameters"],
+                [{"name": "update_status", "value": "in_progress"}],
+            )
+        self.assertEqual(result, [])
+
+    def test_update_detections_failing_batch_surfaces_error(self):
+        """A failure on any batch returns an error dict and stops further calls."""
+        ok = {"status_code": 200, "body": {"resources": []}}
+        boom = {"status_code": 500, "body": {"errors": [{"message": "boom"}]}}
+        # First batch succeeds, second fails; third must never be attempted.
+        self.mock_client.command.side_effect = [ok, boom, ok]
+        ids = [f"id{i}" for i in range(2500)]
+
+        result = self.module.update_detections(
+            ids=ids,
+            status="closed",
+            assign_to_uuid=None,
+            assign_to_user_id=None,
+            assign_to_name=None,
+            unassign=None,
+            append_comment=None,
+            show_in_ui=None,
+            add_tags=["true_positive"],
+            remove_tags=None,
+            remove_tags_by_prefix=None,
+        )
+
+        self.assertEqual(self.mock_client.command.call_count, 2)
+        self.assertIsInstance(result, dict)
+        self.assertIn("error", result)
+        # The first batch already mutated its ids on the backend (no rollback), so
+        # the error must report them for a safe partial retry.
+        self.assertIn("partial_success", result)
+        self.assertEqual(result["partial_success"]["updated_count"], 1000)
+        self.assertEqual(result["partial_success"]["updated_ids"], ids[:1000])
+        self.assertEqual(result["partial_success"]["failed_and_remaining_ids"], ids[1000:])
+
+    def test_update_detections_first_batch_failure_has_no_partial_success(self):
+        """A failure on the very first batch reports no partial success (nothing applied)."""
+        self.mock_client.command.return_value = {
+            "status_code": 500,
+            "body": {"errors": [{"message": "boom"}]},
+        }
+        ids = [f"id{i}" for i in range(2500)]
+
+        result = self.module.update_detections(
+            ids=ids,
+            status="in_progress",
+            assign_to_uuid=None,
+            assign_to_user_id=None,
+            assign_to_name=None,
+            unassign=None,
+            append_comment=None,
+            show_in_ui=None,
+            add_tags=None,
+            remove_tags=None,
+            remove_tags_by_prefix=None,
+        )
+
+        self.assertEqual(self.mock_client.command.call_count, 1)
+        self.assertIsInstance(result, dict)
+        self.assertIn("error", result)
+        self.assertNotIn("partial_success", result)
 
 
 if __name__ == "__main__":

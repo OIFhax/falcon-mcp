@@ -1,5 +1,89 @@
 # Changelog
 
+## [0.19.0](https://github.com/CrowdStrike/falcon-mcp/compare/v0.18.0...v0.19.0) (2026-09-01)
+
+
+### Features
+
+* **modules/guardian:** add AI agent activity module ([#566](https://github.com/CrowdStrike/falcon-mcp/issues/566)) ([f96c4d7](https://github.com/CrowdStrike/falcon-mcp/commit/f96c4d7e263da9911e95515a5ee37719f3be8aae))
+
+
+### Bug Fixes
+
+* **dynamic:** stop generic words deciding which tools are reachable ([#560](https://github.com/CrowdStrike/falcon-mcp/issues/560)) ([5e834aa](https://github.com/CrowdStrike/falcon-mcp/commit/5e834aaa6132ba68c88e6131fd80d943d699cc95))
+
+## [0.18.0](https://github.com/CrowdStrike/falcon-mcp/compare/v0.17.0...v0.18.0) (2026-08-28)
+
+
+### Features
+
+* **modules/cloud:** cloud insights — mixin package, filter-only search, and definitions catalog ([#535](https://github.com/CrowdStrike/falcon-mcp/issues/535)) ([5e0fb29](https://github.com/CrowdStrike/falcon-mcp/commit/5e0fb29dbabfa3410a4aee2feb76461c0c9d25b4))
+
+
+### Bug Fixes
+
+* **modules:** reject sort expressions the policy APIs cannot serve ([#556](https://github.com/CrowdStrike/falcon-mcp/issues/556)) ([d79421a](https://github.com/CrowdStrike/falcon-mcp/commit/d79421a19ecb36ce96e88442d74ef891435635dd))
+* **scripts:** resolve operation names behind constants and helper chains ([#547](https://github.com/CrowdStrike/falcon-mcp/issues/547)) ([7d81837](https://github.com/CrowdStrike/falcon-mcp/commit/7d818372d30c7f60e5431a2c42e54074585b77dd))
+* **scripts:** resolve operation names the doc scope scan could not see ([#557](https://github.com/CrowdStrike/falcon-mcp/issues/557)) ([3e3c36a](https://github.com/CrowdStrike/falcon-mcp/commit/3e3c36a73553da23583b72d75a70ac53cf96b0a5))
+* **tests:** read search results through the pagination envelope ([#555](https://github.com/CrowdStrike/falcon-mcp/issues/555)) ([a4b325c](https://github.com/CrowdStrike/falcon-mcp/commit/a4b325c7904809f6dff6ab97107aa033802989ee))
+
+## [0.17.0](https://github.com/CrowdStrike/falcon-mcp/compare/v0.16.1...v0.17.0) (2026-08-22)
+
+
+### Features
+
+* **modules/agentworks:** add AgentWorks module for calling and observing Charlotte AI agents ([#538](https://github.com/CrowdStrike/falcon-mcp/issues/538)) ([7919f50](https://github.com/CrowdStrike/falcon-mcp/commit/7919f505384713d3b6b37bd098ef150f544d145c))
+* **modules/cases:** add description_format to create/update case ([#531](https://github.com/CrowdStrike/falcon-mcp/issues/531)) ([fa52750](https://github.com/CrowdStrike/falcon-mcp/commit/fa52750dcc403dad9ad361d7fa73130757092f13))
+* **modules/discover:** add falcon_search_managed_assets ([#537](https://github.com/CrowdStrike/falcon-mcp/issues/537)) ([5148e3c](https://github.com/CrowdStrike/falcon-mcp/commit/5148e3cec25a194216907988c10f941c48de8904))
+* **modules/fusion:** add Fusion SOAR module for running and observing workflows ([#543](https://github.com/CrowdStrike/falcon-mcp/issues/543)) ([1b76e26](https://github.com/CrowdStrike/falcon-mcp/commit/1b76e26521f672b5f4f5efe6cfc04ee404a4fcab))
+* **modules/recon:** add aggregation and rule-preview tools ([#527](https://github.com/CrowdStrike/falcon-mcp/issues/527)) ([ecf8813](https://github.com/CrowdStrike/falcon-mcp/commit/ecf8813cc62655f29dcc9386d40e44c744bd6daa))
+* **modules/zero-trust-assessment:** add Zero Trust Assessment module ([#542](https://github.com/CrowdStrike/falcon-mcp/issues/542)) ([a3267e6](https://github.com/CrowdStrike/falcon-mcp/commit/a3267e6da4692b2ec1727e90f8628df5d50d6c21))
+
+
+### Bug Fixes
+
+* **modules/firewall:** drop ignored q param and fix name-glob filter docs ([#528](https://github.com/CrowdStrike/falcon-mcp/issues/528)) ([a9da031](https://github.com/CrowdStrike/falcon-mcp/commit/a9da031de52f13b8606d71c10b64b3f78dcfca89)), closes [#525](https://github.com/CrowdStrike/falcon-mcp/issues/525)
+* **modules/ngsiem:** reject repository values that break path construction ([#544](https://github.com/CrowdStrike/falcon-mcp/issues/544)) ([e8b649f](https://github.com/CrowdStrike/falcon-mcp/commit/e8b649f6d1750e38547ab90088bd8a4049fce3eb))
+* **modules/ngsiem:** return job metadata so a zero-row result is provably one ([#539](https://github.com/CrowdStrike/falcon-mcp/issues/539)) ([1ff6323](https://github.com/CrowdStrike/falcon-mcp/commit/1ff6323b669d47c885c2ec8eac63f09c30fea6b0))
+* **modules/policies:** reject settings for firewall policies ([#529](https://github.com/CrowdStrike/falcon-mcp/issues/529)) ([c92c69f](https://github.com/CrowdStrike/falcon-mcp/commit/c92c69f46b0c432bb8fe659f09c23a48b9cb9800)), closes [#526](https://github.com/CrowdStrike/falcon-mcp/issues/526)
+* **modules/policies:** send rule_group_id for rule-group actions ([#540](https://github.com/CrowdStrike/falcon-mcp/issues/540)) ([42aafb1](https://github.com/CrowdStrike/falcon-mcp/commit/42aafb162a3ad2749723370725c8e8b0d9e4beee))
+
+## [0.16.1](https://github.com/CrowdStrike/falcon-mcp/compare/v0.16.0...v0.16.1) (2026-08-10)
+
+
+### Bug Fixes
+
+* **modules/detections:** chunk update_detections requests over 1000 ids ([#513](https://github.com/CrowdStrike/falcon-mcp/issues/513)) ([a9757b3](https://github.com/CrowdStrike/falcon-mcp/commit/a9757b39fe419bba5d318e0843d488bd1f55f533))
+* **modules/exclusions:** reject IOA regex zero-width assertions pre-flight ([#512](https://github.com/CrowdStrike/falcon-mcp/issues/512)) ([7f774e2](https://github.com/CrowdStrike/falcon-mcp/commit/7f774e21a130c09938c9e1584d6110838343cd82))
+* **modules:** return FQL guide on filter errors for hosts, spotlight, and intel searches ([#507](https://github.com/CrowdStrike/falcon-mcp/issues/507)) ([d59d4b1](https://github.com/CrowdStrike/falcon-mcp/commit/d59d4b141f9db76d2569208a8d1c9b03f2aa7b65)), closes [#501](https://github.com/CrowdStrike/falcon-mcp/issues/501)
+
+
+### Refactoring
+
+* **common:** remove dead dict-to-FQL branch in prepare_api_parameters ([#508](https://github.com/CrowdStrike/falcon-mcp/issues/508)) ([3741c76](https://github.com/CrowdStrike/falcon-mcp/commit/3741c76b4375ce24c24d1f8f68f30e4da1531ed7)), closes [#502](https://github.com/CrowdStrike/falcon-mcp/issues/502)
+
+## [0.16.0](https://github.com/CrowdStrike/falcon-mcp/compare/v0.15.0...v0.16.0) (2026-08-05)
+
+
+### Features
+
+* **dynamic:** rank and broaden tool search, and teach the server once via MCP instructions ([#493](https://github.com/CrowdStrike/falcon-mcp/issues/493)) ([80d8111](https://github.com/CrowdStrike/falcon-mcp/commit/80d8111dafe801e2481b750f8066132b5dfbdd21))
+* **modules/base:** add shared aggregate-query foundation ([#480](https://github.com/CrowdStrike/falcon-mcp/issues/480)) ([903254f](https://github.com/CrowdStrike/falcon-mcp/commit/903254f3479abf9f98ad6eb3aa03c8cb10e8fd9c))
+* **modules/cases:** add aggregate tools for case configuration and files ([#495](https://github.com/CrowdStrike/falcon-mcp/issues/495)) ([a533f58](https://github.com/CrowdStrike/falcon-mcp/commit/a533f58d6796e328c5b2cd28ae4fbb6cf4f17c6e))
+* **modules/detections:** add alert aggregation tool ([#483](https://github.com/CrowdStrike/falcon-mcp/issues/483)) ([ab97afd](https://github.com/CrowdStrike/falcon-mcp/commit/ab97afde87261552b70599561852df1d62d92aff))
+* **modules/hosts:** add Falcon Grouping Tag management tool ([#487](https://github.com/CrowdStrike/falcon-mcp/issues/487)) ([cc2cd6a](https://github.com/CrowdStrike/falcon-mcp/commit/cc2cd6af0a6e4b03bb5bbcde222bb1433779b756))
+* **modules/ngsiem:** add CQL authoring guidance to search tool ([#475](https://github.com/CrowdStrike/falcon-mcp/issues/475)) ([bb600ca](https://github.com/CrowdStrike/falcon-mcp/commit/bb600ca766fb6df2472c395a6f17dfa43325e083))
+* **server:** add concurrent request handling ([#478](https://github.com/CrowdStrike/falcon-mcp/issues/478)) ([356d2b5](https://github.com/CrowdStrike/falcon-mcp/commit/356d2b55bc765cc69aef6330cbfee0b00a72a776))
+* **server:** add tool-level filtering with --read-only, --tools, and --exclude-tools ([#490](https://github.com/CrowdStrike/falcon-mcp/issues/490)) ([3b76a6b](https://github.com/CrowdStrike/falcon-mcp/commit/3b76a6b631f3020f570a0ac7612ab51ff392a3fb))
+
+
+### Bug Fixes
+
+* **modules/detections:** rename falcon_aggregate_alerts to falcon_aggregate_detections ([#488](https://github.com/CrowdStrike/falcon-mcp/issues/488)) ([6a6f19e](https://github.com/CrowdStrike/falcon-mcp/commit/6a6f19ebf8db8380245b523c26fc1a43f955a7e5)), closes [#485](https://github.com/CrowdStrike/falcon-mcp/issues/485)
+* **modules/detections:** send include_hidden as a query parameter ([#491](https://github.com/CrowdStrike/falcon-mcp/issues/491)) ([0ad7fff](https://github.com/CrowdStrike/falcon-mcp/commit/0ad7fff089c805543a0d43b3b4d4865eb6663944))
+* **modules:** drop redundant offset input from dual-pagination search tools ([#474](https://github.com/CrowdStrike/falcon-mcp/issues/474)) ([778d360](https://github.com/CrowdStrike/falcon-mcp/commit/778d360fb0831c05e64c8d4f8f457131789e87d6))
+* **tests:** unwrap the search envelope in three modules' integration guards ([#492](https://github.com/CrowdStrike/falcon-mcp/issues/492)) ([e9e2175](https://github.com/CrowdStrike/falcon-mcp/commit/e9e2175626a6bbed13d72b0923ae51b769ee8e63))
+
 ## [0.15.0](https://github.com/CrowdStrike/falcon-mcp/compare/v0.14.0...v0.15.0) (2026-07-20)
 
 

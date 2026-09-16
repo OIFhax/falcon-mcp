@@ -14,6 +14,38 @@ from falcon_mcp.modules.falconpy_operations import (
 
 logger = get_logger(__name__)
 
+FALCONPY_1_6_3_SERVICE_COLLECTIONS: tuple[str, ...] = (
+    "access_scopes",
+    "api_clients",
+    "cloud_security_registration_combined",
+    "cloud_security_risks",
+    "federated_connections",
+    "foundry_lookup_files",
+    "knowledge_base_audit_events",
+    "knowledge_base_files",
+    "knowledge_bases",
+    "profile_groups",
+)
+
+FALCONPY_1_6_4_SERVICE_COLLECTIONS: tuple[str, ...] = ("falcon_id",)
+
+FALCONPY_1_6_5_SERVICE_COLLECTIONS: tuple[str, ...] = (
+    "agent_invocation",
+    "agent_templates",
+    "agent_versions",
+    "models",
+    "scanning_orchestrator",
+    "spans",
+    "stream",
+    "tools",
+)
+
+NEW_FALCONPY_SERVICE_COLLECTIONS: tuple[str, ...] = (
+    *FALCONPY_1_6_3_SERVICE_COLLECTIONS,
+    *FALCONPY_1_6_4_SERVICE_COLLECTIONS,
+    *FALCONPY_1_6_5_SERVICE_COLLECTIONS,
+)
+
 GENERATED_SERVICE_COLLECTIONS: tuple[str, ...] = (
     "admission_control_policies",
     "alerts",
@@ -62,6 +94,7 @@ GENERATED_SERVICE_COLLECTIONS: tuple[str, ...] = (
     "sample_uploads",
     "tailored_intelligence",
     "unidentified_containers",
+    *NEW_FALCONPY_SERVICE_COLLECTIONS,
 )
 
 __all__: list[str] = []

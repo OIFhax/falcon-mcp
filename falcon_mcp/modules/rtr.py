@@ -2411,10 +2411,11 @@ class RTRModule(BaseModule):
         sort: str | None = Field(
             default=None,
             description=dedent("""
-                Sort RTR audit sessions by a supported audit property using pipe syntax:
-                `created_at|desc`, `updated_at|asc`, or `deleted_at|desc`.
+                Sort RTR audit sessions by a supported audit property using the
+                dot separator, supported on every Falcon sort endpoint:
+                `created_at.desc`, `updated_at.asc`, or `deleted_at.desc`.
             """).strip(),
-            examples=["created_at|desc", "updated_at|asc"],
+            examples=["created_at.desc", "updated_at.asc"],
         ),
         with_command_info: bool = Field(
             default=False,
@@ -2646,7 +2647,7 @@ class RTRModule(BaseModule):
             description="Persist the read-only command in the RTR session history.",
         ),
     ) -> list[dict[str, Any]] | dict[str, Any]:
-        """Execute a read-only RTR command on a single host.
+        """Execute a read-only Real Time Response (RTR) command on a single host.
 
         Limited to read-only commands (ls, ps, cat, filehash, reg) for hunt and triage
         workflows. Does not expose admin or remediation commands. Returns command records

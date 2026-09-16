@@ -388,7 +388,6 @@ cluster_name:'staging'
 agent_type:'Kubernetes'
 """
 )
-
 # List of tuples containing filter options data: (name, type, description)
 IMAGES_VULNERABILITIES_FQL_FILTERS = [
     ("Name", "Type", "Description"),
@@ -564,7 +563,7 @@ SEARCH_CSPM_ASSETS_FQL_FILTERS = [
         "String",
         """
         The cloud provider hosting the resource.
-        Values: AWS, Azure, GCP (case-sensitive).
+        Values: aws, azure, gcp.
 
         Ex: cloud_provider:'AWS'
         Ex: cloud_provider:['AWS', 'Azure']
@@ -817,6 +816,11 @@ CSPM_IOM_FINDINGS_FQL_FILTERS = [
         "String",
         """
         The cloud provider. Values: aws, azure, gcp.
+
+        Lowercase is REQUIRED here. Unlike the CSPM asset and cloud risk endpoints,
+        this one is case-sensitive on cloud_provider, and an uppercase value such as
+        'AWS' returns an empty HTTP 200 rather than an error — so the query looks
+        like "no findings" instead of "wrong value".
 
         Ex: cloud_provider:'aws'
         Ex: cloud_provider:['aws', 'azure']
@@ -1107,7 +1111,7 @@ SEARCH_CSPM_ASSETS_FQL_DOCUMENTATION = (
 === falcon_search_cspm_assets FQL filter examples ===
 
 # Find AWS production assets by tag
-tag_key:'Environment'+tag_value:'Production'+cloud_provider:'AWS'
+tag_key:'Environment'+tag_value:'Production'+cloud_provider:'aws'
 
 # Find EC2 instances
 resource_type:'AWS::EC2::Instance'
@@ -1119,7 +1123,7 @@ tag_key:'Owner'+tag_value:'CloudOps'
 tags:'Environment:Production'
 
 # Find assets by cloud provider and region
-cloud_provider:'AWS'+region:['us-east-1', 'us-west-2']
+cloud_provider:'aws'+region:['us-east-1', 'us-west-2']
 
 # Find assets created in the last 30 days
 creation_time:>'2025-02-16T00:00:00Z'
@@ -1140,7 +1144,7 @@ publicly_exposed:true+highest_severity:'critical'
 instance_state:'running'+managed_by:'Sensor'
 
 # Find assets with active misconfigurations
-iom_count:>0+cloud_provider:'AWS'
+iom_count:>0+cloud_provider:'aws'
 
 === Cloud Resource Tag Filtering Syntax ===
 
@@ -1157,7 +1161,7 @@ tag_key:'Environment'+tag_value:'Production'   # Key + value match
 tags:'Environment:Production'                  # Combined key:value format
 tags_string:'*Production*'                     # Wildcard tag search
 tag_key:'CostCenter'                           # Any asset with this tag key
-tag_key:'Env'+tag_value:'Prod'+cloud_provider:'AWS'  # Tags + provider
+tag_key:'Env'+tag_value:'Prod'+cloud_provider:'aws'  # Tags + provider
 
 === Common Use Cases ===
 
@@ -1168,13 +1172,13 @@ tag_key:'Environment'+tag_value:'Production'+tag_key:'Compliance'+tag_value:'PCI
 tags:'CostCenter:12345'+active:true
 
 # Security: Find publicly exposed compute resources
-service_category:'Compute'+publicly_exposed:true+cloud_provider:'AWS'
+service_category:'Compute'+publicly_exposed:true+cloud_provider:'aws'
 
 # Security: Find assets with critical findings
 highest_severity:'critical'+managed_by:'Sensor'
 
 # Multi-region inventory
-cloud_provider:'AWS'+region:['us-east-1', 'eu-west-1']
+cloud_provider:'aws'+region:['us-east-1', 'eu-west-1']
 
 # Recent changes: Assets updated in last 7 days
 updated_at:>'2025-03-11T00:00:00Z'

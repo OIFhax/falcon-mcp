@@ -613,7 +613,9 @@ class IntelModule(BaseModule):
         )
 
         if self._is_error(api_response):
-            return [api_response]
+            return self._format_fql_error_response(
+                [api_response], filter, QUERY_REPORT_ENTITIES_FQL_DOCUMENTATION
+            )
 
         return api_response
 

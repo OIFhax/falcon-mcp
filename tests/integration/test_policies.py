@@ -62,9 +62,21 @@ class TestPoliciesIntegration(BaseIntegrationTest):
     # ---- Helpers ----------------------------------------------------------------
 
     def _scopes_available(self, policy_type: str) -> bool:
-        """Return True if a search for the given type does not error on scope."""
-        result = self.call_method(
-            self.module.search_policies, policy_type=policy_type, limit=1
+        """Return True if a search for the given type is not blocked by missing scope.
+
+        Retries through `retry_on_transient` first. Without that, an intermittent gateway
+        error reads as "scope unavailable" here, and every caller then skips — turning a
+        transient into a silent pass for whatever the test was supposed to verify. If the
+        error persists across retries, `retry_on_transient` fails rather than letting this
+        return a misleading False.
+        """
+        result = self._unwrap_results(
+            self.retry_on_transient(
+                lambda: self.call_method(
+                    self.module.search_policies, policy_type=policy_type, limit=1
+                ),
+                context=f"{policy_type} scope probe",
+            )
         )
         if isinstance(result, dict) and "error" in result:
             return False
@@ -75,8 +87,10 @@ class TestPoliciesIntegration(BaseIntegrationTest):
 
     def _first_entity(self, policy_type: str):
         """Return one policy entity for the type, or None (empty/scopeless)."""
-        result = self.call_method(
-            self.module.search_policies, policy_type=policy_type, limit=1
+        result = self._unwrap_results(
+            self.call_method(
+                self.module.search_policies, policy_type=policy_type, limit=1
+            )
         )
         if not result or isinstance(result, dict):
             return None
@@ -107,8 +121,10 @@ class TestPoliciesIntegration(BaseIntegrationTest):
                     f"{policy_type} policy scope not available", "operation names"
                 )
                 continue
-            result = self.call_method(
-                self.module.search_policies, policy_type=policy_type, limit=1
+            result = self._unwrap_results(
+                self.call_method(
+                    self.module.search_policies, policy_type=policy_type, limit=1
+                )
             )
             if isinstance(result, list) and result and isinstance(result[0], dict):
                 assert "error" not in result[0], (
@@ -121,8 +137,10 @@ class TestPoliciesIntegration(BaseIntegrationTest):
         for policy_type in POLICY_TYPES:
             if not self._scopes_available(policy_type):
                 continue
-            result = self.call_method(
-                self.module.search_policies, policy_type=policy_type, limit=2
+            result = self._unwrap_results(
+                self.call_method(
+                    self.module.search_policies, policy_type=policy_type, limit=2
+                )
             )
             if not result or isinstance(result, dict):
                 continue
@@ -144,8 +162,10 @@ class TestPoliciesIntegration(BaseIntegrationTest):
                 "Device Control Policies scope not available", "dc v2 fields"
             )
             return
-        result = self.call_method(
-            self.module.search_policies, policy_type="device_control", limit=1
+        result = self._unwrap_results(
+            self.call_method(
+                self.module.search_policies, policy_type="device_control", limit=1
+            )
         )
         if not result or isinstance(result, dict):
             self.skip_with_warning(
@@ -197,11 +217,13 @@ class TestPoliciesIntegration(BaseIntegrationTest):
                     else:
                         filter_expr = f"{field}:'{value}'"
 
-                result = self.call_method(
-                    self.module.search_policies,
-                    policy_type=policy_type,
-                    filter=filter_expr,
-                    limit=1,
+                result = self._unwrap_results(
+                    self.call_method(
+                        self.module.search_policies,
+                        policy_type=policy_type,
+                        filter=filter_expr,
+                        limit=1,
+                    )
                 )
                 assert result and not isinstance(result, dict), (
                     f"Documented filter field '{field}' returned no results for "
@@ -235,11 +257,13 @@ class TestPoliciesIntegration(BaseIntegrationTest):
                 continue
             name = entity["name"]
             filter_expr = f"name:{operator}'{name}'"
-            result = self.call_method(
-                self.module.search_policies,
-                policy_type=policy_type,
-                filter=filter_expr,
-                limit=1,
+            result = self._unwrap_results(
+                self.call_method(
+                    self.module.search_policies,
+                    policy_type=policy_type,
+                    filter=filter_expr,
+                    limit=1,
+                )
             )
             assert result and not isinstance(result, dict), (
                 f"Documented name operator '{operator}' returned nothing for "
@@ -264,9 +288,178 @@ class TestPoliciesIntegration(BaseIntegrationTest):
             sort="platform_name.asc",
             limit=1,
         )
-        assert isinstance(result, list) and result and "error" in result[0], (
+        records = self.records(result, context="platform_name sort guard")
+        assert records and "error" in records[0], (
             f"platform_name sort should be rejected by _validate_sort, got: {result}"
         )
+
+    def test_device_control_timestamp_sorts_ignore_direction(self):
+        """Pins a live API defect: device_control timestamp sorts drop the direction.
+
+        `created_timestamp.asc` and `created_timestamp.desc` return byte-identical ID lists,
+        both ascending, across 5 of 5 measured trials with 20 of 20 distinct timestamps — so
+        the direction is being dropped, not tie-broken. `modified_timestamp` behaves the same
+        (3 of 3). The scope is deliberately narrow: `enabled` and `precedence` do vary with
+        direction on this type, and the other five policy types honor direction on
+        `created_timestamp`, so this is not a blanket "device_control ignores sort".
+
+        Isolated to the API, not to us: the query step returns the same order for both
+        directions, and the get step preserves whatever it is handed (0 of 4 trials
+        scrambled). `_reorder_by_ids` is not implicated, and `search_policies` cannot be
+        given a meaningful sort-order test on these fields — which is why this pin exists.
+        Without it, someone adds a monotonicity test here, it passes against ascending data
+        for either direction, and concludes sort works.
+
+        A failure here most likely means the API was fixed. If so, replace this with a real
+        `assert_sort_orders_rows` test and drop the matching caveat from the `sort`
+        description and the FQL guide.
+        """
+        if not self._scopes_available("device_control"):
+            self.skip_with_warning(
+                "device_control scope unavailable", "device_control sort direction"
+            )
+            return
+
+        def ids_for(field: str, direction: str) -> list[str]:
+            result = self.call_method(
+                self.module.search_policies,
+                policy_type="device_control",
+                sort=f"{field}.{direction}",
+                limit=20,
+            )
+            self.assert_no_error(result, context=f"device_control {field}.{direction}")
+            return [policy["id"] for policy in self._unwrap_results(result)]
+
+        for field in ("created_timestamp", "modified_timestamp"):
+            ascending, descending = ids_for(field, "asc"), ids_for(field, "desc")
+
+            # Fail rather than skip on too little data, matching assert_sort_orders_rows:
+            # with fewer than two policies `ascending == descending` is trivially true, so a
+            # skip would quietly stop verifying both that the defect exists and that it was
+            # fixed.
+            assert len(ascending) > 1, (
+                f"Need 2+ device_control policies to compare sort order, got "
+                f"{len(ascending)}. This pin cannot verify anything on a smaller dataset."
+            )
+
+            assert ascending == descending, (
+                f"device_control now distinguishes sort direction for {field} — the known "
+                "defect this test pins appears to be fixed. Replace this with a real "
+                f"sort-order assertion.\n asc: {ascending}\ndesc: {descending}"
+            )
+
+    def test_pipe_sort_separator_is_rejected_for_every_type(self):
+        """The pipe direction separator is unusable on all six policy types.
+
+        Verifies the live behavior behind `_validate_sort`'s pipe guard. Every one of the
+        six query endpoints answers HTTP 400 ("Query string parameter 'sort' is not an
+        allowable value") for `created_timestamp|desc`, so the guard rejects it locally and
+        this test confirms the API still would.
+
+        Bypasses `search_policies` deliberately: the tool now short-circuits before the
+        request, so reaching the API means calling `_search_by_type` directly. If a type
+        starts accepting the pipe form, narrow the guard rather than leaving it blanket.
+        """
+        for policy_type in POLICY_TYPES:
+            if not self._scopes_available(policy_type):
+                self.skip_with_warning(
+                    f"{policy_type} policy scope unavailable", "pipe sort separator"
+                )
+                continue
+
+            result = self.retry_on_transient(
+                lambda pt=policy_type: self.module._search_by_type(
+                    pt, None, 5, None, "created_timestamp|desc"
+                ),
+                context=f"{policy_type} pipe sort",
+            )
+
+            # A query-step 400 comes back through _format_fql_error_response, so the shape
+            # is the FQL-error envelope rather than a bare list.
+            assert isinstance(result, dict) and "fql_guide" in result, (
+                f"{policy_type} now accepts the pipe sort separator. _validate_sort's "
+                f"blanket pipe rejection is too broad — narrow it. Got: {result}"
+            )
+
+            # Classify on the raw API message, not the composed one: handle_api_response
+            # prefixes every 400 with FQL boilerplate, so matching the composed string
+            # would match any bad request and this test would pass for the wrong reason.
+            errors = result["results"][0]["details"]["body"]["errors"]
+            raw_messages = [error.get("message", "") for error in errors]
+            assert any("sort" in message for message in raw_messages), (
+                f"{policy_type} returned a 400, but not about `sort` — this test is no "
+                f"longer pinning the pipe-separator behavior. API messages: {raw_messages}"
+            )
+
+    def test_pipe_sort_separator_rejected_before_the_request(self):
+        """`search_policies` rejects the pipe form locally, naming the dot form to use."""
+        result = self.call_method(
+            self.module.search_policies,
+            policy_type="device_control",
+            sort="created_timestamp|desc",
+            limit=5,
+        )
+        assert isinstance(result, list) and result and "error" in result[0], (
+            f"Expected a local validation error for the pipe form, got: {result}"
+        )
+        assert "created_timestamp.desc" in result[0]["error"], (
+            f"The error should name the dot form as the fix. Got: {result[0]['error']}"
+        )
+
+    def test_device_control_actor_sorts_return_500_on_the_api(self):
+        """Verifies the live behavior behind the per-type created_by/modified_by guard.
+
+        Both fields sort fine on the other five types but return HTTP 500 on
+        device_control (measured deterministic, 12 of 12 attempts). `_validate_sort` blocks
+        them for this type only, so this reaches the API directly to confirm the underlying
+        defect is still there — if it is fixed, drop the guard and this test.
+        """
+        if not self._scopes_available("device_control"):
+            self.skip_with_warning(
+                "device_control scope unavailable", "device_control actor sorts"
+            )
+            return
+
+        for field in ("created_by", "modified_by"):
+            result = self.retry_on_transient(
+                lambda f=field: self.module._search_by_type(
+                    "device_control", None, 5, None, f"{f}.desc"
+                ),
+                context=f"device_control {field} sort",
+            )
+            records = self._unwrap_results(result)
+            assert isinstance(records, list) and records and "error" in records[0], (
+                f"device_control sort by {field} no longer errors — the guard in "
+                f"_validate_sort can be dropped for this field. Got: {result}"
+            )
+            status = records[0].get("details", {}).get("status_code")
+            assert status == 500, (
+                f"device_control sort by {field} failed with status {status}, not the 500 "
+                f"this guard exists for. Re-check whether the guard is still right."
+            )
+
+    def test_device_control_actor_sorts_rejected_before_the_request(self):
+        """`search_policies` blocks created_by/modified_by for device_control only."""
+        for field in ("created_by", "modified_by"):
+            blocked = self.call_method(
+                self.module.search_policies,
+                policy_type="device_control",
+                sort=f"{field}.desc",
+                limit=5,
+            )
+            assert isinstance(blocked, list) and blocked and "error" in blocked[0], (
+                f"Expected a local validation error for device_control {field}, got: {blocked}"
+            )
+
+            if not self._scopes_available("prevention"):
+                continue
+            allowed = self.call_method(
+                self.module.search_policies,
+                policy_type="prevention",
+                sort=f"{field}.desc",
+                limit=5,
+            )
+            self.assert_no_error(allowed, context=f"prevention {field}.desc")
 
     def test_members_returns_hosts(self):
         """search_policy_members returns host-shaped entities when a policy has members."""
@@ -279,11 +472,13 @@ class TestPoliciesIntegration(BaseIntegrationTest):
             policy_id = entity.get("id")
             if not policy_id:
                 continue
-            members = self.call_method(
-                self.module.search_policy_members,
-                policy_type=policy_type,
-                id=policy_id,
-                limit=1,
+            members = self._unwrap_results(
+                self.call_method(
+                    self.module.search_policy_members,
+                    policy_type=policy_type,
+                    id=policy_id,
+                    limit=1,
+                )
             )
             if not members or isinstance(members, dict):
                 continue

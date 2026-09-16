@@ -12,6 +12,7 @@ from falcon_mcp.modules.falconpy_operations import (
     FalconPyOperationsBase,
     build_tool_specs,
     display_name_from_module_key,
+    is_decommissioned_endpoint,
 )
 from falcon_mcp.modules.generated_falconpy import GENERATED_SERVICE_COLLECTIONS
 
@@ -79,7 +80,9 @@ def _build_raw_gap_module(module_key: str) -> type[FalconPyOperationsBase] | Non
     missing_endpoints = [
         endpoint
         for endpoint in endpoints
-        if endpoint and not _operation_is_covered(str(endpoint[0]))
+        if endpoint
+        and not is_decommissioned_endpoint(endpoint)
+        and not _operation_is_covered(str(endpoint[0]))
     ]
     if not missing_endpoints:
         return None

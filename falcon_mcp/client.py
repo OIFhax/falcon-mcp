@@ -4,11 +4,13 @@ Falcon API Client for MCP Server
 This module provides the Falcon API client and authentication utilities for the Falcon MCP server.
 """
 
+import functools
 import contextvars
 import os
 import platform
 import re
 import sys
+import threading
 from collections import deque
 from contextlib import contextmanager
 from datetime import datetime, timezone
@@ -16,6 +18,8 @@ from importlib.metadata import PackageNotFoundError, version
 from time import sleep
 from typing import Any
 from urllib.parse import urlparse
+
+import anyio
 
 # Import the APIHarnessV2 from FalconPy
 from falconpy import APIHarnessV2  # type: ignore[import-untyped]
@@ -178,6 +182,12 @@ class FalconClient:
         self.client = self._build_api_client(timeout=self.http_timeout)
         self._rtr_client: APIHarnessV2 | None = None
 
+        # Serializes the stale-token refresh path. Concurrent tool calls run their
+        # blocking FalconPy work on separate threads (see command_async); without this
+        # lock, several threads could observe a stale token at once and each fire its
+        # own POST /oauth2/token. The lock guards only the refresh, never the API call.
+        self._token_lock = threading.Lock()
+
         logger.debug("Initialized Falcon client with base URL: %s", self.base_url)
         if self.member_cid:
             logger.debug("Flight Control member_cid: %s", self.member_cid)
@@ -244,6 +254,18 @@ class FalconClient:
         result: bool = self.client.token_valid
         return result
 
+    def _ensure_token_fresh(self, api_client: APIHarnessV2 | None = None) -> None:
+        """Collapse concurrent stale-token refreshes into a single login."""
+        client = api_client or self.client
+        if not getattr(client, "token_stale", False) or not getattr(
+            client, "refreshable", False
+        ):
+            return
+
+        with self._token_lock:
+            if getattr(client, "token_stale", False):
+                client.login()
+
     @contextmanager
     def tool_context(
         self,
@@ -274,6 +296,7 @@ class FalconClient:
         """
         retry_attempts = self.max_retries if operation in RETRYABLE_OPERATIONS else 0
         api_client = self._get_operation_client(operation)
+        self._ensure_token_fresh(api_client)
 
         for attempt in range(retry_attempts + 1):
             timestamp = _utc_timestamp()
@@ -411,6 +434,28 @@ class FalconClient:
             attempt=1,
         )
         return response
+
+    async def command_async(self, operation: str, **kwargs: Any) -> dict[str, Any]:
+        """Execute a Falcon API command off the event loop.
+
+        Runs the blocking FalconPy call on a worker thread so the asyncio event
+        loop stays free to service other in-flight requests. Async handlers (e.g.
+        ngsiem) should await this instead of calling the sync `command` directly;
+        sync handlers are offloaded automatically by the tool wrapper in
+        `BaseModule._add_tool`. The thread-pool cap and cancellation semantics
+        described on `offload_to_thread` apply here too — both share the same
+        default anyio limiter.
+
+        Args:
+            operation: The API operation to execute
+            **kwargs: Additional arguments to pass to the API
+
+        Returns:
+            dict[str, Any]: The API response
+        """
+        return await anyio.to_thread.run_sync(
+            functools.partial(self.command, operation, **kwargs)
+        )
 
     def get_user_agent(self) -> str:
         """Get RFC-compliant user agent string for API requests.

@@ -90,9 +90,7 @@ class TestFirewallIntegration(BaseIntegrationTest):
             self.module.search_firewall_rules,
             filter=None,
             limit=1,
-            offset=0,
             sort=None,
-            q=None,
             after=None,
         )
         self._skip_if_scope_or_service_missing(result, "search_firewall_rules")
@@ -109,7 +107,6 @@ class TestFirewallIntegration(BaseIntegrationTest):
             limit=1,
             offset=0,
             sort=None,
-            q=None,
             after=None,
         )
         self._skip_if_scope_or_service_missing(result, "query_firewall_rule_ids")
@@ -126,7 +123,6 @@ class TestFirewallIntegration(BaseIntegrationTest):
             limit=1,
             offset=0,
             sort=None,
-            q=None,
             after=None,
         )
         self._skip_if_scope_or_service_missing(query_result, "get_firewall_rules setup")

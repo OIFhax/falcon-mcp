@@ -253,37 +253,41 @@ class FirewallModule(BaseModule):
         limit: int = Field(
             default=20, ge=1, le=5000, description="Maximum number of records. [1-5000]"
         ),
-        offset: int = Field(default=0, ge=0, description="Starting index for pagination."),
         sort: str | None = Field(
             default=None, description="Sort expression. Example: `modified_on.desc`."
         ),
-        q: str | None = Field(default=None, description="Free-text query string."),
         after: str | None = Field(
             default=None, description="Pagination token from a previous response."
         ),
     ) -> list[dict[str, Any]] | dict[str, Any]:
         """Search firewall rules and return full details."""
-        rule_ids = self.query_firewall_rule_ids(
-            filter=filter,
-            limit=limit,
-            offset=offset,
-            sort=sort,
-            q=q,
-            after=after,
+        rule_ids, pagination = self._base_search_with_meta(
+            operation="query_rules",
+            search_params={
+                "filter": filter,
+                "limit": limit,
+                "sort": sort,
+                "after": after,
+            },
+            error_message="Failed to search firewall rules",
         )
         if self._is_error(rule_ids):
-            return [rule_ids]
-        if isinstance(rule_ids, dict):
-            return rule_ids
-        if not rule_ids:
             if filter:
                 return self._format_fql_error_response(
-                    [],
-                    filter,
-                    SEARCH_FIREWALL_RULES_FQL_DOCUMENTATION,
+                    [rule_ids], filter, SEARCH_FIREWALL_RULES_FQL_DOCUMENTATION
                 )
-            return []
-        return self.get_firewall_rules(ids=rule_ids)
+            return [rule_ids]
+        if not rule_ids:
+            return self._build_pagination_envelope([], pagination, filter)
+
+        details = self._base_get_by_ids(
+            operation="get_rules", ids=rule_ids, use_params=True
+        )
+        if self._is_error(details):
+            return [details]
+
+        details = self._reorder_by_ids(rule_ids, details, id_field="id")
+        return self._build_pagination_envelope(details, pagination, filter)
 
     def search_firewall_rule_groups(
         self,
@@ -294,37 +298,41 @@ class FirewallModule(BaseModule):
         limit: int = Field(
             default=20, ge=1, le=5000, description="Maximum number of records. [1-5000]"
         ),
-        offset: int = Field(default=0, ge=0, description="Starting index for pagination."),
         sort: str | None = Field(
             default=None, description="Sort expression. Example: `modified_on.desc`."
         ),
-        q: str | None = Field(default=None, description="Free-text query string."),
         after: str | None = Field(
             default=None, description="Pagination token from a previous response."
         ),
     ) -> list[dict[str, Any]] | dict[str, Any]:
         """Search firewall rule groups and return full details."""
-        group_ids = self.query_firewall_rule_group_ids(
-            filter=filter,
-            limit=limit,
-            offset=offset,
-            sort=sort,
-            q=q,
-            after=after,
+        group_ids, pagination = self._base_search_with_meta(
+            operation="query_rule_groups",
+            search_params={
+                "filter": filter,
+                "limit": limit,
+                "sort": sort,
+                "after": after,
+            },
+            error_message="Failed to search firewall rule groups",
         )
         if self._is_error(group_ids):
-            return [group_ids]
-        if isinstance(group_ids, dict):
-            return group_ids
-        if not group_ids:
             if filter:
                 return self._format_fql_error_response(
-                    [],
-                    filter,
-                    SEARCH_FIREWALL_RULES_FQL_DOCUMENTATION,
+                    [group_ids], filter, SEARCH_FIREWALL_RULES_FQL_DOCUMENTATION
                 )
-            return []
-        return self.get_firewall_rule_groups(ids=group_ids)
+            return [group_ids]
+        if not group_ids:
+            return self._build_pagination_envelope([], pagination, filter)
+
+        details = self._base_get_by_ids(
+            operation="get_rule_groups", ids=group_ids, use_params=True
+        )
+        if self._is_error(details):
+            return [details]
+
+        details = self._reorder_by_ids(group_ids, details, id_field="id")
+        return self._build_pagination_envelope(details, pagination, filter)
 
     def search_firewall_policy_rules(
         self,
@@ -340,30 +348,36 @@ class FirewallModule(BaseModule):
         sort: str | None = Field(
             default=None, description="Sort expression. Example: `modified_on.desc`."
         ),
-        q: str | None = Field(default=None, description="Free-text query string."),
     ) -> list[dict[str, Any]] | dict[str, Any]:
         """Search rules within a specific policy container and return full details."""
-        rule_ids = self.query_firewall_policy_rule_ids(
-            policy_id=policy_id,
-            filter=filter,
-            limit=limit,
-            offset=offset,
-            sort=sort,
-            q=q,
+        rule_ids, pagination = self._base_search_with_meta(
+            operation="query_policy_rules",
+            search_params={
+                "id": policy_id,
+                "filter": filter,
+                "limit": limit,
+                "offset": offset,
+                "sort": sort,
+            },
+            error_message="Failed to search firewall policy rules",
         )
         if self._is_error(rule_ids):
-            return [rule_ids]
-        if isinstance(rule_ids, dict):
-            return rule_ids
-        if not rule_ids:
             if filter:
                 return self._format_fql_error_response(
-                    [],
-                    filter,
-                    SEARCH_FIREWALL_RULES_FQL_DOCUMENTATION,
+                    [rule_ids], filter, SEARCH_FIREWALL_RULES_FQL_DOCUMENTATION
                 )
-            return []
-        return self.get_firewall_rules(ids=rule_ids)
+            return [rule_ids]
+        if not rule_ids:
+            return self._build_pagination_envelope([], pagination, filter)
+
+        details = self._base_get_by_ids(
+            operation="get_rules", ids=rule_ids, use_params=True
+        )
+        if self._is_error(details):
+            return [details]
+
+        details = self._reorder_by_ids(rule_ids, details, id_field="id")
+        return self._build_pagination_envelope(details, pagination, filter)
 
     def query_firewall_rule_ids(
         self,
@@ -374,9 +388,7 @@ class FirewallModule(BaseModule):
         limit: int = Field(
             default=100, ge=1, le=5000, description="Maximum number of IDs. [1-5000]"
         ),
-        offset: int = Field(default=0, ge=0, description="Starting index for pagination."),
         sort: str | None = Field(default=None, description="Sort expression."),
-        q: str | None = Field(default=None, description="Free-text query string."),
         after: str | None = Field(default=None, description="Pagination token."),
     ) -> list[str] | dict[str, Any]:
         """Query firewall rule IDs."""
@@ -385,9 +397,7 @@ class FirewallModule(BaseModule):
             search_params={
                 "filter": filter,
                 "limit": limit,
-                "offset": offset,
                 "sort": sort,
-                "q": q,
                 "after": after,
             },
             error_message="Failed to query firewall rule IDs",
@@ -404,9 +414,7 @@ class FirewallModule(BaseModule):
         limit: int = Field(
             default=100, ge=1, le=5000, description="Maximum number of IDs. [1-5000]"
         ),
-        offset: int = Field(default=0, ge=0, description="Starting index for pagination."),
         sort: str | None = Field(default=None, description="Sort expression."),
-        q: str | None = Field(default=None, description="Free-text query string."),
         after: str | None = Field(default=None, description="Pagination token."),
     ) -> list[str] | dict[str, Any]:
         """Query firewall rule-group IDs."""
@@ -415,9 +423,7 @@ class FirewallModule(BaseModule):
             search_params={
                 "filter": filter,
                 "limit": limit,
-                "offset": offset,
                 "sort": sort,
-                "q": q,
                 "after": after,
             },
             error_message="Failed to query firewall rule-group IDs",
@@ -437,7 +443,6 @@ class FirewallModule(BaseModule):
         ),
         offset: int = Field(default=0, ge=0, description="Starting index for pagination."),
         sort: str | None = Field(default=None, description="Sort expression."),
-        q: str | None = Field(default=None, description="Free-text query string."),
     ) -> list[str] | dict[str, Any]:
         """Query firewall policy-rule IDs."""
         return self._query_ids_with_fql_guide(
@@ -448,7 +453,6 @@ class FirewallModule(BaseModule):
                 "limit": limit,
                 "offset": offset,
                 "sort": sort,
-                "q": q,
             },
             error_message="Failed to query firewall policy-rule IDs",
             filter_used=filter,

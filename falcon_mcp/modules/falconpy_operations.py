@@ -13,6 +13,7 @@ from mcp.types import ToolAnnotations
 from pydantic import AnyUrl, Field
 from pydantic.fields import FieldInfo
 
+from falcon_mcp.common.api_scopes import get_required_scopes
 from falcon_mcp.common.errors import _format_error_response, handle_api_response
 from falcon_mcp.common.utils import prepare_api_parameters
 from falcon_mcp.modules.base import BaseModule
@@ -76,6 +77,38 @@ WRITE_OPERATION_PREFIXES = (
     "upsert",
 )
 
+WRITE_OPERATION_TOKENS = {
+    "action",
+    "actions",
+    "add",
+    "assign",
+    "cancel",
+    "clone",
+    "create",
+    "delete",
+    "execute",
+    "import",
+    "ingest",
+    "invoke",
+    "merge",
+    "patch",
+    "populate",
+    "put",
+    "remove",
+    "reset",
+    "retry",
+    "run",
+    "set",
+    "signal",
+    "start",
+    "stop",
+    "submit",
+    "trigger",
+    "update",
+    "upload",
+    "upsert",
+}
+
 
 def operation_to_snake(operation: str) -> str:
     """Convert FalconPy operation IDs into stable MCP-friendly suffixes."""
@@ -133,10 +166,27 @@ def is_write_operation(endpoint: list[Any]) -> bool:
         return False
 
     operation = str(endpoint[0])
-    normalized = operation_to_snake(operation).replace("_", "")
-    if normalized.startswith(READ_OPERATION_PREFIXES):
+    scopes = get_required_scopes(operation)
+    if any(scope.casefold().endswith(":write") for scope in scopes):
+        return True
+    if scopes and all(scope.casefold().endswith(":read") for scope in scopes):
         return False
-    return normalized.startswith(WRITE_OPERATION_PREFIXES)
+
+    normalized = operation_to_snake(operation)
+    compact = normalized.replace("_", "")
+    if compact.startswith(READ_OPERATION_PREFIXES):
+        return False
+    if compact.startswith(WRITE_OPERATION_PREFIXES):
+        return True
+    if set(normalized.split("_")) & WRITE_OPERATION_TOKENS:
+        return True
+    return method not in {"HEAD", "OPTIONS"}
+
+
+def is_decommissioned_endpoint(endpoint: list[Any]) -> bool:
+    """Return whether FalconPy marks an endpoint as decommissioned."""
+    description = str(endpoint[3]) if len(endpoint) > 3 else ""
+    return description.lstrip().casefold().startswith("decommissioned:")
 
 
 def build_tool_specs(module_key: str, endpoints: list[list[Any]]) -> list[dict[str, Any]]:
@@ -145,6 +195,9 @@ def build_tool_specs(module_key: str, endpoints: list[list[Any]]) -> list[dict[s
     seen_tool_names: set[str] = set()
 
     for endpoint in endpoints:
+        if is_decommissioned_endpoint(endpoint):
+            continue
+
         operation = str(endpoint[0])
         method = str(endpoint[1]).upper()
         params = endpoint[5] if len(endpoint) > 5 and isinstance(endpoint[5], list) else []
@@ -194,6 +247,7 @@ def build_tool_specs(module_key: str, endpoints: list[list[Any]]) -> list[dict[s
                     if is_write
                     else None
                 ),
+                "required_scopes": get_required_scopes(operation),
             }
         )
 
@@ -426,12 +480,14 @@ class FalconPyOperationsBase(BaseModule):
             "Pass JSON request bodies through `body`.",
             "For multipart uploads, provide `file_data_base64`, optional `file_name`, optional `file_field`, and any extra `form_data`.",
             "",
-            "| Tool | Operation | Method | Path |",
-            "|---|---|---|---|",
+            "| Tool | Operation | Method | Required scopes | Path |",
+            "|---|---|---|---|---|",
         ]
         for spec in self.TOOL_SPECS:
+            scopes = "<br>".join(f"`{scope}`" for scope in spec["required_scopes"])
+            scopes = scopes or "Not published"
             lines.append(
                 f"| `falcon_{spec['tool_name']}` | `{spec['operation']}` | "
-                f"`{spec['method']}` | `{spec['path']}` |"
+                f"`{spec['method']}` | {scopes} | `{spec['path']}` |"
             )
         return "\n".join(lines)

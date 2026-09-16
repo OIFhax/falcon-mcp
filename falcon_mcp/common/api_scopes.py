@@ -25,6 +25,7 @@ API_SCOPE_REQUIREMENTS = {
     # Hosts operations
     "QueryDevicesByFilter": ["Hosts:read"],
     "PostDeviceDetailsV2": ["Hosts:read"],
+    "UpdateDeviceTags": ["Hosts:write"],
     # Host Groups operations
     "queryCombinedHostGroups": ["Host Groups:read"],
     "queryHostGroups": ["Host Groups:read"],
@@ -38,6 +39,9 @@ API_SCOPE_REQUIREMENTS = {
     "combined_cloud_risks": ["Cloud Security API Risks:read"],
     "ListCloudGroupsExternal": ["Cloud Groups V2:read"],
     "ListCloudGroupsByIDExternal": ["Cloud Groups V2:read"],
+    # Policy Framework insight rules
+    "QueryRule": ["Cloud Security Policies:read"],
+    "GetRule": ["Cloud Security Policies:read"],
     # Host Migration operations
     "GetMigrationIDsV1": ["Host Migration:read"],
     "GetMigrationsV1": ["Host Migration:read"],
@@ -145,6 +149,18 @@ API_SCOPE_REQUIREMENTS = {
     "createIOAExclusionsV1": ["IOA Exclusions:write"],
     "updateIOAExclusionsV1": ["IOA Exclusions:write"],
     "deleteIOAExclusionsV1": ["IOA Exclusions:write"],
+    # Exclusions operations - IOA (v2)
+    "ss_ioa_exclusions_search_v2": ["IOA Exclusions:read"],
+    "ss_ioa_exclusions_get_v2": ["IOA Exclusions:read"],
+    "ss_ioa_exclusions_create_v2": ["IOA Exclusions:write"],
+    "ss_ioa_exclusions_update_v2": ["IOA Exclusions:write"],
+    "ss_ioa_exclusions_delete_v2": ["IOA Exclusions:write"],
+    # Exclusions operations - Machine Learning (v2)
+    "exclusions_search_v2": ["Machine Learning Exclusions:read"],
+    "exclusions_get_v2": ["Machine Learning Exclusions:read"],
+    "exclusions_create_v2": ["Machine Learning Exclusions:write"],
+    "exclusions_update_v2": ["Machine Learning Exclusions:write"],
+    "exclusions_delete_v2": ["Machine Learning Exclusions:write"],
     # Firewall Management operations
     "aggregate_events": ["Firewall Management:read"],
     "aggregate_policy_rules": ["Firewall Management:read"],
@@ -351,6 +367,7 @@ API_SCOPE_REQUIREMENTS = {
     "aggregates_notification_groups_post_v2": ["case-templates:read"],
     "aggregates_slas_post_v1": ["case-templates:read"],
     "aggregates_templates_post_v1": ["case-templates:read"],
+    "aggregates_access_tags_post_v1": ["case-templates:read"],
     "entities_fields_get_v1": ["case-templates:read"],
     "entities_notification_groups_get_v1": ["case-templates:read"],
     "entities_notification_groups_post_v1": ["case-templates:write"],
@@ -766,6 +783,76 @@ API_SCOPE_REQUIREMENTS = {
     "UpdateRulesV1": ["Monitoring rules (Falcon Intelligence Recon):write"],
     "DeleteNotificationsV1": ["Monitoring rules (Falcon Intelligence Recon):write"],
     "UpdateNotificationsV1": ["Monitoring rules (Falcon Intelligence Recon):write"],
+    # Access Scopes operations
+    "ListAccessScopesExternal": ["Access Scope:read"],
+    "QueryAccessScopesExternal": ["Access Scope:read"],
+    # API Clients operations
+    "GetAccessibleScopes": ["Api Client Mgmt:read"],
+    "GetAPIClients": ["Api Client Mgmt:read"],
+    "GetAllAPIClientIdsForCustomer": ["Api Client Mgmt:read"],
+    "ResetAPIClientSecret": ["Api Client Mgmt:write"],
+    "CreateAPIClient": ["Api Client Mgmt:write"],
+    "DeleteAPIClients": ["Api Client Mgmt:write"],
+    "UpdateAPIClient": ["Api Client Mgmt:write"],
+    # Cloud Security Registration Combined operations
+    "cloud_registration_cross_provider_get_account_aggregates": [
+        "Cloud Registration:write"
+    ],
+    # Cloud Security Risks operations
+    "cloud_security_timeline_risks_enriched": ["Cloud Security API Risks:read"],
+    # Falcon ID operations
+    "GetThirdPartyPasskeyRegistry": ["Falcon Id:read"],
+    "QueryThirdPartyPasskeyRegistry": ["Falcon Id:read"],
+    "DeleteThirdPartyPasskeyRegistry": ["Falcon Id:write"],
+    "UpdateThirdPartyPasskeyRegistry": ["Falcon Id:write"],
+    # Federated Connections operations
+    "PostFederatedConnectionsConfig": ["NGSIEM Data Connections API:write"],
+    "DeleteFederatedConnectionsConfig": ["NGSIEM Data Connections API:write"],
+    "PatchFederatedConnectionsConfig": ["NGSIEM Data Connections API:write"],
+    # Agentic Studio read operations
+    "QueryAgentsV2": ["Charlotte AI Agent Definition:read"],
+    "GetAgentsV2": ["Charlotte AI Agent Definition:read"],
+    "EntitiesAgentTemplatesV1": ["Charlotte AI Agent Definition:read"],
+    "QueriesAgentTemplatesV1": ["Charlotte AI Agent Definition:read"],
+    "GetAgentVersionsV1": ["Charlotte AI Agent Definition:read"],
+    "QueryAgentVersionsV1": ["Charlotte AI Agent Definition:read"],
+    "CombinedKnowledgeBaseAuditEventsV1": ["Charlotte AI Agent Definition:read"],
+    "EntitiesKnowledgeBaseAuditEventsV1": ["Charlotte AI Agent Definition:read"],
+    "QueriesKnowledgeBaseAuditEventsV1": ["Charlotte AI Agent Definition:read"],
+    "EntitiesKnowledgeBaseFilesDownloadV1": ["Charlotte AI Agent Definition:read"],
+    "EntitiesKnowledgeBaseFilesV1": ["Charlotte AI Agent Definition:read"],
+    "QueriesKnowledgeBaseFilesV1": ["Charlotte AI Agent Definition:read"],
+    "CombinedKnowledgeBasesV1": ["Charlotte AI Agent Definition:read"],
+    "EntitiesKnowledgeBasesV1": ["Charlotte AI Agent Definition:read"],
+    "QueriesKnowledgeBasesV1": ["Charlotte AI Agent Definition:read"],
+    "EntitiesModelsV1": ["Charlotte AI Agent Definition:read"],
+    "QueriesModelsV1": ["Charlotte AI Agent Definition:read"],
+    "EntitiesSpansV1": ["Charlotte AI Agent Definition:read"],
+    "QueriesSpansV1": ["Charlotte AI Agent Definition:read"],
+    "EntitiesToolsV1": ["Charlotte AI Agent Definition:read"],
+    "QueriesToolsV1": ["Charlotte AI Agent Definition:read"],
+    "GetAgentInvocationV3": ["Charlotte AI Agent Definition:read"],
+    "StreamInvocationResponseV1": ["Charlotte AI Agent Definition:read"],
+    # Agentic Studio write operations
+    "InvokePublishedAgentExternalV1": ["Charlotte AI Agent Definition:write"],
+    "InvokeAgentVersionExternalV1": ["Charlotte AI Agent Definition:write"],
+    "EntitiesKnowledgeBaseFilesUpdateV1": ["Charlotte AI Agent Definition:write"],
+    "EntitiesKnowledgeBaseFilesCreateV1": ["Charlotte AI Agent Definition:write"],
+    "EntitiesKnowledgeBaseFilesDeleteV1": ["Charlotte AI Agent Definition:write"],
+    "EntitiesKnowledgeBasesCreateV1": ["Charlotte AI Agent Definition:write"],
+    "EntitiesKnowledgeBasesUpdateV1": ["Charlotte AI Agent Definition:write"],
+    # Profile Groups operations
+    "GetGroupUsersV1": ["User Management:read"],
+    "GetGroupsV1Mixin0": ["User Management:read"],
+    "GetUserGroupsV1": ["User Management:read"],
+    "QueryGroupsV1Mixin0": ["User Management:read"],
+    "GroupActionsV1Mixin0": ["User Management:write"],
+    "GroupUsersActionsV1Mixin0": ["User Management:write"],
+    "CreateGroupV1Mixin0": ["User Management:write"],
+    "DeleteGroupsV1": ["User Management:write"],
+    "UpdateGroupV1Mixin0": ["User Management:write"],
+    # AI Detection and Response (Guardian) operations
+    "aidr_events_query": ["AIDR:read"],
     # Add more mappings as needed
 }
 

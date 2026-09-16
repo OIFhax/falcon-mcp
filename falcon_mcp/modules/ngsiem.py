@@ -7,7 +7,7 @@ search jobs, dashboards, lookup files, parsers, and saved queries.
 
 import asyncio
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from mcp.server import FastMCP
@@ -22,6 +22,28 @@ from falcon_mcp.resources.ngsiem import (
     NGSIEM_REPOSITORY_GUIDE,
     NGSIEM_SAFETY_GUIDE,
     NGSIEM_SEARCH_GUIDE,
+)
+
+# Hint appended to error/empty responses steering the model to the CQL guide.
+_CQL_ERROR_HINT = (
+    "Review the CQL guide above and correct your query. CQL is a pipe-based "
+    "language (filter | command | command) — not SQL or Splunk SPL. Consult "
+    "`falcon://ngsiem/search-guide` for the syntax and working examples."
+)
+# The API demotes unrecognized CQL words to free-text stages instead of erroring, so
+# `job.parsed_query` (its own normalization of what ran) is the only misparse signal.
+_CQL_CONFIRMED_ZERO_HINT = (
+    "No rows matched, and the job scanned {processed_events:,} events — a real "
+    "negative. Report it as such rather than retrying. If you expected rows, check "
+    "`job.parsed_query` against the query you sent."
+)
+
+# A correct filter over an empty partition and a misparsed query both scan nothing.
+_CQL_UNSCANNED_ZERO_HINT = (
+    "No rows, and `job.processed_events` does not show a completed scan, so this alone "
+    "is not a confirmed negative. Compare `job.parsed_query` to the query you sent: "
+    "unrecognized words become free-text stages instead of an error. If it matches your "
+    "intent the negative is real; if not, correct the syntax using the guide above."
 )
 
 # Configurable polling settings
@@ -62,12 +84,53 @@ SEARCH_DOMAIN_OPERATIONS = {
     "DeleteLookupFile",
     "ListLookupFiles",
 }
+_UNSAFE_REPOSITORY_CHARS = ("/", "\\", "%")
+_DOT_SEGMENTS = (".", "..")
+
+
+def _validate_repository(repository: Any) -> dict[str, Any] | None:
+    """Reject repository values that could alter FalconPy path routing."""
+    if not isinstance(repository, str):
+        return None
+    if not repository.strip():
+        return _format_error_response(
+            "Invalid repository: must be a non-empty repository or view name.",
+            operation="StartSearchV1",
+        )
+    if any(char in repository for char in _UNSAFE_REPOSITORY_CHARS) or repository in _DOT_SEGMENTS:
+        return _format_error_response(
+            f"Invalid repository {repository!r}: must not contain '/', '\\', or '%', "
+            "or be '.' or '..'.",
+            operation="StartSearchV1",
+        )
+    return None
 
 
 def _iso_to_epoch_ms(iso_timestamp: str) -> int:
     """Convert ISO 8601 timestamp to Unix epoch milliseconds."""
     dt = datetime.fromisoformat(iso_timestamp.replace("Z", "+00:00"))
     return int(dt.timestamp() * 1000)
+
+
+def _epoch_ms_to_iso(epoch_ms: Any) -> str | None:
+    """Convert Unix epoch milliseconds to an ISO 8601 UTC timestamp.
+
+    Args:
+        epoch_ms: Unix epoch time in milliseconds
+
+    Returns:
+        ISO 8601 timestamp string, or None if the value is not a usable number
+    """
+    if isinstance(epoch_ms, bool) or not isinstance(epoch_ms, (int, float)):
+        return None
+    try:
+        return (
+            datetime.fromtimestamp(epoch_ms / 1000, tz=timezone.utc)
+            .isoformat()
+            .replace("+00:00", "Z")
+        )
+    except (OSError, OverflowError, ValueError):
+        return None
 
 
 class NGSIEMModule(BaseModule):
@@ -288,6 +351,108 @@ class NGSIEMModule(BaseModule):
         self._add_resource(server, search_guide_resource)
         self._add_resource(server, safety_guide_resource)
 
+    def _format_cql_error_response(
+        self,
+        error_response: dict[str, Any],
+        query_string: str,
+    ) -> dict[str, Any]:
+        """Augment an error response with the CQL guide and a repair hint.
+
+        Reaches the model with the full CQL authoring guide exactly when its query
+        failed, so it can correct the syntax and retry. Mirrors
+        `_format_fql_error_response` but for CQL (the API returns no CQL parser
+        diagnostics, so the guide is the only actionable signal).
+
+        Args:
+            error_response: The error dict produced by the shared error handlers
+            query_string: The CQL query that was attempted
+
+        Returns:
+            The error dict with `cql_guide`, `hint`, and `query_used` added
+        """
+        error_response["query_used"] = query_string
+        error_response["cql_guide"] = NGSIEM_SEARCH_GUIDE
+        error_response["hint"] = _CQL_ERROR_HINT
+        return error_response
+
+    @staticmethod
+    def _extract_job_metadata(
+        body: dict[str, Any],
+        repository: str,
+        job_id: str,
+    ) -> dict[str, Any]:
+        """Map a search-status body onto the `job` block of the response envelope.
+
+        Fields the response omits are reported as None, never defaulted to 0.
+
+        Args:
+            body: The `body` of a 200 GetSearchStatusV1 response
+            repository: The repository the job ran against
+            job_id: The search job ID
+
+        Returns:
+            Dict of job metadata suitable for the `job` key of the response envelope
+        """
+        meta = body.get("metaData") or {}
+        filter_query = meta.get("filterQuery") or {}
+        # Job-level and query-level warnings are scoped separately; callers want both.
+        warnings = [*(body.get("warnings") or []), *(meta.get("warnings") or [])]
+
+        return {
+            "job_id": job_id,
+            "repository": repository,
+            "event_count": meta.get("eventCount"),
+            "processed_events": meta.get("processedEvents"),
+            "processed_bytes": meta.get("processedBytes"),
+            "parsed_query": filter_query.get("queryString"),
+            "search_start": _epoch_ms_to_iso(meta.get("queryStart")),
+            "search_end": _epoch_ms_to_iso(meta.get("queryEnd")),
+            "duration_ms": meta.get("timeMillis"),
+            "is_aggregate": meta.get("isAggregate"),
+            "cancelled": body.get("cancelled"),
+            "warnings": warnings,
+        }
+
+    def _build_job_envelope(
+        self,
+        events: list[dict[str, Any]],
+        job: dict[str, Any],
+        query_string: str,
+    ) -> dict[str, Any]:
+        """Assemble the response envelope, identical in shape for any row count.
+
+        NG-SIEM jobs carry no `meta.pagination`, so this keeps the house `results` key
+        and swaps the pagination block for a `job` block. Zero rows also get the CQL
+        guide and a hint chosen from `job.processed_events`.
+
+        Args:
+            events: The event records returned by the job
+            job: Job metadata from `_extract_job_metadata`
+            query_string: The CQL query as submitted
+
+        Returns:
+            Dict with `results`, `query_used`, `job`, and on zero rows also
+            `cql_guide` and `hint`
+        """
+        envelope: dict[str, Any] = {
+            "results": events,
+            "query_used": query_string,
+            "job": job,
+        }
+
+        if events:
+            return envelope
+
+        processed = job.get("processed_events")
+        if isinstance(processed, int) and not isinstance(processed, bool) and processed > 0:
+            hint = _CQL_CONFIRMED_ZERO_HINT.format(processed_events=processed)
+        else:
+            hint = _CQL_UNSCANNED_ZERO_HINT
+
+        envelope["cql_guide"] = NGSIEM_SEARCH_GUIDE
+        envelope["hint"] = hint
+        return envelope
+
     async def search_ngsiem(
         self,
         query_string: str = Field(
@@ -306,6 +471,10 @@ class NGSIEMModule(BaseModule):
         ),
     ) -> list[dict[str, Any]] | dict[str, Any]:
         """Execute asynchronous NGSIEM search and return matching events."""
+        repository_error = _validate_repository(repository)
+        if repository_error is not None:
+            return repository_error
+
         query_validation_error = self._validate_ngsiem_query_string(
             query_string=query_string,
             operation="StartSearchV1",
@@ -313,59 +482,86 @@ class NGSIEMModule(BaseModule):
         if query_validation_error:
             return query_validation_error
 
-        start_result = self.start_ngsiem_search(
-            confirm_execution=True,
-            query_string=query_string,
-            start=start,
-            repository=repository,
-            end=end,
-            body=None,
-        )
-        if self._is_error(start_result):
-            return start_result
-        if isinstance(start_result, list):
-            return start_result
+        body_params: dict[str, Any] = {
+            "queryString": query_string,
+            "start": _iso_to_epoch_ms(start),
+        }
+        if isinstance(end, str):
+            body_params["end"] = _iso_to_epoch_ms(end)
 
-        job_id = start_result.get("id")
+        start_response = await self.client.command_async(
+            operation="StartSearchV1",
+            repository=repository,
+            body=body_params,
+        )
+        if start_response.get("status_code") != 200:
+            error_response = handle_api_response(
+                start_response,
+                operation="StartSearchV1",
+                error_message="Failed to start NGSIEM search",
+                default_result=[],
+            )
+            return self._format_cql_error_response(error_response, query_string)
+
+        job_id = start_response.get("body", {}).get("id")
         if not job_id:
-            return _format_error_response(
+            error_response = _format_error_response(
                 message="Failed to start NGSIEM search: no job ID returned",
-                details=start_result,
+                details=start_response.get("body", {}),
                 operation="StartSearchV1",
             )
+            return self._format_cql_error_response(error_response, query_string)
 
         elapsed = 0.0
+        last_job_meta: dict[str, Any] | None = None
         while elapsed < TIMEOUT_SECONDS:
             await asyncio.sleep(POLL_INTERVAL_SECONDS)
             elapsed += POLL_INTERVAL_SECONDS
 
-            status_result = self.get_ngsiem_search_status(
+            poll_response = await self.client.command_async(
+                operation="GetSearchStatusV1",
                 repository=repository,
                 search_id=job_id,
             )
-            if self._is_error(status_result):
-                return status_result
-            if isinstance(status_result, list):
-                return status_result
+            if poll_response.get("status_code") != 200:
+                error_response = handle_api_response(
+                    poll_response,
+                    operation="GetSearchStatusV1",
+                    error_message="Failed to poll NGSIEM search status",
+                    default_result=[],
+                )
+                return self._format_cql_error_response(error_response, query_string)
 
-            if status_result.get("done"):
-                events = status_result.get("events")
+            status_body = poll_response.get("body", {})
+            last_job_meta = self._extract_job_metadata(status_body, repository, job_id)
+            if status_body.get("done"):
+                events = status_body.get("events")
                 if isinstance(events, list):
                     return events
                 return []
 
-        self.stop_ngsiem_search(
-            confirm_execution=True,
+        stop_response = await self.client.command_async(
+            operation="StopSearchV1",
             repository=repository,
-            search_id=job_id,
+            id=job_id,
         )
 
-        return _format_error_response(
+        # How far the job got, and whether cleanup actually stopped it.
+        details: dict[str, Any] = {
+            "job_id": job_id,
+            "timeout_seconds": TIMEOUT_SECONDS,
+            "stop_status_code": stop_response.get("status_code"),
+        }
+        if last_job_meta is not None:
+            details["last_job_status"] = last_job_meta
+
+        error_response = _format_error_response(
             message=f"NGSIEM search timed out after {TIMEOUT_SECONDS} seconds. "
             "Try narrowing your query or reducing the time range.",
-            details={"job_id": job_id, "timeout_seconds": TIMEOUT_SECONDS},
+            details=details,
             operation="GetSearchStatusV1",
         )
+        return self._format_cql_error_response(error_response, query_string)
 
     def start_ngsiem_search(
         self,
@@ -862,6 +1058,10 @@ class NGSIEMModule(BaseModule):
         body: dict[str, Any] | None = None,
         default_result: Any | None = None,
     ) -> list[dict[str, Any]] | dict[str, Any]:
+        repository_error = _validate_repository(repository)
+        if repository_error is not None:
+            return repository_error
+
         call_args: dict[str, Any] = {"operation": operation}
         prepared_parameters = prepare_api_parameters(parameters) if parameters else {}
 

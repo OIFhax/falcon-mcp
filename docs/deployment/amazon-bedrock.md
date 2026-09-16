@@ -44,9 +44,25 @@ The MCP Server requires internet connectivity to communicate with CrowdStrike's 
 | `FALCON_MCP_USER_AGENT_COMMENT` | `AWS/Bedrock/AgentCore` | Request identifier |
 | `FALCON_MCP_STATELESS_HTTP` | `true` | **Required** for AgentCore |
 | `FALCON_MCP_API_KEY` | *(optional)* | API key to secure the MCP endpoint |
+| `FALCON_MCP_MODULES` | *(optional)* | Comma-separated list of modules to enable. Defaults to all modules when unset |
+| `FALCON_MEMBER_CID` | *(optional)* | Child CID for Flight Control (MSSP multi-tenancy). Targets a specific child CID when authenticating with parent credentials |
+| `FALCON_MCP_DEBUG` | `false` | Enable debug logging |
+| `FALCON_PROXY_URL` | *(optional)* | HTTP/HTTPS proxy URL for outbound Falcon API connections in restricted network environments |
+| `FALCON_MCP_READ_ONLY` | *(optional)* | When set to `true`, register only read-only (non-mutating) tools. Excludes any tool that modifies Falcon state |
+| `FALCON_MCP_TOOLS` | *(optional)* | Comma-separated allow-list of specific tool names to enable, additive to the modules selected via `FALCON_MCP_MODULES` |
+| `FALCON_MCP_EXCLUDE_TOOLS` | *(optional)* | Comma-separated deny-list of tool names to disable. Takes precedence over `FALCON_MCP_TOOLS` and `FALCON_MCP_READ_ONLY` |
+| `FALCON_MCP_DYNAMIC` | *(optional)* | Enable dynamic mode, which exposes a small set of meta-tools for on-demand tool discovery instead of registering the full tool surface |
 
 > [!CAUTION]
 > `FALCON_MCP_STATELESS_HTTP` must be set to `true` for proper operation in AgentCore's stateless container environment.
+
+<!-- -->
+
+> [!NOTE]
+> `FALCON_MCP_HOST=0.0.0.0`: AgentCore runs the container behind its own managed network
+> security layer, so the server is not directly exposed to the public internet the way a self-managed
+> `0.0.0.0` bind would be. `FALCON_MCP_API_KEY` is optional in this environment and adds defense in depth
+> if you want callers to present an `x-api-key` header as well.
 
 ## Verify Deployment
 

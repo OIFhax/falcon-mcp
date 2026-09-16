@@ -10,62 +10,18 @@ This module provides a unified set of tools for managing CrowdStrike exclusions 
 
 - `IOA Exclusions:read`
 - `Machine Learning Exclusions:read`
-- `Sensor Visibility Exclusions:read`
+- `ml-exclusions:read`
+- `sensor-visibility-exclusions:read`
 - `IOA Exclusions:write`
 - `Machine Learning Exclusions:write`
-- `Sensor Visibility Exclusions:write`
+- `ml-exclusions:write`
+- `sensor-visibility-exclusions:write`
 
 ## Tools
 
-### `falcon_create_exclusion`
-
-> [!NOTE]
-> This tool modifies data.
-
-Create an exclusion of the given type.
-
-The `exclusion_type` selects which fields are required: 'ioa' needs name,
-pattern_id, ifn_regex, and cl_regex; 'ml' and 'sensor_visibility' need
-value (sensor_visibility also needs host_groups); 'certificate' needs
-name, certificate, and status. Invalid or missing fields return a guiding
-error before any API call. Returns the created exclusion record(s).
-
-**Example prompts:**
-
-- "Create an ML exclusion for /tmp/foo.sh applied to all hosts"
-- "Add a sensor visibility exclusion for C:\Temp\* on the Workstations group"
-
-### `falcon_delete_exclusions`
-
-> [!CAUTION]
-> This tool performs destructive operations.
-
-Delete one or more exclusions of the given type.
-
-Provide the `exclusion_type` and a non-empty list of exclusion `ids`.
-Returns the API response for the deletion.
-
-**Example prompts:**
-
-- "Delete the certificate exclusion with ID abc123"
-
-### `falcon_get_certificate_details`
-
-**Required scopes:** `Machine Learning Exclusions:read`
-
-Retrieve the code-signing certificate metadata for a file by SHA256.
-
-Use this as the pre-flight lookup before building a certificate-based
-exclusion: it returns the file's signing certificate details (issuer,
-subject, serial, thumbprint, validity window) which you then pass as the
-`certificate` argument to falcon_create_exclusion. Returns certificate
-metadata for the given hash.
-
-**Example prompts:**
-
-- "Look up the signing certificate for SHA256 3dd9a..."
-
 ### `falcon_search_exclusions`
+
+**Required scopes:** `IOA Exclusions:read`, `Machine Learning Exclusions:read`, `ml-exclusions:read`, `sensor-visibility-exclusions:read`
 
 Search exclusions of a given type and return full exclusion records.
 
@@ -82,10 +38,32 @@ Responses include `pagination.total` (the total number of records matching the f
 - "Show me my most recent IOA and machine learning exclusions"
 - "List sensor visibility exclusions created in the last 7 days"
 
+### `falcon_create_exclusion`
+
+> [!NOTE]
+> This tool modifies data.
+
+**Required scopes:** `IOA Exclusions:write`, `Machine Learning Exclusions:write`, `ml-exclusions:write`, `sensor-visibility-exclusions:write`
+
+Create an exclusion of the given type.
+
+The `exclusion_type` selects which fields are required: 'ioa' needs name,
+pattern_id, ifn_regex, and cl_regex; 'ml' and 'sensor_visibility' need
+value (sensor_visibility also needs host_groups); 'certificate' needs
+name, certificate, and status. Invalid or missing fields return a guiding
+error before any API call. Returns the created exclusion record(s).
+
+**Example prompts:**
+
+- "Create an ML exclusion for /tmp/foo.sh applied to all hosts"
+- "Add a sensor visibility exclusion for C:\Temp\* on the Workstations group"
+
 ### `falcon_update_exclusion`
 
 > [!NOTE]
 > This tool modifies data.
+
+**Required scopes:** `IOA Exclusions:write`, `Machine Learning Exclusions:write`, `ml-exclusions:write`, `sensor-visibility-exclusions:write`
 
 Update an existing exclusion of the given type.
 
@@ -97,6 +75,38 @@ exclusion record(s).
 **Example prompts:**
 
 - "Update IOA exclusion abc123 to also match a new command line regex"
+
+### `falcon_delete_exclusions`
+
+> [!CAUTION]
+> This tool performs destructive operations.
+
+**Required scopes:** `IOA Exclusions:write`, `Machine Learning Exclusions:write`, `ml-exclusions:write`, `sensor-visibility-exclusions:write`
+
+Delete one or more exclusions of the given type.
+
+Provide the `exclusion_type` and a non-empty list of exclusion `ids`.
+Returns the API response for the deletion.
+
+**Example prompts:**
+
+- "Delete the certificate exclusion with ID abc123"
+
+### `falcon_get_certificate_details`
+
+**Required scopes:** `ml-exclusions:read`
+
+Retrieve the code-signing certificate metadata for a file by SHA256.
+
+Use this as the pre-flight lookup before building a certificate-based
+exclusion: it returns the file's signing certificate details (issuer,
+subject, serial, thumbprint, validity window) which you then pass as the
+`certificate` argument to falcon_create_exclusion. Returns certificate
+metadata for the given hash.
+
+**Example prompts:**
+
+- "Look up the signing certificate for SHA256 3dd9a..."
 
 ## Resources
 

@@ -174,7 +174,11 @@ class PoliciesModule(BaseModule):
 
     # Valid action_name values per type for perform_policy_action. The SDK rejects
     # rule-group actions for firewall/device_control; content_update has unique
-    # pin/override actions.
+    # pin/override actions. Rule-group actions are prevention-only: the
+    # sensor_update and response endpoints advertise them but have no rule-group
+    # support behind them — they return 200 with zero affected resources, attach
+    # nothing, and their policy schema has no rule-group field to hold an
+    # attachment. Reject them up front rather than report a silent no-op as success.
     _VALID_ACTIONS: dict[str, set[str]] = {
         "prevention": {
             "enable",
@@ -189,16 +193,12 @@ class PoliciesModule(BaseModule):
             "disable",
             "add-host-group",
             "remove-host-group",
-            "add-rule-group",
-            "remove-rule-group",
         },
         "response": {
             "enable",
             "disable",
             "add-host-group",
             "remove-host-group",
-            "add-rule-group",
-            "remove-rule-group",
         },
         "firewall": {
             "enable",
@@ -229,6 +229,34 @@ class PoliciesModule(BaseModule):
         },
     }
 
+    # The action_parameters name each group action requires. Host-group actions take
+    # 'group_id'; rule-group actions take 'rule_group_id'. The two are not
+    # interchangeable — sending the wrong name returns HTTP 400 "Group action
+    # parameters must be provided" and changes nothing, the same response as sending
+    # no action_parameters at all.
+    _GROUP_ACTION_PARAM: dict[str, str] = {
+        "add-host-group": "group_id",
+        "remove-host-group": "group_id",
+        "add-rule-group": "rule_group_id",
+        "remove-rule-group": "rule_group_id",
+    }
+
+    # Whether a create/update body may carry a `settings` object. The firewall
+    # create and update endpoints have no `settings` field (their schema is
+    # id/name/description[/clone_id/platform_name] only), so the API silently
+    # discards a `settings` value and returns 200 — a no-op that looks like a
+    # success. Reject it up front instead. Firewall rule-group attachment is a
+    # whole-container PUT (/policy/entities/policy-container) that this module
+    # does not wrap; it cannot be done through create/update settings.
+    _SUPPORTS_SETTINGS: dict[str, bool] = {
+        "prevention": True,
+        "sensor_update": True,
+        "firewall": False,
+        "device_control": True,
+        "response": True,
+        "content_update": True,
+    }
+
     # Sort field bases that the API accepts (each with a .asc/.desc direction).
     # platform_name is deliberately excluded — it returns HTTP 500 on every type.
     _SAFE_SORT_FIELDS = {
@@ -239,6 +267,11 @@ class PoliciesModule(BaseModule):
         "created_by",
         "modified_by",
         "precedence",
+    }
+
+    # Sort fields that are safe on other types but return HTTP 500 on a specific one.
+    _UNSAFE_SORT_FIELDS_BY_TYPE = {
+        "device_control": {"created_by", "modified_by"},
     }
 
     def register_tools(self, server: FastMCP) -> None:
@@ -348,17 +381,27 @@ class PoliciesModule(BaseModule):
             )
         return None
 
-    def _validate_sort(self, sort: str | None) -> dict[str, Any] | None:
-        """Reject platform_name sorts (HTTP 500) and unknown sort fields.
+    def _validate_sort(self, policy_type: str, sort: str | None) -> dict[str, Any] | None:
+        """Reject sort expressions the API cannot serve, before the request goes out.
 
-        Returns an error dict if the sort base is platform_name or not in the
-        allowed set, else None. Accepts an optional `.asc`/`.desc`/`|asc`/`|desc`
-        direction suffix.
+        Three cases, each verified against the live API: the pipe direction separator
+        (rejected with HTTP 400 on all six types), platform_name (HTTP 500 on all six),
+        and per-type fields that 500 only for one type. Returns an error dict, else None.
+        Accepts a `.asc`/`.desc` direction suffix.
         """
         if not sort:
             return None
 
-        base = sort.split(".")[0].split("|")[0].strip()
+        # The policy query endpoints accept only the dot separator. Every one of the six
+        # answers HTTP 400 for `field|desc`, so catch it here with a message that names the
+        # fix instead of surfacing the API's generic "not an allowable value".
+        if "|" in sort:
+            return _format_error_response(
+                f"Invalid sort separator in '{sort}'. The policy APIs accept only the dot "
+                f"form — use '{sort.replace('|', '.')}' instead.",
+            )
+
+        base = sort.split(".")[0].strip()
         if base == "platform_name":
             return _format_error_response(
                 "Sorting by 'platform_name' is not supported (the API returns "
@@ -369,6 +412,15 @@ class PoliciesModule(BaseModule):
             return _format_error_response(
                 f"Invalid sort field '{base}'. Valid sort fields are: "
                 f"{', '.join(sorted(self._SAFE_SORT_FIELDS))}.",
+            )
+        if base in self._UNSAFE_SORT_FIELDS_BY_TYPE.get(policy_type, set()):
+            allowed = sorted(
+                self._SAFE_SORT_FIELDS - self._UNSAFE_SORT_FIELDS_BY_TYPE[policy_type]
+            )
+            return _format_error_response(
+                f"Sorting by '{base}' is not supported for policy_type "
+                f"'{policy_type}' (the API returns HTTP 500), though it works for other "
+                f"types. Use one of: {', '.join(allowed)}.",
             )
         return None
 
@@ -398,7 +450,7 @@ class PoliciesModule(BaseModule):
         ),
         sort: str | None = Field(
             default=None,
-            description="Sort expression (e.g. 'modified_timestamp.desc'). See `falcon://policies/search/fql-guide`. Do NOT sort by platform_name (returns HTTP 500).",
+            description="Sort expression using the dot form only (e.g. 'modified_timestamp.desc'); the pipe form 'field|desc' is rejected. Do NOT sort by platform_name (HTTP 500 on every type), or by created_by/modified_by when policy_type is 'device_control' (HTTP 500). For device_control, created_timestamp and modified_timestamp ignore the direction and always return ascending order. See `falcon://policies/search/fql-guide`.",
         ),
     ) -> list[dict[str, Any]] | dict[str, Any]:
         """Search host-based policies of a given type and return full policy records.
@@ -416,7 +468,7 @@ class PoliciesModule(BaseModule):
         if type_error is not None:
             return [type_error]
 
-        sort_error = self._validate_sort(sort)
+        sort_error = self._validate_sort(policy_type, sort)
         if sort_error is not None:
             return [sort_error]
 
@@ -598,6 +650,19 @@ class PoliciesModule(BaseModule):
                     operation=self._OPERATIONS[policy_type]["create"],
                 )
 
+        # The firewall endpoints have no `settings` field — passing one returns
+        # 200 while changing nothing. Reject it loudly instead of silently no-op.
+        if settings is not None and not self._SUPPORTS_SETTINGS[policy_type]:
+            op_key = "update" if is_update else "create"
+            return _format_error_response(
+                f"'{policy_type}' policies do not accept a 'settings' object — the "
+                "endpoint has no such field and would silently ignore it. Firewall "
+                "policy configuration (including rule-group attachment) is a "
+                "whole-container operation not exposed by this tool; use the Falcon "
+                "console for it. This tool can still update 'name' and 'description'.",
+                operation=self._OPERATIONS[policy_type][op_key],
+            )
+
         resource: dict[str, Any] = {}
         # id is only placed in the body on update (create never carries an id).
         if is_update and policy_id is not None:
@@ -646,7 +711,7 @@ class PoliciesModule(BaseModule):
         ),
         settings: Any | None = Field(
             default=None,
-            description="Opaque per-type settings object (dict or list), passed through unchanged. Building detailed settings is out of scope for v1 — prefer cloning an existing policy via clone_id then tweaking with falcon_update_policy.",
+            description="Opaque per-type settings object (dict or list), passed through unchanged. Not accepted for firewall policies (the endpoint has no settings field and would ignore it — rejected with an error). Building detailed settings is out of scope for v1 — prefer cloning an existing policy via clone_id then tweaking with falcon_update_policy.",
         ),
         clone_id: str | None = Field(
             default=None,
@@ -713,15 +778,17 @@ class PoliciesModule(BaseModule):
         ),
         settings: Any | None = Field(
             default=None,
-            description="Opaque per-type settings object (dict or list), passed through unchanged. Unspecified fields are left unchanged.",
+            description="Opaque per-type settings object (dict or list), passed through unchanged. Unspecified fields are left unchanged. Not accepted for firewall policies (the endpoint has no settings field and would ignore it — rejected with an error).",
         ),
     ) -> list[dict[str, Any]]:
         """Update an existing host-based policy of the given type.
 
         Provide the policy `id` plus any fields to change (name, description,
         settings). platform_name is not updatable after creation. Uses HTTP PATCH
-        semantics — unspecified fields are left unchanged. Returns the updated
-        policy record.
+        semantics — unspecified fields are left unchanged. Firewall policies accept
+        only name and description here; they have no settings field, and rule-group
+        attachment is a whole-container operation this tool does not expose. Returns
+        the updated policy record.
         """
         type_error = self._validate_policy_type(policy_type)
         if type_error is not None:
@@ -812,23 +879,24 @@ class PoliciesModule(BaseModule):
             ),
         ),
         action_name: str = Field(
-            description="The action to perform. Common to all types: 'enable', 'disable', 'add-host-group', 'remove-host-group'. prevention/sensor_update/response also allow 'add-rule-group'/'remove-rule-group'; content_update also allows 'override-allow'/'override-pause'/'override-revert'. The valid set is validated per type.",
+            description="The action to perform. Common to all types: 'enable', 'disable', 'add-host-group', 'remove-host-group'. prevention also allows 'add-rule-group'/'remove-rule-group' (attach/detach a Custom IOA rule group); content_update also allows 'override-allow'/'override-pause'/'override-revert'. The valid set is validated per type.",
         ),
         ids: list[str] = Field(
             description="IDs of the policies to act on.",
         ),
         group_id: str | None = Field(
             default=None,
-            description="Group ID for group actions. Required for 'add-host-group'/'remove-host-group' (a host group ID) and 'add-rule-group'/'remove-rule-group' (a rule group ID); omit for other actions.",
+            description="Group ID for group actions. Required for 'add-host-group'/'remove-host-group' (a host group ID) and, on prevention policies, 'add-rule-group'/'remove-rule-group' (a Custom IOA rule group ID); omit for other actions.",
         ),
     ) -> list[dict[str, Any]]:
         """Perform an action on one or more policies of the given type.
 
-        Use this to enable/disable policies or attach/detach host groups and rule
-        groups (and, for content_update, content overrides). action_name is
-        validated against the actions valid for that policy_type. The
-        add/remove-host-group and add/remove-rule-group actions require a group_id.
-        Returns the updated policy records.
+        Use this to enable/disable policies or attach/detach host groups (and, for
+        prevention, Custom IOA rule groups; for content_update, content overrides).
+        action_name is validated against the actions valid for that policy_type —
+        rule-group actions are prevention-only. The add/remove-host-group and
+        add/remove-rule-group actions require a group_id. Returns the updated policy
+        records.
         """
         type_error = self._validate_policy_type(policy_type)
         if type_error is not None:
@@ -853,12 +921,7 @@ class PoliciesModule(BaseModule):
             ]
 
         body: dict[str, Any] = {"ids": ids}
-        if action_name in (
-            "add-host-group",
-            "remove-host-group",
-            "add-rule-group",
-            "remove-rule-group",
-        ):
+        if action_name in self._GROUP_ACTION_PARAM:
             if not group_id:
                 return [
                     _format_error_response(
@@ -868,7 +931,9 @@ class PoliciesModule(BaseModule):
                         operation=self._OPERATIONS[policy_type]["action"],
                     )
                 ]
-            body["action_parameters"] = [{"name": "group_id", "value": group_id}]
+            body["action_parameters"] = [
+                {"name": self._GROUP_ACTION_PARAM[action_name], "value": group_id}
+            ]
 
         result = self._base_query_api_call(
             operation=self._OPERATIONS[policy_type]["action"],

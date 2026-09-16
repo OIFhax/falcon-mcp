@@ -13,11 +13,30 @@ from mcp.server.fastmcp.resources import TextResource
 from pydantic import AnyUrl, Field
 
 from falcon_mcp.common.errors import _format_error_response, handle_api_response
+from falcon_mcp.common.utils import unwrap_field_default
 from falcon_mcp.modules.base import BaseModule
 from falcon_mcp.resources.zero_trust_assessment import (
     SEARCH_ZTA_COMBINED_ASSESSMENTS_FQL_DOCUMENTATION,
     SEARCH_ZTA_ASSESSMENTS_FQL_DOCUMENTATION,
 )
+
+SORT_ORDERS = ("asc", "desc")
+
+
+def _build_score_filter(min_score: int | None, max_score: int | None) -> str:
+    """Build the score filter required by the assessment query endpoint."""
+    parts = []
+    if min_score is not None:
+        parts.append(f"score:>={min_score}")
+    if max_score is not None:
+        parts.append(f"score:<={max_score}")
+    return "+".join(parts) if parts else "score:>=0"
+
+
+def _missing_aids(requested: list[str], records: list[dict[str, Any]]) -> list[str]:
+    """Return requested AIDs with no assessment, preserving request order."""
+    found = {record.get("aid") for record in records}
+    return [aid for aid in requested if aid not in found]
 
 
 class ZeroTrustAssessmentModule(BaseModule):
@@ -29,6 +48,11 @@ class ZeroTrustAssessmentModule(BaseModule):
         Args:
             server: MCP server instance
         """
+        self._add_tool(
+            server=server,
+            method=self.search_zta_assessments,
+            name="search_zta_assessments",
+        )
         self._add_tool(
             server=server,
             method=self.search_zta_assessments_by_score,
@@ -72,6 +96,88 @@ class ZeroTrustAssessmentModule(BaseModule):
 
         self._add_resource(server, search_zta_assessments_fql_resource)
         self._add_resource(server, search_zta_combined_assessments_fql_resource)
+
+    def search_zta_assessments(
+        self,
+        min_score: int | None = Field(
+            default=None,
+            ge=0,
+            le=100,
+            description="Lowest Zero Trust score to include (0-100). Omit for no lower bound.",
+        ),
+        max_score: int | None = Field(
+            default=None,
+            ge=0,
+            le=100,
+            description=(
+                "Highest Zero Trust score to include (0-100). Combine with `min_score` "
+                "to select a range."
+            ),
+        ),
+        limit: int = Field(
+            default=100,
+            ge=1,
+            le=1000,
+            description="Maximum number of hosts to return. (Max: 1000)",
+        ),
+        after: str | None = Field(
+            default=None,
+            description="Pagination token from a previous response's `pagination.next`.",
+        ),
+        sort_order: str = Field(
+            default="asc",
+            description="'asc' for weakest first, 'desc' for strongest first.",
+        ),
+    ) -> list[dict[str, Any]] | dict[str, Any]:
+        """Search Zero Trust scores and return full assessment details."""
+        min_score = unwrap_field_default(min_score)
+        max_score = unwrap_field_default(max_score)
+        limit = unwrap_field_default(limit)
+        after = unwrap_field_default(after)
+        sort_order = unwrap_field_default(sort_order)
+
+        if sort_order not in SORT_ORDERS:
+            return _format_error_response(
+                f"Invalid sort_order '{sort_order}'. Valid values are: {', '.join(SORT_ORDERS)}."
+            )
+        if min_score is not None and max_score is not None and min_score > max_score:
+            return _format_error_response(
+                f"min_score ({min_score}) is greater than max_score ({max_score}), "
+                "so no host can match."
+            )
+
+        score_filter = _build_score_filter(min_score, max_score)
+        assessments, pagination = self._base_search_with_meta(
+            operation="getAssessmentsByScoreV1",
+            search_params={
+                "filter": score_filter,
+                "limit": limit,
+                "after": after,
+                "sort": f"score|{sort_order}",
+            },
+            error_message="Failed to search Zero Trust Assessment scores",
+        )
+        if self._is_error(assessments):
+            return [assessments]
+
+        aids = [aid for record in assessments if (aid := record.get("aid"))]
+        if not aids:
+            return self._build_pagination_envelope([], pagination, score_filter)
+
+        details = self._base_get_by_ids(
+            operation="getAssessmentV1",
+            ids=aids,
+            use_params=True,
+        )
+        if self._is_error(details):
+            return [details]
+
+        details = self._reorder_by_ids(aids, details, id_field="aid")
+        envelope = self._build_pagination_envelope(details, pagination, score_filter)
+        missing = _missing_aids(aids, details)
+        if missing:
+            envelope["not_found"] = missing
+        return envelope
 
     def search_zta_assessments_by_score(
         self,

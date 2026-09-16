@@ -256,6 +256,63 @@ class TestPoliciesModule(TestModules):
         self.assertIn("error", result[0])
         self.assertEqual(self.mock_client.command.call_count, 0)
 
+    def test_search_pipe_sort_separator_rejected(self):
+        """The pipe direction separator is rejected before any API call.
+
+        All six policy query endpoints answer HTTP 400 for `field|desc` (live-validated),
+        so the guard catches it locally and the error names the dot form to use instead.
+        """
+        for policy_type in ("prevention", "device_control"):
+            with self.subTest(policy_type=policy_type):
+                self.mock_client.command.reset_mock()
+                result = self.module.search_policies(
+                    policy_type=policy_type,
+                    filter=None,
+                    limit=10,
+                    offset=0,
+                    sort="created_timestamp|desc",
+                )
+                self.assertIn("error", result[0])
+                self.assertIn("created_timestamp.desc", result[0]["error"])
+                self.assertEqual(self.mock_client.command.call_count, 0)
+
+    def test_search_device_control_rejects_actor_sort_fields(self):
+        """created_by/modified_by are rejected for device_control only.
+
+        Both return HTTP 500 on device_control (live-validated, 12 of 12 attempts) while
+        working normally on the other five types, so the guard is per-type rather than
+        removing them from the shared safe-field set.
+        """
+        for field in ("created_by", "modified_by"):
+            with self.subTest(field=field):
+                self.mock_client.command.reset_mock()
+                result = self.module.search_policies(
+                    policy_type="device_control",
+                    filter=None,
+                    limit=10,
+                    offset=0,
+                    sort=f"{field}.desc",
+                )
+                self.assertIn("error", result[0])
+                self.assertIn("device_control", result[0]["error"])
+                self.assertEqual(self.mock_client.command.call_count, 0)
+
+    def test_search_actor_sort_fields_allowed_for_other_types(self):
+        """created_by sorting still reaches the API for non-device_control types."""
+        self.mock_client.command.return_value = {
+            "status_code": 200,
+            "body": {"resources": [{"id": "pol-1"}]},
+        }
+        result = self.module.search_policies(
+            policy_type="prevention",
+            filter=None,
+            limit=10,
+            offset=0,
+            sort="created_by.desc",
+        )
+        self.assertNotIn("error", result)
+        self.assertGreater(self.mock_client.command.call_count, 0)
+
     def test_search_empty_returns_fql_guide(self):
         """Empty combined results include the FQL guide context."""
         self.mock_client.command.return_value = {
@@ -496,6 +553,77 @@ class TestPoliciesModule(TestModules):
         self.assertIn("error", result[0])
         self.assertEqual(self.mock_client.command.call_count, 0)
 
+    def test_update_firewall_rejects_settings(self):
+        """Firewall update with settings is rejected — the endpoint has no
+        settings field and would silently 200 without changing anything (#526)."""
+        result = self.module.update_policy(
+            policy_type="firewall",
+            id="fw-1",
+            name=None,
+            description=None,
+            settings={"rule_group_ids": ["rg-1"]},
+        )
+        self.assertIn("error", result[0])
+        self.assertIn("settings", result[0]["error"])
+        self.assertEqual(self.mock_client.command.call_count, 0)
+
+    def test_create_firewall_rejects_settings(self):
+        """Firewall create with settings is rejected for the same reason (#526)."""
+        result = self.module.create_policy(
+            policy_type="firewall",
+            **self._create_kwargs(
+                name="fw",
+                platform_name="Windows",
+                settings={"foo": "bar"},
+            ),
+        )
+        self.assertIn("error", result[0])
+        self.assertIn("settings", result[0]["error"])
+        self.assertEqual(self.mock_client.command.call_count, 0)
+
+    def test_update_firewall_name_and_description_still_work(self):
+        """Firewall update without settings still works — only settings is barred."""
+        self.mock_client.command.return_value = self._create_response(
+            {"id": "fw-1", "name": "renamed"}
+        )
+        self.module.update_policy(
+            policy_type="firewall",
+            id="fw-1",
+            name="renamed",
+            description="desc",
+            settings=None,
+        )
+        call = self.mock_client.command.call_args_list[0]
+        self.assertEqual(call[0][0], "updateFirewallPolicies")
+        resource = call[1]["body"]["resources"][0]
+        self.assertEqual(resource["id"], "fw-1")
+        self.assertEqual(resource["name"], "renamed")
+        self.assertEqual(resource["description"], "desc")
+        self.assertNotIn("settings", resource)
+
+    def test_update_non_firewall_types_accept_settings(self):
+        """Every non-firewall type still forwards settings into the body."""
+        for policy_type in EXPECTED_OPS:
+            if policy_type == "firewall":
+                continue
+            with self.subTest(policy_type=policy_type):
+                self.mock_client.command.reset_mock()
+                self.mock_client.command.side_effect = None
+                self.mock_client.command.return_value = self._create_response(
+                    {"id": "p-1"}
+                )
+                self.module.update_policy(
+                    policy_type=policy_type,
+                    id="p-1",
+                    name=None,
+                    description=None,
+                    settings=[{"id": "x", "value": True}],
+                )
+                call = self.mock_client.command.call_args_list[0]
+                wrapper = self.module._BODY_WRAPPER[policy_type]
+                resource = call[1]["body"][wrapper][0]
+                self.assertEqual(resource["settings"], [{"id": "x", "value": True}])
+
     def test_update_places_id_inside_resource(self):
         """Update body places id inside the resource object."""
         self.mock_client.command.return_value = self._create_response(
@@ -613,36 +741,34 @@ class TestPoliciesModule(TestModules):
     # ---- Perform action --------------------------------------------------------
 
     def test_perform_action_rule_group_validity_per_type(self):
-        """add-rule-group is valid for prevention/sensor_update/response, rejected for firewall/dc."""
-        # prevention/sensor_update/response accept add-rule-group (with a group_id).
-        for policy_type, action_op in (
-            ("prevention", "performPreventionPoliciesAction"),
-            ("sensor_update", "performSensorUpdatePoliciesAction"),
-            ("response", "performRTResponsePoliciesAction"),
-        ):
-            with self.subTest(policy_type=policy_type, expect="accepted"):
+        """Rule-group actions are valid for prevention only, rejected for every other type."""
+        for action_name in ("add-rule-group", "remove-rule-group"):
+            with self.subTest(policy_type="prevention", action_name=action_name):
                 self.mock_client.command.reset_mock()
                 self.mock_client.command.return_value = {
                     "status_code": 200,
                     "body": {"resources": [{"id": "p-1"}]},
                 }
                 result = self.module.perform_policy_action(
-                    policy_type=policy_type,
-                    action_name="add-rule-group",
+                    policy_type="prevention",
+                    action_name=action_name,
                     ids=["p-1"],
                     group_id="rg-1",
                 )
                 self.assertNotIn("error", result[0])
                 self.assertEqual(self.mock_client.command.call_count, 1)
                 call = self.mock_client.command.call_args_list[0]
-                self.assertEqual(call[0][0], action_op)
+                self.assertEqual(call[0][0], "performPreventionPoliciesAction")
                 self.assertEqual(
                     call[1]["body"]["action_parameters"],
-                    [{"name": "group_id", "value": "rg-1"}],
+                    [{"name": "rule_group_id", "value": "rg-1"}],
                 )
 
-        # firewall and device_control reject rule-group actions before any API call.
-        for policy_type in ("firewall", "device_control"):
+        # Every other type rejects rule-group actions before any API call. firewall
+        # and device_control are rejected by the SDK; sensor_update and response
+        # accept the action_name but have no rule-group support behind it — the API
+        # returns 200 with zero affected resources and attaches nothing.
+        for policy_type in ("sensor_update", "response", "firewall", "device_control"):
             with self.subTest(policy_type=policy_type, expect="rejected"):
                 self.mock_client.command.reset_mock()
                 result = self.module.perform_policy_action(
@@ -654,11 +780,43 @@ class TestPoliciesModule(TestModules):
                 self.assertIn("error", result[0])
                 self.assertEqual(self.mock_client.command.call_count, 0)
 
+    def test_perform_action_group_param_name_is_per_action(self):
+        """Group actions use the action_parameters name their endpoint requires.
+
+        Host-group actions take 'group_id'; rule-group actions take 'rule_group_id'.
+        The names are not interchangeable — the wrong one returns HTTP 400 "Group
+        action parameters must be provided" and changes nothing.
+        """
+        for action_name, expected_name in (
+            ("add-host-group", "group_id"),
+            ("remove-host-group", "group_id"),
+            ("add-rule-group", "rule_group_id"),
+            ("remove-rule-group", "rule_group_id"),
+        ):
+            with self.subTest(action_name=action_name):
+                self.mock_client.command.reset_mock()
+                self.mock_client.command.return_value = {
+                    "status_code": 200,
+                    "body": {"resources": [{"id": "p-1"}]},
+                }
+                self.module.perform_policy_action(
+                    policy_type="prevention",
+                    action_name=action_name,
+                    ids=["p-1"],
+                    group_id="g-1",
+                )
+                call = self.mock_client.command.call_args_list[0]
+                self.assertEqual(
+                    call[1]["body"]["action_parameters"],
+                    [{"name": expected_name, "value": "g-1"}],
+                )
+
     def test_perform_action_rule_group_requires_group_id(self):
         """add-rule-group without group_id returns a guiding error, no API call.
 
-        Rule-group actions need the same action_parameters group_id payload as
-        host-group actions; omitting it must be caught before the API call.
+        Rule-group actions carry the group through action_parameters as host-group
+        actions do, but under their own parameter name; either way an omitted
+        group_id must be caught before the API call.
         """
         result = self.module.perform_policy_action(
             policy_type="prevention",

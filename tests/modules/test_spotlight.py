@@ -51,7 +51,6 @@ class TestSpotlightModule(TestModules):
         result = self.module.search_vulnerabilities(
             filter="status:'open'",
             limit=10,
-            offset=0,
             sort="created_timestamp|desc",
             after=None,
             facet="cve",
@@ -62,13 +61,12 @@ class TestSpotlightModule(TestModules):
             parameters={
                 "filter": "status:'open'",
                 "limit": 10,
-                "offset": 0,
                 "sort": "created_timestamp|desc",
                 "facet": "cve",
             },
         )
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]["id"], "vuln-1")
+        self.assertEqual(len(result["results"]), 1)
+        self.assertEqual(result["results"][0]["id"], "vuln-1")
 
     def test_query_vulnerability_ids_empty_filter_returns_guide(self):
         """Test ID query with empty filtered result returns FQL helper response."""

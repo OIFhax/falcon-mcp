@@ -28,6 +28,9 @@ Configure your CrowdStrike API credentials and server settings using environment
 | `FALCON_MCP_STATELESS_HTTP` | `false` | Stateless mode for scalable deployments (required for AWS AgentCore) |
 | `FALCON_MCP_API_KEY` | — | API key for HTTP transport authentication |
 | `FALCON_MCP_DYNAMIC` | `false` | [Dynamic mode](/falcon-mcp/usage/dynamic-mode/): expose three tools instead of all module tools |
+| `FALCON_MCP_READ_ONLY` | `false` | Register only read-only tools ([tool restrictions](/falcon-mcp/usage/cli/#restricting-the-tool-surface)) |
+| `FALCON_MCP_TOOLS` | — | Comma-separated allow-list of tool names, added to the enabled modules |
+| `FALCON_MCP_EXCLUDE_TOOLS` | — | Comma-separated deny-list of tool names |
 | `FALCON_PROXY_URL` | — | HTTP/HTTPS proxy URL for outbound API connections |
 
 ## Using a .env File
@@ -64,6 +67,9 @@ FALCON_BASE_URL=https://api.crowdstrike.com
 #FALCON_MCP_STATELESS_HTTP=false
 #FALCON_MCP_API_KEY=your-api-key
 #FALCON_MCP_DYNAMIC=false
+#FALCON_MCP_READ_ONLY=false
+#FALCON_MCP_TOOLS=falcon_search_detections,falcon_search_hosts
+#FALCON_MCP_EXCLUDE_TOOLS=falcon_delete_host_groups
 #FALCON_PROXY_URL=http://proxy.corp.example.com:8080
 ```
 
@@ -86,10 +92,54 @@ falcon-mcp
 
 ## HTTP Transport Security
 
-When running HTTP transports (`sse` or `streamable-http`), protect the endpoint with an API key:
+The HTTP transports (`sse` and `streamable-http`) have no authentication by default. The server binds
+to loopback (`127.0.0.1`) unless you tell it otherwise, so out of the box it is only reachable from the
+local host.
+
+Binding to a non-loopback address such as `--host 0.0.0.0` (or `FALCON_MCP_HOST=0.0.0.0`) exposes the
+server on the network. With no API key set, anyone who can reach the port can invoke every tool using
+your CrowdStrike credentials. The server logs a warning at startup when it binds beyond loopback
+without an API key (it does not refuse to start). Set `--api-key` whenever you bind beyond loopback:
 
 ```bash
-falcon-mcp --transport streamable-http --api-key your-secret-key
+falcon-mcp --transport streamable-http --host 0.0.0.0 --api-key your-secret-key
 ```
 
-This is a self-generated key (any secure string you create) that ensures only authorized clients with the matching key can access the MCP server. It is separate from your CrowdStrike API credentials.
+The key is a self-generated value (any secure string you create) that callers must send in the
+`x-api-key` header; requests without a matching key are rejected with `401 Unauthorized`. It is
+separate from your CrowdStrike API credentials. You can also supply it via the `FALCON_MCP_API_KEY`
+environment variable.
+
+Clients pass the key in an `x-api-key` header. In an MCP client config:
+
+```json
+{
+  "mcpServers": {
+    "falcon-mcp-remote": {
+      "type": "streamable-http",
+      "url": "http://your-server:8000/mcp",
+      "headers": {
+        "x-api-key": "your-secret-key"
+      }
+    }
+  }
+}
+```
+
+Or when calling the endpoint directly:
+
+```bash
+curl http://your-server:8000/mcp \
+  -H "x-api-key: your-secret-key" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","method":"initialize","id":1,"params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"example","version":"1.0"}}}'
+```
+
+**Recommendations:**
+
+- Keep the default loopback bind (`127.0.0.1`) for local single-machine use.
+- Set `--api-key` any time you bind to a non-loopback address or publish the port to a network.
+- Managed runtimes such as AWS Bedrock AgentCore and Google Cloud Run sit behind their own network
+  security layer (IAM, private networking), so the open-bind concern does not apply there. `--api-key`
+  remains available on those platforms as optional defense in depth.

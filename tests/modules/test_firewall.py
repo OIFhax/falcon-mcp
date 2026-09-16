@@ -102,9 +102,7 @@ class TestFirewallModule(TestModules):
         result = self.module.search_firewall_rules(
             filter="enabled:true",
             limit=10,
-            offset=0,
             sort="modified_on.desc",
-            q=None,
             after=None,
         )
 
@@ -114,13 +112,12 @@ class TestFirewallModule(TestModules):
             parameters={
                 "filter": "enabled:true",
                 "limit": 10,
-                "offset": 0,
                 "sort": "modified_on.desc",
             },
         )
         self.mock_client.command.assert_any_call("get_rules", parameters={"ids": ["rule-1"]})
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]["id"], "rule-1")
+        self.assertEqual(len(result["results"]), 1)
+        self.assertEqual(result["results"][0]["id"], "rule-1")
 
     def test_query_firewall_rule_ids_empty_filter_returns_guide(self):
         """Test empty query results with filter return FQL helper context."""
@@ -132,9 +129,7 @@ class TestFirewallModule(TestModules):
         result = self.module.query_firewall_rule_ids(
             filter="name:'missing*'",
             limit=100,
-            offset=0,
             sort=None,
-            q=None,
             after=None,
         )
 
@@ -257,7 +252,6 @@ class TestFirewallModule(TestModules):
             limit=100,
             offset=0,
             sort=None,
-            q=None,
             after=None,
         )
 
@@ -286,6 +280,23 @@ class TestFirewallModule(TestModules):
         )
         self.assertEqual(len(success_result), 1)
         self.assertTrue(success_result[0]["valid"])
+
+
+    def test_search_tools_do_not_expose_q_param(self):
+        """The `q` free-text param was removed — the API silently ignores it, so
+        offering it returned unfiltered results that looked filtered (issue #525)."""
+        import inspect
+
+        for method in (
+            self.module.search_firewall_rules,
+            self.module.search_firewall_rule_groups,
+            self.module.search_firewall_policy_rules,
+            self.module.query_firewall_rule_ids,
+            self.module.query_firewall_rule_group_ids,
+            self.module.query_firewall_policy_rule_ids,
+        ):
+            params = inspect.signature(method).parameters
+            self.assertNotIn("q", params, f"{method.__name__} must not expose `q`")
 
 
 if __name__ == "__main__":

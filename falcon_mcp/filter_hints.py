@@ -7,6 +7,28 @@ without needing to read the full FQL resource.
 """
 
 FILTER_HINTS: dict[str, str] = {
+    # === AgentWorks ===
+    "falcon_search_agentworks_agents": (
+        "Common fields: template_id, active_version.model "
+        "(e.g. 'bedrock.claude-4-6-sonnet'), published_version_ids. "
+        "The agent has no top-level name/model — filter model via active_version.model. "
+        "No wildcards. Sort by created_date. "
+        "Ex: active_version.model:'bedrock.claude-4-6-sonnet'"
+    ),
+    "falcon_search_agentworks_agent_versions": (
+        "Common fields: agent_id, name (exact, no wildcards), model, "
+        "is_published (true|false), is_enabled (true|false), created_at (UTC datetime). "
+        "Sort by created_at. "
+        "Ex: agent_id:'<uuid>'+is_published:true"
+    ),
+    "falcon_search_agentworks_spans": (
+        "ALWAYS filter, usually by trace_id (pass an invocation's ai_trace_id). "
+        "Common fields: trace_id, span_type (llm|aw_agent|aiplatform_agent|...), "
+        "status (unset|ok|error), name, duration_ms, "
+        "start_time (last 90 days only, e.g. start_time:>'now-7d'). "
+        "Sort by start_time. "
+        "Ex: trace_id:'<ai_trace_id>'"
+    ),
     # === Detections ===
     "falcon_search_detections": (
         "Common fields: severity_name (Critical|High|Medium|Low|Informational), "
@@ -15,6 +37,15 @@ FILTER_HINTS: dict[str, str] = {
         "assigned_to_name, filename, cmdline. "
         "Date filters: timestamp:>'now-24h' (relative) or timestamp:>'2026-01-01T00:00:00Z' (absolute). "
         "Sort by timestamp.desc for latest. "
+        "Ex: status:'new'+severity_name:'Critical'"
+    ),
+    "falcon_aggregate_detections": (
+        "Common fields: severity_name (Critical|High|Medium|Low|Informational), "
+        "status (new|in_progress|closed|reopened), product (epp|idp|xdr|overwatch), "
+        "device.hostname, tactic, technique_id, assigned_to_name, filename. "
+        "The filter narrows which alerts are counted; the aggregated field is set "
+        "separately by the field param. "
+        "Date filters: timestamp:>'now-24h' (relative). "
         "Ex: status:'new'+severity_name:'Critical'"
     ),
     # === Hosts ===
@@ -37,6 +68,39 @@ FILTER_HINTS: dict[str, str] = {
         "Common fields: status (new|in_progress|closed|reopened), "
         "severity (Integer 1-100: Informational=1, Low~25, Medium~50, High~75, Critical=100), "
         "name, assigned_to_name, created_timestamp (UTC datetime), tags."
+    ),
+    "falcon_aggregate_case_slas": (
+        "Common fields: name, id, cid, created_by_name, updated_by_name, "
+        "created_timestamp, updated_timestamp. "
+        "Substring match uses :* (name:*'*Corp*'); ~ and 'val*' return nothing. "
+        "Date filters: created_timestamp:>'now-30d' (relative). "
+        "Ex: created_timestamp:>'now-30d'"
+    ),
+    "falcon_aggregate_case_templates": (
+        "Common fields: name, id, cid, created_by_name, updated_by_name, "
+        "created_timestamp, updated_timestamp. "
+        "Substring match uses :* (name:*'*Case*'); ~ and 'val*' return nothing. "
+        "Date filters: created_timestamp:>'now-30d' (relative). "
+        "Ex: created_by_name:'analyst@example.com'"
+    ),
+    "falcon_aggregate_case_access_tags": (
+        "Common fields: key, id, cid — access tags accept no other field. "
+        "Substring match uses :* (key:*'*ANALYST*'); ~ and 'val*' return nothing. "
+        "Ex: key:'ANALYST1'"
+    ),
+    "falcon_aggregate_case_notification_groups": (
+        "Common fields: name, id, cid, created_by_name, updated_by_name, "
+        "created_timestamp, updated_timestamp. "
+        "Substring match uses :* (name:*'*Analyst*'); ~ and 'val*' return nothing. "
+        "Date filters: created_timestamp:>'now-90d' (relative). "
+        "Ex: name:*'*Analyst*'"
+    ),
+    "falcon_aggregate_case_file_details": (
+        "Common fields: name (file name), case_id, id (file id), cid, "
+        "file_size (a string such as '114.8 KB', not a number). "
+        "Substring match uses :* (name:*'*.png'); ~ returns nothing. "
+        "Prefer the case_ids parameter over a case_id filter. "
+        "Ex: name:*'*.png'"
     ),
     # === Cloud: Kubernetes Containers ===
     "falcon_search_kubernetes_containers": (
@@ -61,8 +125,22 @@ FILTER_HINTS: dict[str, str] = {
     # === Cloud: IOM Findings ===
     "falcon_search_iom_findings": (
         "Common fields: severity (Critical|High|Medium|Low|Informational), "
-        "status (open|suppressed|pass), cloud_provider (aws|azure|gcp), "
+        "status (open|suppressed|pass), cloud_provider (aws|azure|gcp — lowercase "
+        "required; uppercase returns an empty result, not an error), "
         "service, region, resource_type, account_name, rule_name."
+    ),
+    # === Cloud: Cloud Insights ===
+    "falcon_search_cloud_insights": (
+        "Filter on insights.id (insight ID), insights.boolean_value (true|false), "
+        "insights.string_value (string; substring match needs :*'*val*' — 'val*' and ~ return nothing), "
+        "insights.integer_value (integer, supports range ops e.g. :>0), "
+        "insights.date_value (ISO-8601 timestamp, e.g. :<'2025-01-01T00:00:00Z'), "
+        "insights.string_list_value (list member match). "
+        "All fields are asset-level: a condition matches if any insight on the asset satisfies it. "
+        "Use snake_case field names — camelCase is rejected. "
+        "To scope by category: call list_cloud_insight_definitions(categories=['X']) first, "
+        "then pass the returned insight_ids as insights.id:['id1','id2']. "
+        "Ex: insights.id:'identityIsAdmin'+insights.boolean_value:true"
     ),
     # === Cloud: Cloud Risks ===
     "falcon_search_cloud_groups": (
@@ -103,18 +181,38 @@ FILTER_HINTS: dict[str, str] = {
         "external_ip, local_ip_addresses, os_version, "
         "first_seen_timestamp (UTC datetime), last_seen_timestamp (UTC datetime)."
     ),
+    # === Discover: Managed Assets ===
+    "falcon_search_managed_assets": (
+        "Common fields: aid (Falcon agent ID - same value as the device ID from "
+        "falcon_search_hosts; if you already have one, prefer it since it is unique "
+        "per sensor, but you do not need to fetch it first), "
+        "encryption_status (Encrypted|Unencrypted), "
+        "unencrypted_drives_count/number_of_disk_drives (numbers, use :>0), "
+        "os_security.credential_guard_status / os_security.secure_boot_enabled_status / "
+        "os_security.iommu_protection_status (booleans, use true|false - NOT 'Enabled'), "
+        "used_disk_space/total_memory/average_processor_usage (numbers, use :>0), "
+        "platform_name (Windows|Linux|Mac), criticality, internet_exposure (Yes|No), "
+        "last_seen_timestamp:>'now-24h' (relative date). "
+        "Ex: encryption_status:'Unencrypted'+platform_name:'Windows'"
+    ),
     # === Firewall Rules ===
     "falcon_search_firewall_rules": (
         "Common fields: platform (windows|mac|linux), name, "
-        "enabled (true|false), created_on (UTC datetime)."
+        "enabled (true|false), created_on (UTC datetime). "
+        "name: use the contains operator name:~'value' (whole-word substring); a "
+        "name:'value*' glob is treated literally and returns nothing."
     ),
     "falcon_search_firewall_rule_groups": (
         "Common fields: platform (windows|mac|linux), name, "
-        "enabled (true|false), created_on (UTC datetime)."
+        "enabled (true|false), created_on (UTC datetime). "
+        "name: use the contains operator name:~'value' (whole-word substring); a "
+        "name:'value*' glob is treated literally and returns nothing."
     ),
     "falcon_search_firewall_policy_rules": (
         "Common fields: platform (windows|mac|linux), name, "
-        "enabled (true|false), created_on (UTC datetime)."
+        "enabled (true|false), created_on (UTC datetime). "
+        "name: use the contains operator name:~'value' (whole-word substring); a "
+        "name:'value*' glob is treated literally and returns nothing."
     ),
     # === Intel: Actors ===
     "falcon_search_actors": (
@@ -259,6 +357,24 @@ FILTER_HINTS: dict[str, str] = {
         "created_date:>'now-7d' (relative date). "
         "Ex: domain:'example.com'+credential_status:'newly_reported'"
     ),
+    "falcon_aggregate_recon_notifications": (
+        "Filters which notifications are counted. Common fields: "
+        "status (new|in-progress|pending-review|closed-true-positive|closed-false-positive), "
+        "rule_priority (low|medium|high|critical), "
+        "rule_topic (SA_TYPOSQUATTING|SA_THIRD_PARTY|SA_CUSTOM|SA_DOMAIN|SA_IP|SA_BRAND_PRODUCT), "
+        "rule_id, item_type, item_site, source_category, "
+        "created_date:>'now-30d' (relative date). "
+        "Ex: rule_topic:'SA_TYPOSQUATTING'+created_date:>'now-30d'"
+    ),
+    "falcon_aggregate_recon_exposed_data_records": (
+        "Filters which records are counted. Common fields: domain, email, "
+        "credential_status (newly_reported|confirmed_active|previously_reported), "
+        "site (telegram.org|stealer_logs|malware_logs), source_category, notification_id, "
+        "rule.topic (SA_DOMAIN|SA_EMAIL), "
+        "created_date:>'now-7d' (relative date). "
+        "NOTE: the aggregatable `field` list is narrower than what this filter accepts. "
+        "Ex: credential_status:'newly_reported'+created_date:>'now-30d'"
+    ),
     # === Scheduled Reports ===
     "falcon_search_scheduled_reports": (
         "Common fields: name, type, status (Active|Inactive|Expired), "
@@ -286,5 +402,45 @@ FILTER_HINTS: dict[str, str] = {
         "cve.exprt_rating (Critical|High|Medium|Low), "
         "status (open|closed|reopen), host_info.hostname, "
         "cve.exploit_status, created_timestamp (UTC datetime)."
+    ),
+    # === Fusion SOAR ===
+    "falcon_search_workflow_definitions": (
+        "Common fields: name.raw (exact: name.raw:'Full Name'; substring: name.raw:*'*part*'), "
+        "id, enabled (true|false), trigger.type (On demand|Signal|Scheduled), version, "
+        "description, last_modified_timestamp. "
+        "Use name.raw, NOT name — name is analyzed and matches whole tokens only. "
+        "trigger.type:'On demand' workflows are the ones to execute; 'Signal' ones are refused. "
+        "Date filters: last_modified_timestamp:>'now-30d' (relative). "
+        "Sort uses dots (name.asc), not pipes. "
+        "Ex: enabled:true+trigger.type:'On demand'"
+    ),
+    "falcon_search_workflow_executions": (
+        "Common fields: id (the response calls it execution_id), definition_id, "
+        "ui_status (Completed|Failed|In progress|Action required), definition_name (~ token match), "
+        "definition_version, test_mode, contains_mocks. "
+        "Filter status via ui_status — the `status` field uses a different vocabulary "
+        "('Succeeded' not 'Completed'). "
+        "Date filters: started_timestamp:>'now-7d', completed_timestamp:>'now-1d' "
+        "(NOT start_timestamp/end_timestamp — those are response-only names). "
+        "Ex: ui_status:'Completed'+started_timestamp:>'now-7d'"
+    ),
+}
+
+
+# Curated inline CQL hints for tools that take a `query_string` (CQL) parameter
+# instead of an FQL `filter`. Injected onto the query_string param description in
+# dynamic mode, mirroring FILTER_HINTS for FQL filters.
+QUERY_STRING_HINTS: dict[str, str] = {
+    # === NGSIEM ===
+    "falcon_search_ngsiem": (
+        "CQL is pipe-based: `filter | command | command` — not SQL or Splunk SPL "
+        "(no SELECT/WHERE/stats/`| limit`). Start from a tag filter "
+        "`#event_simpleName=ProcessRollup2`, then pipe into `groupBy([field], "
+        "function=count())`, `sort(_count, order=desc)`, and `head(n)` to cap raw "
+        "events. Unrecognized words become free-text stages instead of an error, so "
+        "check `job.parsed_query` against your intent; on zero rows, "
+        "`job.processed_events` above zero means a real negative. "
+        "For distinct count, time bucketing, regex/contains match, or "
+        "filtering on an aggregate, see `falcon://ngsiem/search/cql-guide`."
     ),
 }

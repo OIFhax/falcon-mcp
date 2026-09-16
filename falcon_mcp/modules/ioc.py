@@ -91,10 +91,6 @@ class IOCModule(BaseModule):
             le=500,
             description="Maximum number of IOC IDs to return from search. (Max: 500)",
         ),
-        offset: int | None = Field(
-            default=None,
-            description="Starting index of overall result set from which to return IDs.",
-        ),
         sort: str | None = Field(
             default=None,
             description=dedent("""
@@ -104,10 +100,12 @@ class IOCModule(BaseModule):
                 action, applied_globally, created_on, expiration, modified_on,
                 severity_number, source, type, value
 
-                Supported formats: 'field.asc', 'field.desc', 'field|asc', 'field|desc'
-                Examples: 'modified_on.desc', 'severity_number|desc'
+                Prefer the dot separator ('field.desc'), which is supported on
+                every Falcon sort endpoint. The pipe form ('field|desc') also
+                works here.
+                Examples: 'modified_on.desc', 'severity_number.desc'
             """).strip(),
-            examples={"modified_on.desc", "severity_number|desc"},
+            examples={"modified_on.desc", "severity_number.desc"},
         ),
         after: str | None = Field(
             default=None,
@@ -130,7 +128,6 @@ class IOCModule(BaseModule):
             search_params={
                 "filter": filter,
                 "limit": limit,
-                "offset": offset,
                 "sort": sort,
                 "after": after,
                 "from_parent": from_parent,

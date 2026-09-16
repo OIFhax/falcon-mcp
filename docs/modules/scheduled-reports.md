@@ -1,10 +1,10 @@
 <!-- meta:title Scheduled Reports -->
-<!-- meta:description Accessing and managing CrowdStrike Falcon scheduled reports and scheduled searches -->
+<!-- meta:description This module provides full Scheduled Reports and Report Executions coverage: query/get/launch operations for scheduled report entities, query/get/retry/download operations for report executions, and search convenience tools -->
 <!-- meta:section modules -->
 <!-- meta:link-base /falcon-mcp/ -->
 <!-- frontmatter:sidebar order:10 -->
 
-Accessing and managing CrowdStrike Falcon scheduled reports and scheduled searches
+This module provides full Scheduled Reports and Report Executions coverage: query/get/launch operations for scheduled report entities, query/get/retry/download operations for report executions, and search convenience tools
 
 ## API Scopes
 
@@ -12,19 +12,27 @@ Accessing and managing CrowdStrike Falcon scheduled reports and scheduled search
 
 ## Tools
 
-### `falcon_download_report_execution`
+### `falcon_search_scheduled_reports`
 
 **Required scopes:** `Scheduled Reports:read`
 
-Download the results of a completed report execution.
-
-Only works for executions with status='DONE'. Check status first using
-falcon_search_report_executions. Returns CSV string or JSON records depending
-on the report's configured format. PDF format is not supported.
+Search scheduled reports and return full details.
 
 **Example prompts:**
 
-- "Download the results for report execution abc123"
+- "Show me all active scheduled reports"
+
+### `falcon_query_scheduled_report_ids`
+
+**Required scopes:** `Scheduled Reports:read`
+
+Query scheduled report IDs.
+
+### `falcon_get_scheduled_report_details`
+
+**Required scopes:** `Scheduled Reports:read`
+
+Get scheduled report detail records by ID.
 
 ### `falcon_launch_scheduled_report`
 
@@ -33,12 +41,7 @@ on the report's configured format. PDF format is not supported.
 
 **Required scopes:** `Scheduled Reports:read`
 
-Launch a scheduled report or search on demand.
-
-Executes the report immediately outside its recurring schedule. Returns
-execution records containing an execution ID that can be tracked with
-falcon_search_report_executions and downloaded with
-falcon_download_report_execution when complete.
+Launch a scheduled report/search on demand.
 
 **Example prompts:**
 
@@ -48,33 +51,44 @@ falcon_download_report_execution when complete.
 
 **Required scopes:** `Scheduled Reports:read`
 
-Search for report/search execution history.
-
-Use this to find executions by status, report ID, or completion date. Consult
-falcon://scheduled-reports/executions/search/fql-guide before constructing filter
-expressions. Returns full execution details including status and timestamps.
-Responses include `pagination.total` (the total number of records matching the filter, or null when the API does not report a count) — use it to answer "how many" questions.
+Search report executions and return full details.
 
 **Example prompts:**
 
 - "Show me completed executions for report abc123"
 
-### `falcon_search_scheduled_reports`
+### `falcon_query_report_execution_ids`
 
 **Required scopes:** `Scheduled Reports:read`
 
-Search for scheduled reports and searches in your CrowdStrike environment.
+Query report execution IDs.
 
-Use this to find reports by status, type, creator, or creation date. Consult
-falcon://scheduled-reports/search/fql-guide before constructing filter expressions.
-Returns full report/search entity details including schedule configuration.
-Responses include `pagination.total` (the total number of records matching the filter, or null when the API does not report a count) — use it to answer "how many" questions.
+### `falcon_get_report_execution_details`
+
+**Required scopes:** `Scheduled Reports:read`
+
+Get report execution detail records by ID.
+
+### `falcon_retry_report_execution`
+
+> [!NOTE]
+> This tool modifies data.
+
+**Required scopes:** `Scheduled Reports:read`
+
+Retry a failed/eligible report execution.
+
+### `falcon_download_report_execution`
+
+**Required scopes:** `Scheduled Reports:read`
+
+Download generated report results.
 
 **Example prompts:**
 
-- "Show me all active scheduled reports"
+- "Download the results for report execution abc123"
 
 ## Resources
 
-- **`falcon://scheduled-reports/search/fql-guide`**: Contains the guide for the `filter` param of the `falcon_search_scheduled_reports` tool.
-- **`falcon://scheduled-reports/executions/search/fql-guide`**: Contains the guide for the `filter` param of the `falcon_search_report_executions` tool.
+- **`falcon://scheduled-reports/search/fql-guide`**: Contains the guide for the `filter` parameter of scheduled report query/search tools.
+- **`falcon://scheduled-reports/executions/search/fql-guide`**: Contains the guide for the `filter` parameter of report execution query/search tools.

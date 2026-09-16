@@ -628,6 +628,28 @@ class TestApiScopes(unittest.TestCase):
             get_required_scopes("WorkflowExecute"),
             ["Workflow:write"],
         )
+        new_service_scope_examples = {
+            "ListAccessScopesExternal": "Access Scope:read",
+            "CreateAPIClient": "Api Client Mgmt:write",
+            "cloud_registration_cross_provider_get_account_aggregates": (
+                "Cloud Registration:write"
+            ),
+            "cloud_security_timeline_risks_enriched": "Cloud Security API Risks:read",
+            "UpdateThirdPartyPasskeyRegistry": "Falcon Id:write",
+            "PatchFederatedConnectionsConfig": "NGSIEM Data Connections API:write",
+            "EntitiesAgentTemplatesV1": "Charlotte AI Agent Definition:read",
+            "InvokePublishedAgentExternalV1": "Charlotte AI Agent Definition:write",
+            "EntitiesKnowledgeBaseFilesCreateV1": "Charlotte AI Agent Definition:write",
+            "CombinedKnowledgeBasesV1": "Charlotte AI Agent Definition:read",
+            "EntitiesModelsV1": "Charlotte AI Agent Definition:read",
+            "EntitiesSpansV1": "Charlotte AI Agent Definition:read",
+            "StreamInvocationResponseV1": "Charlotte AI Agent Definition:read",
+            "EntitiesToolsV1": "Charlotte AI Agent Definition:read",
+            "GetGroupUsersV1": "User Management:read",
+            "GroupUsersActionsV1Mixin0": "User Management:write",
+        }
+        for operation, scope in new_service_scope_examples.items():
+            self.assertEqual(get_required_scopes(operation), [scope])
         self.assertEqual(
             get_required_scopes("RTR_AggregateSessions"),
             ["Real Time Response:read"],
@@ -1094,8 +1116,9 @@ class TestApiScopes(unittest.TestCase):
                 scope_patterns[resource].add(permission)
 
         # Validate that most resources use consistent permission patterns
+        # "Hosts" is deliberately absent: UpdateDeviceTags needs Hosts:write.
         read_only_resources = [
-            "Hosts", "Vulnerabilities",
+            "Vulnerabilities",
             "Assets", "Sensor Usage", "Scheduled Reports",
             "Real Time Response", "Real Time Response Audit", "CAO Hunting",
             "Zero Trust Assessment", "Sensor Download", "event-streams",

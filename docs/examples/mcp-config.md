@@ -97,20 +97,8 @@ mock-execute operations for API-visible definitions.
 
 ## Remote HTTP Server
 
-If running the server on a remote host or in Docker:
-
-```json
-{
-  "mcpServers": {
-    "falcon-mcp-remote": {
-      "type": "streamable-http",
-      "url": "http://your-server:8000/mcp"
-    }
-  }
-}
-```
-
-For authenticated endpoints (with `--api-key`):
+If running the server on a remote host or in Docker, send the API key you configured with `--api-key`
+in the `x-api-key` header:
 
 ```json
 {
@@ -121,6 +109,21 @@ For authenticated endpoints (with `--api-key`):
       "headers": {
         "x-api-key": "your-api-key"
       }
+    }
+  }
+}
+```
+
+Only drop the `headers` block when the endpoint is unauthenticated — for example a loopback-only
+server, or one already fronted by a managed runtime that handles auth (AWS Bedrock AgentCore, Google
+Cloud Run):
+
+```json
+{
+  "mcpServers": {
+    "falcon-mcp-remote": {
+      "type": "streamable-http",
+      "url": "http://your-server:8000/mcp"
     }
   }
 }

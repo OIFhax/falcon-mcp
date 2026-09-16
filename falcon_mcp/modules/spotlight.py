@@ -76,15 +76,10 @@ class SpotlightModule(BaseModule):
             description="FQL filter for combined vulnerability search. IMPORTANT: use the `falcon://spotlight/vulnerabilities/fql-guide` resource when building this filter parameter.",
         ),
         limit: int = Field(
-            default=20,
+            default=10,
             ge=1,
             le=5000,
             description="Maximum number of vulnerability records to return. [1-5000]",
-        ),
-        offset: int = Field(
-            default=0,
-            ge=0,
-            description="Starting index of overall result set from which to return records.",
         ),
         sort: str | None = Field(
             default=None,
@@ -100,12 +95,11 @@ class SpotlightModule(BaseModule):
         ),
     ) -> list[dict[str, Any]] | dict[str, Any]:
         """Search Spotlight vulnerabilities using the combined endpoint."""
-        result = self._base_search_api_call(
+        vulnerabilities, pagination = self._base_search_with_meta(
             operation="combinedQueryVulnerabilities",
             search_params={
                 "filter": filter,
                 "limit": limit,
-                "offset": offset,
                 "sort": sort,
                 "after": after,
                 "facet": facet,
@@ -113,23 +107,14 @@ class SpotlightModule(BaseModule):
             error_message="Failed to search vulnerabilities",
         )
 
-        if self._is_error(result):
-            if filter:
-                return self._format_fql_error_response(
-                    [result],
-                    filter,
-                    SEARCH_VULNERABILITIES_FQL_DOCUMENTATION,
-                )
-            return [result]
-
-        if not result and filter:
+        if self._is_error(vulnerabilities):
             return self._format_fql_error_response(
-                [],
-                filter,
-                SEARCH_VULNERABILITIES_FQL_DOCUMENTATION,
+                [vulnerabilities], filter, SEARCH_VULNERABILITIES_FQL_DOCUMENTATION
             )
 
-        return result
+        return self._build_pagination_envelope(
+            vulnerabilities or [], pagination, filter
+        )
 
     def query_vulnerability_ids(
         self,

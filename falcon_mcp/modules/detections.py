@@ -30,6 +30,7 @@ WRITE_ANNOTATIONS = ToolAnnotations(
 logger = get_logger(__name__)
 
 DETECTION_DETAIL_BATCH_SIZE = 500
+MAX_UPDATE_COMPOSITE_IDS = 1000
 
 
 class DetectionsModule(BaseModule):
@@ -89,6 +90,12 @@ class DetectionsModule(BaseModule):
             method=self.update_detections_v3,
             name="update_detections_v3",
             annotations=WRITE_ANNOTATIONS,
+        )
+
+        self._add_tool(
+            server=server,
+            method=self.aggregate_detections,
+            name="aggregate_detections",
         )
 
         self._add_tool(
@@ -445,7 +452,7 @@ class DetectionsModule(BaseModule):
             operation="PostEntitiesAlertsV2",
             ids=composite_ids,
             id_key="composite_ids",
-            include_hidden=include_hidden,
+            parameters={"include_hidden": include_hidden},
         )
 
         if self._is_error(details):
@@ -881,6 +888,159 @@ class DetectionsModule(BaseModule):
             return value.default
         return value
 
+    def aggregate_detections(
+        self,
+        field: str = Field(
+            description=(
+                "Alert field to aggregate on, such as `severity_name`, `status`, "
+                "`tactic`, `technique`, `product`, `device.hostname`, or `timestamp`. "
+                "See `falcon://detections/search/fql-guide` for the aggregatable fields."
+            ),
+            examples=["severity_name", "status", "tactic", "device.hostname"],
+        ),
+        type: Literal[
+            "terms",
+            "date_histogram",
+            "date_range",
+            "range",
+            "cardinality",
+            "max",
+            "min",
+            "avg",
+            "sum",
+            "percentiles",
+        ] = Field(
+            default="terms",
+            description=(
+                "Aggregation to run. Use `terms` to count alerts per distinct value, "
+                "`date_histogram` for a time series, `date_range` or `range` for "
+                "explicit buckets, and `cardinality` for a distinct-value count."
+            ),
+        ),
+        filter: str | None = Field(
+            default=None,
+            description=(
+                "FQL filter expression narrowing which alerts are counted. See "
+                "`falcon://detections/search/fql-guide` for syntax."
+            ),
+            examples=["status:'new'", "severity_name:'Critical'+product:'epp'"],
+        ),
+        size: int | None = Field(
+            default=10,
+            ge=1,
+            le=1000,
+            description="Maximum number of buckets to return for `terms` aggregations.",
+        ),
+        sort: str | None = Field(
+            default=None,
+            description=(
+                "Bucket ordering, using the pipe form only: `_count|desc` (most "
+                "alerts first), `_count|asc`, `_key|asc`, or `_key|desc`. The dot "
+                "form accepted by search sorts is rejected here."
+            ),
+            examples=["_count|desc", "_key|asc"],
+        ),
+        interval: Literal["hour", "day", "week", "month", "quarter", "year"] | None = Field(
+            default=None,
+            description=(
+                "Bucket width for `date_histogram` aggregations. Required whenever "
+                "`type` is `date_histogram`."
+            ),
+        ),
+        date_ranges: list[dict[str, str]] | None = Field(
+            default=None,
+            description=(
+                "Explicit time buckets for `date_range` aggregations, for example "
+                "`[{'from': 'now-7d', 'to': 'now'}]`. Required whenever `type` is "
+                "`date_range`."
+            ),
+            examples=[[{"from": "now-7d", "to": "now"}]],
+        ),
+        ranges: list[dict[str, Any]] | None = Field(
+            default=None,
+            description=(
+                "Numeric buckets for `range` aggregations, for example "
+                "`[{'From': 0, 'To': 50}]`. Required whenever `type` is `range`."
+            ),
+            examples=[[{"From": 0, "To": 50}, {"From": 50, "To": 100}]],
+        ),
+        percents: list[float] | None = Field(
+            default=None,
+            description="Percentiles to compute for `percentiles` aggregations.",
+            examples=[[50.0, 95.0]],
+        ),
+        missing: str | None = Field(
+            default=None,
+            description=(
+                "Label used for alerts that have no value for `field`, so they are "
+                "counted instead of dropped."
+            ),
+            examples=["Unassigned"],
+        ),
+        include: str | None = Field(
+            default=None,
+            description=(
+                "Keep only buckets whose key matches this regular expression, e.g. "
+                "`High|Critical`."
+            ),
+            examples=["High|Critical"],
+        ),
+        name: str = Field(
+            default="alert_aggregation",
+            description="Label echoed back on the returned aggregation.",
+        ),
+        time_zone: str | None = Field(
+            default=None,
+            description="UTC offset applied to date buckets, e.g. `+00:00`.",
+            examples=["+00:00"],
+        ),
+        sub_aggregates: list[dict[str, Any]] | None = Field(
+            default=None,
+            description=(
+                "Nested aggregations applied within each bucket, each shaped like a "
+                "top-level spec, e.g. `[{'type': 'terms', 'field': 'status'}]`."
+            ),
+            examples=[[{"type": "terms", "field": "status", "size": 3}]],
+        ),
+        include_hidden: bool = Field(
+            default=True,
+            description=(
+                "Whether to count hidden alerts (default: True). Set False to match "
+                "the alert totals shown in the Falcon console."
+            ),
+        ),
+    ) -> list[dict[str, Any]] | dict[str, Any]:
+        """Count and summarize detections (also called alerts) without retrieving each record.
+
+        Use this for "how many" and "top N" questions — alerts per severity, status,
+        tactic, or host, distinct host counts, and alert volume over time — instead of
+        paging through falcon_search_detections. Consult
+        falcon://detections/search/fql-guide before constructing filter expressions.
+        Returns one aggregation per request holding `buckets`, which key on `label`
+        with a `count`; single-value aggregations (`cardinality`, `max`, `min`, `avg`,
+        `sum`) report their answer as `value` instead.
+        """
+        return self._base_aggregate(
+            operation="PostAggregatesAlertsV2",
+            agg_type=type,
+            field=field,
+            filter=filter,
+            name=name,
+            size=size,
+            sort=sort,
+            interval=interval,
+            date_ranges=date_ranges,
+            ranges=ranges,
+            percents=percents,
+            missing=missing,
+            include=include,
+            time_zone=time_zone,
+            sub_aggregates=sub_aggregates,
+            parameters={"include_hidden": include_hidden},
+            error_message="Failed to aggregate detections",
+        )
+
+
     def update_detections(
         self,
         ids: list[str] = Field(
@@ -963,9 +1123,12 @@ class DetectionsModule(BaseModule):
         email address, or full name, unassign, append a comment, hide/show detections in the UI,
         or add/remove tags. Resolution is tag-based: applying the conventional tags true_positive,
         false_positive, or ignored is what populates the console's Resolution view. At least one
-        update parameter must be provided. Returns `[]` (empty list) on success, or
+        update parameter must be provided. Requests covering more than 1000 detection IDs are
+        chunked automatically so none are silently dropped. Returns `[]` (empty list) on success, or
         `{"result": [], "hint": "..."}` when closing without adding a resolution tag in this call;
-        returns an error dict on failure.
+        returns an error dict on failure. If a later chunk fails after earlier chunks already
+        applied, the error dict carries a `partial_success` block listing the already-updated ids so
+        the caller can retry only the remainder rather than re-applying non-idempotent actions.
         """
         # Validate mutually exclusive assignment parameters
         assignment_params = [assign_to_uuid, assign_to_user_id, assign_to_name]
@@ -1031,17 +1194,36 @@ class DetectionsModule(BaseModule):
         if not action_parameters:
             return {"error": "At least one update parameter must be provided."}
 
-        body = {
-            "composite_ids": ids,
-            "action_parameters": action_parameters,
-        }
+        body_base = {"action_parameters": action_parameters}
 
-        result = self._base_query_api_call(
-            operation="PatchEntitiesAlertsV3",
-            body_params=body,
-            error_message="Failed to update detections",
-            default_result=[],
-        )
+        # PatchEntitiesAlertsV3 rejects more than MAX_UPDATE_COMPOSITE_IDS ids per
+        # request with HTTP 413, so chunk larger requests and fail loudly if any
+        # batch errors rather than reporting success on a truncated update.
+        result: list[dict[str, Any]] | dict[str, Any] = []
+        for i in range(0, len(ids), MAX_UPDATE_COMPOSITE_IDS):
+            batch = ids[i : i + MAX_UPDATE_COMPOSITE_IDS]
+            batch_result = self._base_query_api_call(
+                operation="PatchEntitiesAlertsV3",
+                body_params={**body_base, "composite_ids": batch},
+                error_message="Failed to update detections",
+                default_result=[],
+            )
+
+            if self._is_error(batch_result):
+                # The API applies each batch independently and cannot roll back, so
+                # ids before this batch are already updated. Report how many so the
+                # caller can retry only the remainder instead of re-applying
+                # non-idempotent actions (e.g. append_comment) to earlier ids.
+                if i > 0:
+                    batch_result["partial_success"] = {
+                        "updated_ids": ids[:i],
+                        "updated_count": i,
+                        "failed_and_remaining_ids": ids[i:],
+                    }
+                return batch_result
+
+            if isinstance(batch_result, list):
+                result.extend(batch_result)
 
         # Soft hint: closing without adding a resolution tag in this call may leave the
         # detection out of the console's Resolution view. Non-fatal — only wraps the success

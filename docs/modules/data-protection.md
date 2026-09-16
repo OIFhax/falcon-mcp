@@ -8,13 +8,13 @@ Provides read-only access to Data Protection configuration data — classificati
 
 ## API Scopes
 
-- `Data Protection:read`
+- `Data Protection Config:read`
 
 ## Tools
 
 ### `falcon_search_data_protection_classifications`
 
-**Required scopes:** `Data Protection:read`
+**Required scopes:** `Data Protection Config:read`
 
 Search for Data Protection classifications in your CrowdStrike environment.
 
@@ -30,26 +30,9 @@ Responses include `pagination.total` (the total number of records matching the f
 - "What Data Protection classifications are configured in my environment?"
 - "Show me the classification rules that detect credit card data"
 
-### `falcon_search_data_protection_content_patterns`
-
-**Required scopes:** `Data Protection:read`
-
-Search for Data Protection content patterns in your CrowdStrike environment.
-
-Use this to find regex-based content detection patterns by type, category,
-or region. Consult falcon://data-protection/content-patterns/fql-guide
-before constructing filter expressions. Returns full pattern details
-including regex definitions and match thresholds.
-Responses include `pagination.total` (the total number of records matching the filter, or null when the API does not report a count) — use it to answer "how many" questions.
-
-**Example prompts:**
-
-- "What predefined content patterns are available for Data Protection?"
-- "Show me custom Data Protection regex patterns in the Financial category"
-
 ### `falcon_search_data_protection_policies`
 
-**Required scopes:** `Data Protection:read`
+**Required scopes:** `Data Protection Config:read`
 
 Search for Data Protection policies in your CrowdStrike environment.
 
@@ -64,6 +47,23 @@ Responses include `pagination.total` (the total number of records matching the f
 
 - "List all enabled Windows Data Protection policies"
 - "Show me the Mac Data Protection policies and their precedence order"
+
+### `falcon_search_data_protection_content_patterns`
+
+**Required scopes:** `Data Protection Config:read`
+
+Search for Data Protection content patterns in your CrowdStrike environment.
+
+Use this to find regex-based content detection patterns by type, category,
+or region. Consult falcon://data-protection/content-patterns/fql-guide
+before constructing filter expressions. Returns full pattern details
+including regex definitions and match thresholds.
+Responses include `pagination.total` (the total number of records matching the filter, or null when the API does not report a count) — use it to answer "how many" questions.
+
+**Example prompts:**
+
+- "What predefined content patterns are available for Data Protection?"
+- "Show me custom Data Protection regex patterns in the Financial category"
 
 ## Resources
 

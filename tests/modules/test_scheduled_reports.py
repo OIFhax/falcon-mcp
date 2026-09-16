@@ -80,8 +80,8 @@ class TestScheduledReportsModule(TestModules):
             "scheduled_reports_get",
             parameters={"ids": ["report-id-1"]},
         )
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]["id"], "report-id-1")
+        self.assertEqual(len(result["results"]), 1)
+        self.assertEqual(result["results"][0]["id"], "report-id-1")
 
     def test_query_scheduled_report_ids_empty_filter_returns_guide(self):
         """Test query IDs helper response when filtered results are empty."""
@@ -178,8 +178,8 @@ class TestScheduledReportsModule(TestModules):
             "report_executions_get",
             parameters={"ids": ["exec-id-1"]},
         )
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]["id"], "exec-id-1")
+        self.assertEqual(len(result["results"]), 1)
+        self.assertEqual(result["results"][0]["id"], "exec-id-1")
 
     def test_retry_report_execution_confirm_required_and_success(self):
         """Test retry operation confirmation and success path."""
