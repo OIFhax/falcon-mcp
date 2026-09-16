@@ -36,6 +36,17 @@ logger = get_logger(__name__)
 
 # Type alias for transport options
 TransportType = Literal["stdio", "sse", "streamable-http"]
+LEGACY_MODULE_ALIASES = {
+    "rawcloudsecurityregistrationcombined": "cloudsecurityregistrationcombined",
+    "rawcloudsecurityrisks": "cloudsecurityrisks",
+    "rawfederatedconnections": "federatedconnections",
+    "rawfoundrylookupfiles": "foundrylookupfiles",
+    "rawknowledgebaseauditevents": "knowledgebaseauditevents",
+    "rawknowledgebasefiles": "knowledgebasefiles",
+    "rawknowledgebases": "knowledgebases",
+    "rawprofilegroups": "profilegroups",
+    "rawspotlightvulnerabilities": "spotlight",
+}
 SERVER_INSTRUCTIONS = f"""
 This server provides access to CrowdStrike Falcon capabilities.
 Use only declared `falcon_*` tools exposed by this server. Never invent wrapper names or aliases such as `MCP_Client`.
@@ -602,8 +613,23 @@ def parse_modules_list(modules_string: str) -> list[str]:
     # Get available modules
     available_modules = registry.get_module_names()
 
-    # Split by comma and clean up whitespace
-    modules = [m.strip() for m in modules_string.split(",") if m.strip()]
+    # Promote legacy raw-gap names to their current generated or curated modules.
+    # Preserve order while deduplicating aliases whose canonical module is already listed.
+    requested_modules = [m.strip() for m in modules_string.split(",") if m.strip()]
+    modules = list(
+        dict.fromkeys(LEGACY_MODULE_ALIASES.get(module, module) for module in requested_modules)
+    )
+
+    remapped = {
+        module: LEGACY_MODULE_ALIASES[module]
+        for module in requested_modules
+        if module in LEGACY_MODULE_ALIASES
+    }
+    if remapped:
+        logger.warning(
+            "Remapped legacy module names: %s",
+            ", ".join(f"{old}->{new}" for old, new in remapped.items()),
+        )
 
     # Validate against available modules
     invalid_modules = [m for m in modules if m not in available_modules]

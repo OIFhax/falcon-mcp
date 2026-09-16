@@ -8,7 +8,12 @@ from unittest.mock import MagicMock, patch
 
 from falcon_mcp import registry
 from falcon_mcp.modules.base import READ_ONLY_ANNOTATIONS
-from falcon_mcp.server import FalconMCPServer, SERVER_INSTRUCTIONS
+from falcon_mcp.server import (
+    LEGACY_MODULE_ALIASES,
+    SERVER_INSTRUCTIONS,
+    FalconMCPServer,
+    parse_modules_list,
+)
 
 
 class TestFalconMCPServer(unittest.TestCase):
@@ -18,6 +23,19 @@ class TestFalconMCPServer(unittest.TestCase):
         """Set up test fixtures before each test method."""
         # Ensure modules are discovered before each test
         registry.discover_modules()
+
+    def test_legacy_module_aliases_resolve_to_available_modules(self):
+        available_modules = set(registry.get_module_names())
+        self.assertLessEqual(set(LEGACY_MODULE_ALIASES.values()), available_modules)
+
+        parsed = parse_modules_list(",".join(LEGACY_MODULE_ALIASES))
+
+        self.assertEqual(parsed, list(dict.fromkeys(LEGACY_MODULE_ALIASES.values())))
+
+    def test_legacy_module_aliases_deduplicate_canonical_names(self):
+        parsed = parse_modules_list("rawcloudsecurityrisks,cloudsecurityrisks")
+
+        self.assertEqual(parsed, ["cloudsecurityrisks"])
 
     def test_register_tools_rejects_duplicate_names(self):
         server = FalconMCPServer.__new__(FalconMCPServer)
