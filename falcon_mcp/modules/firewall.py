@@ -6,6 +6,7 @@ query/get/aggregate operations for rules, rule groups, policy rules, events, fie
 platforms, policy containers, and network locations, plus write lifecycle operations.
 """
 
+from textwrap import dedent
 from typing import Any
 
 from mcp.server import FastMCP
@@ -249,18 +250,33 @@ class FirewallModule(BaseModule):
         filter: str | None = Field(
             default=None,
             description="FQL filter for firewall rule search. IMPORTANT: use `falcon://firewall/rules/fql-guide` for filter construction.",
+            examples=["enabled:true", "enabled:true+name:~'Block'"],
         ),
         limit: int = Field(
             default=20, ge=1, le=5000, description="Maximum number of records. [1-5000]"
         ),
         sort: str | None = Field(
-            default=None, description="Sort expression. Example: `modified_on.desc`."
+            default=None,
+            description=dedent("""
+                Sort firewall rules using FQL syntax.
+
+                Supported examples: name.asc, modified_on.desc. Prefer the dot
+                separator ('modified_on.desc'), which is supported on every Falcon
+                sort endpoint; the pipe form ('name|asc') also works here.
+            """).strip(),
+            examples=["modified_on.desc", "name.asc"],
         ),
         after: str | None = Field(
             default=None, description="Pagination token from a previous response."
         ),
     ) -> list[dict[str, Any]] | dict[str, Any]:
-        """Search firewall rules and return full details."""
+        """Search firewall rules and return full rule details.
+
+        Use this to find firewall rules by name or enabled state. Consult
+        falcon://firewall/rules/fql-guide before constructing filter expressions.
+        Returns complete rule objects including conditions and actions.
+        Responses include `pagination.total` (the total number of records matching the filter, or null when the API does not report a count) — use it to answer "how many" questions. For cursor-based paging, use `pagination.next` as the `after` parameter on the next call.
+        """
         rule_ids, pagination = self._base_search_with_meta(
             operation="query_rules",
             search_params={
