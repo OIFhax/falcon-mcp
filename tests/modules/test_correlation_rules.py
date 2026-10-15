@@ -2,6 +2,8 @@
 
 import unittest
 
+from mcp.types import ToolAnnotations
+
 from falcon_mcp.modules.base import READ_ONLY_ANNOTATIONS
 from falcon_mcp.modules.correlation_rules import (
     DESTRUCTIVE_WRITE_ANNOTATIONS,
@@ -67,6 +69,19 @@ class TestCorrelationRulesModule(TestModules):
         )
         self.assertIsInstance(result, dict)
         self.assertIn("fql_guide", result)
+
+    def test_update_tool_annotations(self):
+        """Test that update tool has non-read-only, destructive, idempotent annotations."""
+        self.module.register_tools(self.mock_server)
+        self.assert_tool_annotations(
+            "falcon_update_correlation_rule",
+            ToolAnnotations(
+                readOnlyHint=False,
+                destructiveHint=True,
+                idempotentHint=True,
+                openWorldHint=True,
+            ),
+        )
 
 
 if __name__ == "__main__":

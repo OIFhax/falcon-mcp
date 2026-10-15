@@ -8,5 +8,5 @@ Generated all-operation modules for FalconPy service collections not hand-wrappe
 
 ## API Scopes
 
-- `Data Protection Config:read`
-- `Data Protection Config:write`
+- `Data Protection:read`
+- `Data Protection:write`

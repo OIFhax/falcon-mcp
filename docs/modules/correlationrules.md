@@ -93,8 +93,8 @@ Create a correlation rule from structured fields or a confirmed raw body.
 
 ### `falcon_update_correlation_rule`
 
-> [!NOTE]
-> This tool modifies data.
+> [!CAUTION]
+> This tool performs destructive operations.
 
 **Required scopes:** `correlation-rules:write`
 

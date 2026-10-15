@@ -4,6 +4,8 @@ Tests for the Quarantine module.
 
 import unittest
 
+from mcp.types import ToolAnnotations
+
 from falcon_mcp.modules.base import READ_ONLY_ANNOTATIONS
 from falcon_mcp.modules.quarantine import WRITE_ANNOTATIONS, QuarantineModule
 from tests.modules.utils.test_modules import TestModules
@@ -41,6 +43,31 @@ class TestQuarantineModule(TestModules):
             "falcon_search_quarantined_files_fql_guide",
         ]
         self.assert_resources_registered(expected_resources)
+
+    def test_tool_annotations(self):
+        """Test quarantine tool annotations."""
+        self.module.register_tools(self.mock_server)
+
+        self.assert_tool_annotations("falcon_search_quarantined_files", READ_ONLY_ANNOTATIONS)
+        self.assert_tool_annotations("falcon_preview_quarantine_actions", READ_ONLY_ANNOTATIONS)
+        self.assert_tool_annotations(
+            "falcon_update_quarantined_files",
+            ToolAnnotations(
+                readOnlyHint=False,
+                destructiveHint=True,
+                idempotentHint=False,
+                openWorldHint=True,
+            ),
+        )
+        self.assert_tool_annotations(
+            "falcon_delete_quarantined_files",
+            ToolAnnotations(
+                readOnlyHint=False,
+                destructiveHint=True,
+                idempotentHint=True,
+                openWorldHint=True,
+            ),
+        )
 
     def test_search_quarantine_files_success(self):
         """Test quarantine search and detail retrieval."""

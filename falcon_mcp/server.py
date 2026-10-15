@@ -55,7 +55,7 @@ NGSIEM searches require pre-written CQL from `falcon://ngsiem/search-guide`; imp
 Preserve raw tool I/O with `falcon_get_tool_io_history` and `falcon_generate_support_bundle` when troubleshooting.
 Do not make final claims unless they are grounded in tool results returned by this server.
 Changing state: `readOnlyHint=false` marks a tool that changes tenant state, and
-`destructiveHint=true` marks one whose effect cannot be undone. Confirm the user's
+`destructiveHint=true` marks one that can remove, overwrite, or disable existing state. Confirm the user's
 intent before calling either.
 """.strip()
 
@@ -76,7 +76,8 @@ BASE_INSTRUCTIONS = (
     "empty result rather than an error, which is indistinguishable from a genuine "
     "no-match.\n\n"
     "Changing state: readOnlyHint=false marks a tool that changes tenant state, and "
-    "destructiveHint=true marks one whose effect cannot be undone. Confirm the user's "
+    "destructiveHint=true marks one that can remove, overwrite, or disable existing "
+    "state rather than only adding to it. Confirm the user's "
     "intent before calling either."
 )
 
@@ -148,7 +149,7 @@ class FalconMCPServer:
         # modules owning the tools it names, gated so they contribute only those
         # tools.
         if enabled_modules:
-            self.enabled_modules = set(enabled_modules)
+            self.enabled_modules = set(registry.resolve_module_names(enabled_modules))
         elif allowed_tools:
             # --tools alone supplies the whole surface, so start from no modules.
             self.enabled_modules = set()
@@ -615,8 +616,8 @@ def parse_modules_list(modules_string: str) -> list[str]:
     # Promote legacy raw-gap names to their current generated or curated modules.
     # Preserve order while deduplicating aliases whose canonical module is already listed.
     requested_modules = [m.strip() for m in modules_string.split(",") if m.strip()]
-    modules = list(
-        dict.fromkeys(LEGACY_MODULE_ALIASES.get(module, module) for module in requested_modules)
+    modules = registry.resolve_module_names(
+        LEGACY_MODULE_ALIASES.get(module, module) for module in requested_modules
     )
 
     remapped = {

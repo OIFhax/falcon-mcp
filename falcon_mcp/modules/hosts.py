@@ -152,7 +152,7 @@ class HostsModule(BaseModule):
             name="manage_host_grouping_tags",
             annotations=ToolAnnotations(
                 readOnlyHint=False,
-                destructiveHint=False,
+                destructiveHint=True,
                 idempotentHint=True,
                 openWorldHint=True,
             ),

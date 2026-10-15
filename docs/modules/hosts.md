@@ -133,8 +133,8 @@ Perform an action on host migration entities.
 
 ### `falcon_manage_host_grouping_tags`
 
-> [!NOTE]
-> This tool modifies data.
+> [!CAUTION]
+> This tool performs destructive operations.
 
 **Required scopes:** `Hosts:write`
 

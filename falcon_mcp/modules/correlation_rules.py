@@ -37,7 +37,7 @@ DESTRUCTIVE_WRITE_ANNOTATIONS = ToolAnnotations(
 
 UPDATE_ANNOTATIONS = ToolAnnotations(
     readOnlyHint=False,
-    destructiveHint=False,
+    destructiveHint=True,
     idempotentHint=True,
     openWorldHint=True,
 )

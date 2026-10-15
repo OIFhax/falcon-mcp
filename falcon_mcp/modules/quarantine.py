@@ -86,7 +86,7 @@ class QuarantineModule(BaseModule):
             name="update_quarantined_files",
             annotations=ToolAnnotations(
                 readOnlyHint=False,
-                destructiveHint=False,
+                destructiveHint=True,
                 idempotentHint=False,
                 openWorldHint=True,
             ),

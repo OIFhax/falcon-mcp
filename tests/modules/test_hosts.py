@@ -48,7 +48,7 @@ class TestHostsModule(TestModules):
             "falcon_manage_host_grouping_tags",
             ToolAnnotations(
                 readOnlyHint=False,
-                destructiveHint=False,
+                destructiveHint=True,
                 idempotentHint=True,
                 openWorldHint=True,
             ),

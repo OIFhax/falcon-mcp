@@ -44,6 +44,7 @@
   - [Prevention Policies Module](#prevention-policies-module)
   - [Response Policies Module](#response-policies-module)
   - [Data Protection Configuration Module](#data-protection-configuration-module)
+  - [Data Security Module](#data-security-module)
   - [Device Control Policies Module](#device-control-policies-module)
   - [Firewall Policies Module](#firewall-policies-module)
   - [Sensor Update Policies Module](#sensor-update-policies-module)
@@ -145,7 +146,8 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Installation Tokens** | `Installation Tokens:read`<br>`Installation Tokens:write`<br>`Installation Tokens Settings:write` | Search and manage installation tokens, inspect audit events, and control tenant token settings |
 | **Prevention Policies** | `Prevention Policies:read`<br>`Prevention Policies:write` | Search and manage prevention policies, policy members, policy actions, and precedence ordering |
 | **Response Policies** | `Response Policies:read`<br>`Response Policies:write` | Search and manage response policies, policy members, policy actions, and precedence ordering |
-| **Data Protection Configuration** | `Data Protection Config:read`<br>`Data Protection Config:write` | Search and manage DLP policies, classifications, content patterns, cloud/local applications, enterprise accounts, file types, sensitivity labels, web locations, and policy precedence |
+| **Data Protection Configuration** | `Data Protection:read`<br>`Data Protection:write` | Search and manage DLP policies, classifications, content patterns, cloud/local applications, enterprise accounts, file types, sensitivity labels, web locations, and policy precedence |
+| **Data Security** | `Data Protection:read`<br>`Data Protection:write` | Search, create, and update Data Security configuration entities through the consolidated tools |
 | **Device Control Policies** | `Device Control Policies:read`<br>`Device Control Policies:write` | Search and manage device control policies, defaults, classes, precedence, actions, and policy member relationships |
 | **Firewall Policies** | `Firewall Policies:read`<br>`Firewall Policies:write` | Search and manage firewall policies, policy actions, precedence, and policy member relationships |
 | **Sensor Update Policies** | `Sensor Update Policies:read`<br>`Sensor Update Policies:write` | Search and manage sensor update policies, builds, kernels, precedence, actions, and uninstall token reveal workflows |
@@ -772,8 +774,8 @@ Provides full Response Policies service collection coverage:
 
 **API Scopes Required**:
 
-- `Data Protection Config:read`
-- `Data Protection Config:write`
+- `Data Protection:read`
+- `Data Protection:write`
 
 Provides full Data Protection Configuration service collection coverage:
 
@@ -806,6 +808,15 @@ Provides full Data Protection Configuration service collection coverage:
 - `falcon://data-protection-configuration/safety-guide`: Operational guardrails for Data Protection write operations
 
 **Use Cases**: DLP policy governance, classification and content-pattern lifecycle management, sensitivity label inventory, cloud/local application controls, web location controls, file type lookup, and policy precedence orchestration
+
+### Data Security Module
+
+**API Scopes Required**:
+
+- `Data Protection:read`
+- `Data Protection:write`
+
+Provides consolidated search, create, and update tools for classifications, policies, content patterns, applications, accounts, web locations, sensitivity labels, and file types. The legacy `dataprotection` module name resolves to `datasecurity`.
 
 ### Device Control Policies Module
 
