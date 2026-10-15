@@ -7,8 +7,8 @@ import unittest
 from falcon_mcp.modules.base import READ_ONLY_ANNOTATIONS
 from falcon_mcp.modules.installation_tokens import (
     DESTRUCTIVE_WRITE_ANNOTATIONS,
-    InstallationTokensModule,
     WRITE_ANNOTATIONS,
+    InstallationTokensModule,
 )
 from tests.modules.utils.test_modules import TestModules
 

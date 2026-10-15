@@ -1,0 +1,144 @@
+<!-- meta:title Editor Integration -->
+<!-- meta:description Configure the Falcon MCP Server in popular MCP-compatible editors and assistants. -->
+<!-- meta:section usage -->
+<!-- meta:link-base /falcon-mcp/ -->
+
+The Falcon MCP Server works with any MCP-compatible editor or AI assistant. Below are configuration examples for popular clients.
+
+> [!TIP]
+> Some clients can install falcon-mcp directly from a registry — see the [MCP Registry](https://registry.modelcontextprotocol.io/?q=io.github.CrowdStrike%2Ffalcon-mcp&all=1)<!-- link:external -->, [GitHub MCP Registry](https://github.com/mcp/CrowdStrike/falcon-mcp)<!-- link:external -->, and [Gemini CLI Extensions](https://geminicli.com/extensions/?name=CrowdStrikefalcon-mcp)<!-- link:external --> listings.
+
+## Claude Desktop
+
+Edit `claude_desktop_config.json`:
+
+### Using uvx (recommended)
+
+```json
+{
+  "mcpServers": {
+    "falcon-mcp": {
+      "command": "uvx",
+      "args": [
+        "--env-file",
+        "/path/to/.env",
+        "falcon-mcp"
+      ]
+    }
+  }
+}
+```
+
+### With module selection
+
+```json
+{
+  "mcpServers": {
+    "falcon-mcp": {
+      "command": "uvx",
+      "args": [
+        "--env-file",
+        "/path/to/.env",
+        "falcon-mcp",
+        "--modules",
+        "detections,hosts,intel"
+      ]
+    }
+  }
+}
+```
+
+### Using individual environment variables
+
+```json
+{
+  "mcpServers": {
+    "falcon-mcp": {
+      "command": "uvx",
+      "args": ["falcon-mcp"],
+      "env": {
+        "FALCON_CLIENT_ID": "your-client-id",
+        "FALCON_CLIENT_SECRET": "your-client-secret",
+        "FALCON_BASE_URL": "https://api.crowdstrike.com"
+      }
+    }
+  }
+}
+```
+
+### Docker version
+
+```json
+{
+  "mcpServers": {
+    "falcon-mcp-docker": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "--env-file",
+        "/full/path/to/.env",
+        "quay.io/crowdstrike/falcon-mcp:latest"
+      ]
+    }
+  }
+}
+```
+
+> [!NOTE]
+> The `-i` flag is required when using the default stdio transport with Docker.
+
+## Cline (VS Code)
+
+Cline supports stdio and SSE transports. Add to your Cline MCP settings:
+
+```json
+{
+  "mcpServers": {
+    "falcon-mcp": {
+      "command": "uvx",
+      "args": [
+        "--env-file",
+        "/path/to/.env",
+        "falcon-mcp"
+      ]
+    }
+  }
+}
+```
+
+## Gemini CLI
+
+```bash
+# Install uv first
+gemini extensions install https://github.com/CrowdStrike/falcon-mcp
+```
+
+```bash
+# Copy .env file
+cp /path/to/.env ~/.gemini/extensions/falcon-mcp/.env
+```
+
+## SSE / HTTP Clients
+
+For clients that connect via URL (SSE or streamable-http), start the server first:
+
+```bash
+# SSE
+falcon-mcp --transport sse --host 0.0.0.0 --port 8000 --api-key your-secret-key
+```
+
+```bash
+# Streamable HTTP
+falcon-mcp --transport streamable-http --host 0.0.0.0 --port 8000 --api-key your-secret-key
+```
+
+`--host 0.0.0.0` exposes the server on the network, so set `--api-key` and send it as the `x-api-key`
+header from your client. Omit both to keep the server on the default loopback bind for local-only use.
+See [HTTP Transport Security](/falcon-mcp/getting-started/configuration/#http-transport-security).
+
+Then configure your client with:
+
+- SSE URL: `http://your-host:8000/sse`
+- Streamable HTTP URL: `http://your-host:8000/mcp`

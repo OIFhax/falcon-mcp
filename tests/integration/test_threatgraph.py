@@ -42,7 +42,7 @@ class TestThreatGraphIntegration(BaseIntegrationTest):
         )
 
         status_code = self._extract_status_code(result)
-        if status_code in (400, 404, 422):
+        if status_code in (400, 422):
             return
 
         self.assert_no_error(result, context="get_threatgraph_ran_on")

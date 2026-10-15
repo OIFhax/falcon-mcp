@@ -4,7 +4,7 @@ ThreatGraph module for Falcon MCP Server.
 This module provides read-only tools for ThreatGraph vertices, edges, and indicator pivots.
 """
 
-from typing import Any
+from typing import Any, Literal
 
 from mcp.server import FastMCP
 from mcp.server.fastmcp.resources import TextResource
@@ -90,7 +90,13 @@ class ThreatGraphModule(BaseModule):
 
     def get_threatgraph_ran_on(
         self,
-        type: str | None = Field(default=None, description="Indicator type such as domain or sha256."),
+        type: Literal["domain", "ipv4", "ipv6", "md5", "sha1", "sha256"] | None = Field(
+            default=None,
+            description=(
+                "ThreatGraph indicator type. Use `ipv4` or `ipv6` for IP addresses; "
+                "Falcon Intelligence's `ip_address` type is not valid here."
+            ),
+        ),
         value: str | None = Field(default=None, description="Indicator value to pivot on."),
         limit: int = Field(default=100, ge=1, le=100),
         offset: int | None = Field(default=None),
@@ -105,15 +111,27 @@ class ThreatGraphModule(BaseModule):
                 )
             ]
 
-        result = self._base_query_api_call(
+        response = self.client.command(
+            "combined_ran_on_get",
+            parameters=prepare_api_parameters(
+                {
+                    "type": type,
+                    "value": value,
+                    "limit": limit,
+                    "offset": offset,
+                    "nano": nano,
+                }
+            ),
+        )
+
+        # ThreatGraph reports an indicator with no retained vertex as HTTP 404.
+        # For a sightings query this is a clean no-match, not a tool failure.
+        if response.get("status_code") == 404:
+            return []
+
+        result = handle_api_response(
+            response,
             operation="combined_ran_on_get",
-            query_params={
-                "type": type,
-                "value": value,
-                "limit": limit,
-                "offset": offset,
-                "nano": nano,
-            },
             error_message="Failed to retrieve ThreatGraph ran-on results",
             default_result=[],
         )

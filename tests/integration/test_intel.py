@@ -1,5 +1,7 @@
 """Integration tests for the Intel module."""
 
+import time
+from datetime import datetime, timezone
 from typing import Any
 
 import pytest
@@ -54,6 +56,82 @@ class TestIntelIntegration(BaseIntegrationTest):
                 "Intel service unavailable for this tenant/region",
                 context=context,
             )
+
+    def test_query_actor_entities_returns_details(self):
+        """Validate combined actor queries return complete records."""
+        result = self.call_method(self.module.query_actor_entities, limit=5)
+        self.assert_no_error(result, context="query_actor_entities")
+        self.assert_valid_list_response(result, min_length=0, context="query_actor_entities")
+        if self.records(result, context="query_actor_entities"):
+            self.assert_search_returns_details(
+                result,
+                expected_fields=["id", "name"],
+                context="query_actor_entities",
+            )
+
+    def test_query_actor_entities_with_filter(self):
+        """Validate actor industry filtering."""
+        result = self.call_method(
+            self.module.query_actor_entities,
+            filter="target_industries:'Technology'",
+            limit=3,
+        )
+        self.assert_no_error(result, context="query_actor_entities with filter")
+        self.assert_valid_list_response(result, min_length=0, context="query_actor_entities with filter")
+
+    def test_query_actor_entities_with_free_text(self):
+        """Validate actor free-text search."""
+        result = self.call_method(self.module.query_actor_entities, q="BEAR", limit=5)
+        self.assert_no_error(result, context="query_actor_entities with q param")
+        self.assert_valid_list_response(result, min_length=0, context="query_actor_entities with q param")
+
+    def test_query_indicator_entities_returns_details(self):
+        """Validate combined indicator queries return complete records."""
+        result = self.call_method(self.module.query_indicator_entities, limit=5)
+        self.assert_no_error(result, context="query_indicator_entities")
+        self.assert_valid_list_response(result, min_length=0, context="query_indicator_entities")
+        if self.records(result, context="query_indicator_entities"):
+            self.assert_search_returns_details(
+                result,
+                expected_fields=["id", "indicator"],
+                context="query_indicator_entities",
+            )
+
+    def test_query_indicator_entities_with_filter(self):
+        """Validate indicator type filtering."""
+        result = self.call_method(
+            self.module.query_indicator_entities,
+            filter="type:'domain'",
+            limit=3,
+        )
+        self.assert_no_error(result, context="query_indicator_entities with filter")
+        self.assert_valid_list_response(
+            result,
+            min_length=0,
+            context="query_indicator_entities with filter",
+        )
+
+    def test_query_report_entities_returns_details(self):
+        """Validate combined report queries return complete records."""
+        result = self.call_method(self.module.query_report_entities, limit=5)
+        self.assert_no_error(result, context="query_report_entities")
+        self.assert_valid_list_response(result, min_length=0, context="query_report_entities")
+        if self.records(result, context="query_report_entities"):
+            self.assert_search_returns_details(
+                result,
+                expected_fields=["id", "name"],
+                context="query_report_entities",
+            )
+
+    def test_query_report_entities_with_filter(self):
+        """Validate report type filtering."""
+        result = self.call_method(
+            self.module.query_report_entities,
+            filter="type:'CSIT'",
+            limit=3,
+        )
+        self.assert_no_error(result, context="query_report_entities with filter")
+        self.assert_valid_list_response(result, min_length=0, context="query_report_entities with filter")
 
     def test_search_actors_operation_name(self):
         """Validate QueryIntelActorEntities operation wiring."""
@@ -181,9 +259,227 @@ class TestIntelIntegration(BaseIntegrationTest):
         result = self.call_method(self.module.get_mitre_report, actor=actor_name, format="json")
         self._skip_if_scope_or_service_missing(result, "get_mitre_report")
 
-        if isinstance(result, list):
-            self.assert_no_error(result, context="get_mitre_report list response")
-        elif isinstance(result, str):
-            assert len(result) >= 0
-        else:
-            raise AssertionError(f"Unexpected result type for get_mitre_report: {type(result)}")
+        if isinstance(result, list) and len(result) > 0:
+            first_item = result[0]
+            if isinstance(first_item, dict) and "error" in first_item:
+                self.skip_with_warning(
+                    f"MITRE report not available for actor: {actor_name}",
+                    context="test_get_mitre_report_with_actor_name",
+                )
+
+        assert isinstance(result, list), (
+            f"Expected list for JSON format, got {type(result).__name__}: {repr(result)[:200]}"
+        )
+        if result:
+            assert isinstance(result[0], dict), (
+                f"Expected list of dicts, got list of {type(result[0]).__name__}"
+            )
+            expected_fields = {"id", "tactic_id", "tactic_name", "technique_id", "technique_name"}
+            missing = expected_fields - set(result[0].keys())
+            assert not missing, f"Missing expected MITRE fields: {missing}"
+
+    def test_get_mitre_report_csv_format(self):
+        """Validate that CSV MITRE reports are returned as raw text."""
+        actors = self.skip_unless_tenant_has(
+            self.call_method(self.module.query_actor_entities, limit=1),
+            "actors",
+            context="test_get_mitre_report_csv_format",
+        )
+        actor_name = actors[0].get("name")
+        if not actor_name:
+            self.skip_with_warning(
+                "Could not extract actor name from search results",
+                context="test_get_mitre_report_csv_format",
+            )
+
+        result = self.call_method(self.module.get_mitre_report, actor=actor_name, format="csv")
+        self._skip_if_scope_or_service_missing(result, "get_mitre_report csv")
+        if isinstance(result, list) and result and isinstance(result[0], dict):
+            if "error" in result[0]:
+                self.skip_with_warning(
+                    f"MITRE report not available for actor: {actor_name}",
+                    context="test_get_mitre_report_csv_format",
+                )
+        assert isinstance(result, str), (
+            f"Expected str for CSV format, got {type(result).__name__}: {repr(result)[:200]}"
+        )
+
+    def test_operation_names_are_correct(self):
+        """Validate that FalconPy operation names are correct.
+
+        If operation names are wrong, the API call will fail with an error.
+        """
+        # Test QueryIntelActorEntities
+        result = self.call_method(self.module.query_actor_entities, limit=1)
+        self.assert_no_error(result, context="QueryIntelActorEntities operation name")
+
+        # Test QueryIntelIndicatorEntities
+        result = self.call_method(self.module.query_indicator_entities, limit=1)
+        self.assert_no_error(result, context="QueryIntelIndicatorEntities operation name")
+
+        # Test QueryIntelReportEntities
+        result = self.call_method(self.module.query_report_entities, limit=1)
+        self.assert_no_error(result, context="QueryIntelReportEntities operation name")
+
+    # ------------------------------------------------------------------
+    # Actor and report filter shapes
+    #
+    # These endpoints reject an unknown field but answer an impossible value with
+    # an empty 200 (see test_filter_classification.py), so each value below is
+    # established by rows. Actor content is CrowdStrike's own catalog rather than
+    # tenant data, so scarcity does not apply to the actor cases.
+    # ------------------------------------------------------------------
+
+    def _actor_count(self, filter=None):
+        """Number of actors matching `filter`.
+
+        Counted from the returned records rather than `pagination.total`, which
+        this endpoint reports as 1 regardless of how many actors come back — so a
+        total-based comparison would read every filter as identical.
+        """
+        result = self.call_method(
+            self.module.query_actor_entities, filter=filter, limit=200
+        )
+        self.assert_envelope_ok(result, context=f"actors {filter!r}")
+        return len(self.records(result, context=f"actors {filter!r}"))
+
+    def test_actor_last_activity_date_accepts_relative_dates(self):
+        """`last_activity_date:>'now-90d'` is honored, not dropped.
+
+        The guide showed only an epoch integer for this field and documented
+        relative dates on indicators, a different operation. A dropped clause would
+        return the same actors as no filter at all, so the assertion is that the
+        result is strictly smaller — and the wider window returning everything is
+        what shows the narrowing came from the cutoff rather than a broken filter.
+        """
+        unfiltered = self._actor_count()
+        assert unfiltered > 1, f"Only {unfiltered} actors available; nothing to narrow."
+
+        recent = self._actor_count("last_activity_date:>'now-90d'")
+        assert 0 < recent < unfiltered, (
+            f"last_activity_date:>'now-90d' returned {recent} of {unfiltered} actors. "
+            "Zero means no actor is recently active; equal means the clause was "
+            "parsed as garbage and dropped. Neither confirms the syntax."
+        )
+
+        wide = self._actor_count("last_activity_date:>'now-3650d'")
+        assert wide == unfiltered, (
+            f"A ten-year window returned {wide} of {unfiltered} actors, so the field "
+            "is not simply a cutoff on activity and the comparison above is unsound."
+        )
+
+    def test_actor_motivations_and_target_industries(self):
+        """The documented motivation and industry values are real, not invented.
+
+        Enumerated from the actor catalog first, so every value asserted here is
+        one the API itself reports; a bogus value is checked in the same run to
+        show the filter is doing the selecting.
+        """
+        actors = self.records(
+            self.call_method(self.module.query_actor_entities, limit=100),
+            context="actor catalog",
+        )
+        assert actors, "No actors returned, so nothing can be enumerated."
+
+        def values(field):
+            return {
+                entry["value"]
+                for actor in actors
+                for entry in actor.get(field) or []
+                if entry.get("value")
+            }
+
+        for field, hint_values in (
+            ("motivations", {"State-Sponsored", "Criminal"}),
+            (
+                "target_industries",
+                {"Financial Services", "Government", "Technology", "Healthcare", "Energy"},
+            ),
+        ):
+            observed = values(field)
+            assert hint_values <= observed, (
+                f"The {field} values the hint documents are not in the catalog: "
+                f"{sorted(hint_values - observed)}. Either they were invented or the "
+                "catalog changed."
+            )
+            for value in sorted(hint_values):
+                self.assert_filter_matches(
+                    self.module.query_actor_entities,
+                    f"{field}.value:'{value}'",
+                    predicate=lambda actor, field=field, value=value: any(
+                        entry.get("value") == value for entry in actor.get(field) or []
+                    ),
+                    predicate_desc=f"actor.{field} includes {value!r}",
+                    note=f"Every {field}.value in the hint must select actors.",
+                    limit=3,
+                )
+
+            assert self._actor_count(f"{field}.value:'ZZZ Not A Value'") == 0, (
+                f"A nonsense {field}.value matched actors, so the filter is not "
+                "selecting and the assertions above prove nothing."
+            )
+
+    def test_report_created_date_accepts_three_forms(self):
+        """`created_date` takes an ISO string, an unquoted epoch, or a relative expression.
+
+        The field table gave an epoch integer while the notes said the format must
+        be ISO — each was right about a form the other omitted. A *quoted* epoch is
+        the one shape that fails, which is why the note now says unquoted.
+
+        Each predicate checks the row against the cutoff the filter asked for, and
+        the relative form additionally has to narrow the population. Asserting only
+        that `created_date` is an integer would be satisfied by every report alive,
+        so a clause the API parsed as garbage and dropped would still pass.
+        """
+        reports = self.skip_unless_tenant_has(
+            self.call_method(self.module.query_report_entities, limit=3),
+            "intel reports",
+            context="report created_date",
+        )
+        epoch = reports[0].get("created_date")
+        assert isinstance(epoch, int), (
+            f"created_date is no longer an epoch integer in the response: {epoch!r}. "
+            "The field table's type needs updating."
+        )
+
+        iso_cutoff = int(
+            datetime(2020, 1, 1, tzinfo=timezone.utc).timestamp()
+        )
+        for filter, cutoff in (
+            (f"created_date:>{epoch - 1}", epoch - 1),
+            ("created_date:>'2020-01-01T00:00:00Z'", iso_cutoff),
+        ):
+            self.assert_filter_matches(
+                self.module.query_report_entities,
+                filter,
+                predicate=lambda report, cutoff=cutoff: (
+                    isinstance(report.get("created_date"), int)
+                    and report["created_date"] > cutoff
+                ),
+                predicate_desc=f"report.created_date > {cutoff}",
+                note="All three date forms are documented for created_date.",
+                limit=3,
+            )
+
+        relative_cutoff = int(time.time()) - 30 * 86400
+        self.assert_filter_narrows(
+            self.module.query_report_entities,
+            "created_date:>'now-30d'",
+            predicate=lambda report: (
+                isinstance(report.get("created_date"), int)
+                and report["created_date"] > relative_cutoff
+            ),
+            predicate_desc=f"report.created_date > {relative_cutoff} (now-30d)",
+            note="The relative form is the one most likely to be silently dropped.",
+            limit=3,
+        )
+
+        quoted = self.call_method(
+            self.module.query_report_entities,
+            filter=f"created_date:>'{epoch - 1}'",
+            limit=1,
+        )
+        assert self.error_dicts(quoted), (
+            f"A quoted epoch was accepted. If it now works, drop the caveat from the "
+            f"guide's notes. Got: {quoted}"
+        )

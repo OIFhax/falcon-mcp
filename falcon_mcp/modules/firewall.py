@@ -6,6 +6,7 @@ query/get/aggregate operations for rules, rule groups, policy rules, events, fie
 platforms, policy containers, and network locations, plus write lifecycle operations.
 """
 
+from textwrap import dedent
 from typing import Any
 
 from mcp.server import FastMCP
@@ -43,7 +44,9 @@ class FirewallModule(BaseModule):
 
     def register_tools(self, server: FastMCP) -> None:
         """Register tools with the MCP server."""
-        self._add_tool(server=server, method=self.search_firewall_rules, name="search_firewall_rules")
+        self._add_tool(
+            server=server, method=self.search_firewall_rules, name="search_firewall_rules"
+        )
         self._add_tool(
             server=server,
             method=self.search_firewall_rule_groups,
@@ -54,7 +57,9 @@ class FirewallModule(BaseModule):
             method=self.search_firewall_policy_rules,
             name="search_firewall_policy_rules",
         )
-        self._add_tool(server=server, method=self.query_firewall_rule_ids, name="query_firewall_rule_ids")
+        self._add_tool(
+            server=server, method=self.query_firewall_rule_ids, name="query_firewall_rule_ids"
+        )
         self._add_tool(
             server=server,
             method=self.query_firewall_rule_group_ids,
@@ -66,8 +71,12 @@ class FirewallModule(BaseModule):
             name="query_firewall_policy_rule_ids",
         )
         self._add_tool(server=server, method=self.get_firewall_rules, name="get_firewall_rules")
-        self._add_tool(server=server, method=self.get_firewall_rule_groups, name="get_firewall_rule_groups")
-        self._add_tool(server=server, method=self.aggregate_firewall_rules, name="aggregate_firewall_rules")
+        self._add_tool(
+            server=server, method=self.get_firewall_rule_groups, name="get_firewall_rule_groups"
+        )
+        self._add_tool(
+            server=server, method=self.aggregate_firewall_rules, name="aggregate_firewall_rules"
+        )
         self._add_tool(
             server=server,
             method=self.aggregate_firewall_rule_groups,
@@ -78,13 +87,25 @@ class FirewallModule(BaseModule):
             method=self.aggregate_firewall_policy_rules,
             name="aggregate_firewall_policy_rules",
         )
-        self._add_tool(server=server, method=self.aggregate_firewall_events, name="aggregate_firewall_events")
-        self._add_tool(server=server, method=self.query_firewall_event_ids, name="query_firewall_event_ids")
+        self._add_tool(
+            server=server, method=self.aggregate_firewall_events, name="aggregate_firewall_events"
+        )
+        self._add_tool(
+            server=server, method=self.query_firewall_event_ids, name="query_firewall_event_ids"
+        )
         self._add_tool(server=server, method=self.get_firewall_events, name="get_firewall_events")
-        self._add_tool(server=server, method=self.query_firewall_field_ids, name="query_firewall_field_ids")
+        self._add_tool(
+            server=server, method=self.query_firewall_field_ids, name="query_firewall_field_ids"
+        )
         self._add_tool(server=server, method=self.get_firewall_fields, name="get_firewall_fields")
-        self._add_tool(server=server, method=self.query_firewall_platform_ids, name="query_firewall_platform_ids")
-        self._add_tool(server=server, method=self.get_firewall_platforms, name="get_firewall_platforms")
+        self._add_tool(
+            server=server,
+            method=self.query_firewall_platform_ids,
+            name="query_firewall_platform_ids",
+        )
+        self._add_tool(
+            server=server, method=self.get_firewall_platforms, name="get_firewall_platforms"
+        )
         self._add_tool(
             server=server,
             method=self.get_firewall_policy_containers,
@@ -229,35 +250,60 @@ class FirewallModule(BaseModule):
         filter: str | None = Field(
             default=None,
             description="FQL filter for firewall rule search. IMPORTANT: use `falcon://firewall/rules/fql-guide` for filter construction.",
+            examples=["enabled:true", "enabled:true+name:~'Block'"],
         ),
-        limit: int = Field(default=20, ge=1, le=5000, description="Maximum number of records. [1-5000]"),
-        offset: int = Field(default=0, ge=0, description="Starting index for pagination."),
-        sort: str | None = Field(default=None, description="Sort expression. Example: `modified_on.desc`."),
-        q: str | None = Field(default=None, description="Free-text query string."),
-        after: str | None = Field(default=None, description="Pagination token from a previous response."),
+        limit: int = Field(
+            default=20, ge=1, le=5000, description="Maximum number of records. [1-5000]"
+        ),
+        sort: str | None = Field(
+            default=None,
+            description=dedent("""
+                Sort firewall rules using FQL syntax.
+
+                Supported examples: name.asc, modified_on.desc. Prefer the dot
+                separator ('modified_on.desc'), which is supported on every Falcon
+                sort endpoint; the pipe form ('name|asc') also works here.
+            """).strip(),
+            examples=["modified_on.desc", "name.asc"],
+        ),
+        after: str | None = Field(
+            default=None, description="Pagination token from a previous response."
+        ),
     ) -> list[dict[str, Any]] | dict[str, Any]:
-        """Search firewall rules and return full details."""
-        rule_ids = self.query_firewall_rule_ids(
-            filter=filter,
-            limit=limit,
-            offset=offset,
-            sort=sort,
-            q=q,
-            after=after,
+        """Search firewall rules and return full rule details.
+
+        Use this to find firewall rules by name or enabled state. Consult
+        falcon://firewall/rules/fql-guide before constructing filter expressions.
+        Returns complete rule objects including conditions and actions.
+        Responses include `pagination.total` (the total number of records matching the filter, or null when the API does not report a count) — use it to answer "how many" questions. For cursor-based paging, use `pagination.next` as the `after` parameter on the next call.
+        """
+        rule_ids, pagination = self._base_search_with_meta(
+            operation="query_rules",
+            search_params={
+                "filter": filter,
+                "limit": limit,
+                "sort": sort,
+                "after": after,
+            },
+            error_message="Failed to search firewall rules",
         )
         if self._is_error(rule_ids):
-            return [rule_ids]
-        if isinstance(rule_ids, dict):
-            return rule_ids
-        if not rule_ids:
             if filter:
                 return self._format_fql_error_response(
-                    [],
-                    filter,
-                    SEARCH_FIREWALL_RULES_FQL_DOCUMENTATION,
+                    [rule_ids], filter, SEARCH_FIREWALL_RULES_FQL_DOCUMENTATION
                 )
-            return []
-        return self.get_firewall_rules(ids=rule_ids)
+            return [rule_ids]
+        if not rule_ids:
+            return self._build_pagination_envelope([], pagination, filter)
+
+        details = self._base_get_by_ids(
+            operation="get_rules", ids=rule_ids, use_params=True
+        )
+        if self._is_error(details):
+            return [details]
+
+        details = self._reorder_by_ids(rule_ids, details, id_field="id")
+        return self._build_pagination_envelope(details, pagination, filter)
 
     def search_firewall_rule_groups(
         self,
@@ -265,34 +311,44 @@ class FirewallModule(BaseModule):
             default=None,
             description="FQL filter for firewall rule-group search. IMPORTANT: use `falcon://firewall/rules/fql-guide` for filter construction.",
         ),
-        limit: int = Field(default=20, ge=1, le=5000, description="Maximum number of records. [1-5000]"),
-        offset: int = Field(default=0, ge=0, description="Starting index for pagination."),
-        sort: str | None = Field(default=None, description="Sort expression. Example: `modified_on.desc`."),
-        q: str | None = Field(default=None, description="Free-text query string."),
-        after: str | None = Field(default=None, description="Pagination token from a previous response."),
+        limit: int = Field(
+            default=20, ge=1, le=5000, description="Maximum number of records. [1-5000]"
+        ),
+        sort: str | None = Field(
+            default=None, description="Sort expression. Example: `modified_on.desc`."
+        ),
+        after: str | None = Field(
+            default=None, description="Pagination token from a previous response."
+        ),
     ) -> list[dict[str, Any]] | dict[str, Any]:
         """Search firewall rule groups and return full details."""
-        group_ids = self.query_firewall_rule_group_ids(
-            filter=filter,
-            limit=limit,
-            offset=offset,
-            sort=sort,
-            q=q,
-            after=after,
+        group_ids, pagination = self._base_search_with_meta(
+            operation="query_rule_groups",
+            search_params={
+                "filter": filter,
+                "limit": limit,
+                "sort": sort,
+                "after": after,
+            },
+            error_message="Failed to search firewall rule groups",
         )
         if self._is_error(group_ids):
-            return [group_ids]
-        if isinstance(group_ids, dict):
-            return group_ids
-        if not group_ids:
             if filter:
                 return self._format_fql_error_response(
-                    [],
-                    filter,
-                    SEARCH_FIREWALL_RULES_FQL_DOCUMENTATION,
+                    [group_ids], filter, SEARCH_FIREWALL_RULES_FQL_DOCUMENTATION
                 )
-            return []
-        return self.get_firewall_rule_groups(ids=group_ids)
+            return [group_ids]
+        if not group_ids:
+            return self._build_pagination_envelope([], pagination, filter)
+
+        details = self._base_get_by_ids(
+            operation="get_rule_groups", ids=group_ids, use_params=True
+        )
+        if self._is_error(details):
+            return [details]
+
+        details = self._reorder_by_ids(group_ids, details, id_field="id")
+        return self._build_pagination_envelope(details, pagination, filter)
 
     def search_firewall_policy_rules(
         self,
@@ -301,33 +357,43 @@ class FirewallModule(BaseModule):
             default=None,
             description="FQL filter for policy-rule search. IMPORTANT: use `falcon://firewall/rules/fql-guide` for filter construction.",
         ),
-        limit: int = Field(default=20, ge=1, le=5000, description="Maximum number of records. [1-5000]"),
+        limit: int = Field(
+            default=20, ge=1, le=5000, description="Maximum number of records. [1-5000]"
+        ),
         offset: int = Field(default=0, ge=0, description="Starting index for pagination."),
-        sort: str | None = Field(default=None, description="Sort expression. Example: `modified_on.desc`."),
-        q: str | None = Field(default=None, description="Free-text query string."),
+        sort: str | None = Field(
+            default=None, description="Sort expression. Example: `modified_on.desc`."
+        ),
     ) -> list[dict[str, Any]] | dict[str, Any]:
         """Search rules within a specific policy container and return full details."""
-        rule_ids = self.query_firewall_policy_rule_ids(
-            policy_id=policy_id,
-            filter=filter,
-            limit=limit,
-            offset=offset,
-            sort=sort,
-            q=q,
+        rule_ids, pagination = self._base_search_with_meta(
+            operation="query_policy_rules",
+            search_params={
+                "id": policy_id,
+                "filter": filter,
+                "limit": limit,
+                "offset": offset,
+                "sort": sort,
+            },
+            error_message="Failed to search firewall policy rules",
         )
         if self._is_error(rule_ids):
-            return [rule_ids]
-        if isinstance(rule_ids, dict):
-            return rule_ids
-        if not rule_ids:
             if filter:
                 return self._format_fql_error_response(
-                    [],
-                    filter,
-                    SEARCH_FIREWALL_RULES_FQL_DOCUMENTATION,
+                    [rule_ids], filter, SEARCH_FIREWALL_RULES_FQL_DOCUMENTATION
                 )
-            return []
-        return self.get_firewall_rules(ids=rule_ids)
+            return [rule_ids]
+        if not rule_ids:
+            return self._build_pagination_envelope([], pagination, filter)
+
+        details = self._base_get_by_ids(
+            operation="get_rules", ids=rule_ids, use_params=True
+        )
+        if self._is_error(details):
+            return [details]
+
+        details = self._reorder_by_ids(rule_ids, details, id_field="id")
+        return self._build_pagination_envelope(details, pagination, filter)
 
     def query_firewall_rule_ids(
         self,
@@ -335,10 +401,10 @@ class FirewallModule(BaseModule):
             default=None,
             description="FQL filter for firewall rule ID query. IMPORTANT: use `falcon://firewall/rules/fql-guide`.",
         ),
-        limit: int = Field(default=100, ge=1, le=5000, description="Maximum number of IDs. [1-5000]"),
-        offset: int = Field(default=0, ge=0, description="Starting index for pagination."),
+        limit: int = Field(
+            default=100, ge=1, le=5000, description="Maximum number of IDs. [1-5000]"
+        ),
         sort: str | None = Field(default=None, description="Sort expression."),
-        q: str | None = Field(default=None, description="Free-text query string."),
         after: str | None = Field(default=None, description="Pagination token."),
     ) -> list[str] | dict[str, Any]:
         """Query firewall rule IDs."""
@@ -347,9 +413,7 @@ class FirewallModule(BaseModule):
             search_params={
                 "filter": filter,
                 "limit": limit,
-                "offset": offset,
                 "sort": sort,
-                "q": q,
                 "after": after,
             },
             error_message="Failed to query firewall rule IDs",
@@ -363,10 +427,10 @@ class FirewallModule(BaseModule):
             default=None,
             description="FQL filter for firewall rule-group ID query. IMPORTANT: use `falcon://firewall/rules/fql-guide`.",
         ),
-        limit: int = Field(default=100, ge=1, le=5000, description="Maximum number of IDs. [1-5000]"),
-        offset: int = Field(default=0, ge=0, description="Starting index for pagination."),
+        limit: int = Field(
+            default=100, ge=1, le=5000, description="Maximum number of IDs. [1-5000]"
+        ),
         sort: str | None = Field(default=None, description="Sort expression."),
-        q: str | None = Field(default=None, description="Free-text query string."),
         after: str | None = Field(default=None, description="Pagination token."),
     ) -> list[str] | dict[str, Any]:
         """Query firewall rule-group IDs."""
@@ -375,9 +439,7 @@ class FirewallModule(BaseModule):
             search_params={
                 "filter": filter,
                 "limit": limit,
-                "offset": offset,
                 "sort": sort,
-                "q": q,
                 "after": after,
             },
             error_message="Failed to query firewall rule-group IDs",
@@ -392,10 +454,11 @@ class FirewallModule(BaseModule):
             default=None,
             description="FQL filter for firewall policy-rule ID query. IMPORTANT: use `falcon://firewall/rules/fql-guide`.",
         ),
-        limit: int = Field(default=100, ge=1, le=5000, description="Maximum number of IDs. [1-5000]"),
+        limit: int = Field(
+            default=100, ge=1, le=5000, description="Maximum number of IDs. [1-5000]"
+        ),
         offset: int = Field(default=0, ge=0, description="Starting index for pagination."),
         sort: str | None = Field(default=None, description="Sort expression."),
-        q: str | None = Field(default=None, description="Free-text query string."),
     ) -> list[str] | dict[str, Any]:
         """Query firewall policy-rule IDs."""
         return self._query_ids_with_fql_guide(
@@ -406,7 +469,6 @@ class FirewallModule(BaseModule):
                 "limit": limit,
                 "offset": offset,
                 "sort": sort,
-                "q": q,
             },
             error_message="Failed to query firewall policy-rule IDs",
             filter_used=filter,
@@ -436,7 +498,9 @@ class FirewallModule(BaseModule):
 
     def get_firewall_rule_groups(
         self,
-        ids: list[str] | None = Field(default=None, description="Firewall rule-group IDs to retrieve."),
+        ids: list[str] | None = Field(
+            default=None, description="Firewall rule-group IDs to retrieve."
+        ),
     ) -> list[dict[str, Any]]:
         """Get firewall rule groups by ID."""
         if not ids:
@@ -561,7 +625,9 @@ class FirewallModule(BaseModule):
             default=None,
             description="FQL filter for firewall event ID query. IMPORTANT: use `falcon://firewall/events/fql-guide`.",
         ),
-        limit: int = Field(default=100, ge=1, le=5000, description="Maximum number of IDs. [1-5000]"),
+        limit: int = Field(
+            default=100, ge=1, le=5000, description="Maximum number of IDs. [1-5000]"
+        ),
         offset: int = Field(default=0, ge=0, description="Starting index for pagination."),
         sort: str | None = Field(default=None, description="Sort expression."),
         q: str | None = Field(default=None, description="Free-text query string."),
@@ -606,8 +672,12 @@ class FirewallModule(BaseModule):
 
     def query_firewall_field_ids(
         self,
-        filter: str | None = Field(default=None, description="FQL filter for firewall field ID query."),
-        limit: int = Field(default=100, ge=1, le=5000, description="Maximum number of IDs. [1-5000]"),
+        filter: str | None = Field(
+            default=None, description="FQL filter for firewall field ID query."
+        ),
+        limit: int = Field(
+            default=100, ge=1, le=5000, description="Maximum number of IDs. [1-5000]"
+        ),
         offset: int = Field(default=0, ge=0, description="Starting index for pagination."),
         sort: str | None = Field(default=None, description="Sort expression."),
         q: str | None = Field(default=None, description="Free-text query string."),
@@ -653,7 +723,9 @@ class FirewallModule(BaseModule):
 
     def query_firewall_platform_ids(
         self,
-        limit: int = Field(default=100, ge=1, le=5000, description="Maximum number of IDs. [1-5000]"),
+        limit: int = Field(
+            default=100, ge=1, le=5000, description="Maximum number of IDs. [1-5000]"
+        ),
         offset: int = Field(default=0, ge=0, description="Starting index for pagination."),
     ) -> list[str] | dict[str, Any]:
         """Query firewall platform IDs."""
@@ -671,7 +743,9 @@ class FirewallModule(BaseModule):
 
     def get_firewall_platforms(
         self,
-        ids: list[str] | None = Field(default=None, description="Firewall platform IDs to retrieve."),
+        ids: list[str] | None = Field(
+            default=None, description="Firewall platform IDs to retrieve."
+        ),
     ) -> list[dict[str, Any]]:
         """Get firewall platforms by ID."""
         if not ids:
@@ -692,7 +766,9 @@ class FirewallModule(BaseModule):
 
     def get_firewall_policy_containers(
         self,
-        ids: list[str] | None = Field(default=None, description="Firewall policy-container IDs to retrieve."),
+        ids: list[str] | None = Field(
+            default=None, description="Firewall policy-container IDs to retrieve."
+        ),
     ) -> list[dict[str, Any]]:
         """Get firewall policy containers by ID."""
         if not ids:
@@ -765,7 +841,9 @@ class FirewallModule(BaseModule):
             default=False,
             description="Explicit safety confirmation. Must be `true` to execute this write operation.",
         ),
-        ids: list[str] | None = Field(default=None, description="Firewall rule-group IDs to delete."),
+        ids: list[str] | None = Field(
+            default=None, description="Firewall rule-group IDs to delete."
+        ),
         comment: str | None = Field(default=None, description="Optional audit comment."),
     ) -> list[dict[str, Any]]:
         """Delete firewall rule groups."""
@@ -885,7 +963,9 @@ class FirewallModule(BaseModule):
             default=None,
             description="FQL filter for network-location ID query. IMPORTANT: use `falcon://firewall/network-locations/fql-guide`.",
         ),
-        limit: int = Field(default=100, ge=1, le=5000, description="Maximum number of IDs. [1-5000]"),
+        limit: int = Field(
+            default=100, ge=1, le=5000, description="Maximum number of IDs. [1-5000]"
+        ),
         offset: int = Field(default=0, ge=0, description="Starting index for pagination."),
         sort: str | None = Field(default=None, description="Sort expression."),
         q: str | None = Field(default=None, description="Free-text query string."),
@@ -909,7 +989,9 @@ class FirewallModule(BaseModule):
 
     def get_firewall_network_locations(
         self,
-        ids: list[str] | None = Field(default=None, description="Firewall network-location IDs to retrieve."),
+        ids: list[str] | None = Field(
+            default=None, description="Firewall network-location IDs to retrieve."
+        ),
     ) -> list[dict[str, Any]]:
         """Get firewall network locations by ID."""
         if not ids:
@@ -1131,7 +1213,7 @@ class FirewallModule(BaseModule):
         filter_used: str | None,
         fql_guide: str,
     ) -> list[str] | dict[str, Any]:
-        result = self._base_search_api_call(
+        result, pagination = self._base_search_with_meta(
             operation=operation,
             search_params=search_params,
             error_message=error_message,
@@ -1140,8 +1222,8 @@ class FirewallModule(BaseModule):
         if self._is_error(result):
             return self._format_fql_error_response([result], filter_used, fql_guide)
 
-        if not result and filter_used:
-            return self._format_fql_error_response([], filter_used, fql_guide)
+        if not result:
+            return self._build_pagination_envelope([], pagination, filter_used)
 
         return result
 

@@ -2,12 +2,18 @@
 Tests for the Falcon MCP server.
 """
 
+import sys
 import unittest
 from unittest.mock import MagicMock, patch
 
 from falcon_mcp import registry
 from falcon_mcp.modules.base import READ_ONLY_ANNOTATIONS
-from falcon_mcp.server import FalconMCPServer, SERVER_INSTRUCTIONS
+from falcon_mcp.server import (
+    LEGACY_MODULE_ALIASES,
+    SERVER_INSTRUCTIONS,
+    FalconMCPServer,
+    parse_modules_list,
+)
 
 
 class TestFalconMCPServer(unittest.TestCase):
@@ -17,6 +23,38 @@ class TestFalconMCPServer(unittest.TestCase):
         """Set up test fixtures before each test method."""
         # Ensure modules are discovered before each test
         registry.discover_modules()
+
+    def test_legacy_module_aliases_resolve_to_available_modules(self):
+        available_modules = set(registry.get_module_names())
+        self.assertLessEqual(set(LEGACY_MODULE_ALIASES.values()), available_modules)
+
+        parsed = parse_modules_list(",".join(LEGACY_MODULE_ALIASES))
+
+        self.assertEqual(parsed, list(dict.fromkeys(LEGACY_MODULE_ALIASES.values())))
+
+    def test_legacy_module_aliases_deduplicate_canonical_names(self):
+        parsed = parse_modules_list("rawcloudsecurityrisks,cloudsecurityrisks")
+
+        self.assertEqual(parsed, ["cloudsecurityrisks"])
+
+    def test_new_raw_spotlight_module_is_not_legacy_alias(self):
+        self.assertIn("rawspotlightvulnerabilities", registry.get_module_names())
+        self.assertNotIn("rawspotlightvulnerabilities", LEGACY_MODULE_ALIASES)
+        self.assertEqual(
+            parse_modules_list("rawspotlightvulnerabilities,spotlight"),
+            ["rawspotlightvulnerabilities", "spotlight"],
+        )
+
+    def test_register_tools_rejects_duplicate_names(self):
+        server = FalconMCPServer.__new__(FalconMCPServer)
+        server.server = MagicMock()
+        server.dynamic = False
+        first = MagicMock(tools=["falcon_duplicate"])
+        second = MagicMock(tools=["falcon_duplicate"])
+        server.modules = {"first": first, "second": second}
+
+        with self.assertRaisesRegex(RuntimeError, "falcon_duplicate"):
+            server._register_tools()
 
     @patch("falcon_mcp.server.FalconClient")
     @patch("falcon_mcp.server.FastMCP")
@@ -84,37 +122,77 @@ class TestFalconMCPServer(unittest.TestCase):
 
     @patch("falcon_mcp.server.FalconClient")
     def test_authentication_failure(self, mock_client):
-        """Test server initialization with authentication failure."""
-        # Setup mock
+        """Test server initialization with authentication failure includes diagnostics."""
         mock_client_instance = MagicMock()
         mock_client_instance.authenticate.return_value = False
+        mock_client_instance.auth_failure_message.return_value = (
+            "Failed to authenticate with the Falcon API (HTTP 401). invalid credentials"
+        )
         mock_client.return_value = mock_client_instance
 
-        # Verify authentication failure raises RuntimeError
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as ctx:
             FalconMCPServer()
 
+        self.assertIn("HTTP 401", str(ctx.exception))
+        mock_client_instance.auth_failure_message.assert_called_once()
+
     @patch("falcon_mcp.server.FalconClient")
-    def test_falcon_check_connectivity(self, mock_client):
-        """Test checking Falcon API connectivity."""
-        # Setup mock
+    def test_falcon_check_connectivity_success(self, mock_client):
+        """Successful OAuth2 probe (HTTP 201) returns connected=True."""
         mock_client_instance = MagicMock()
-        mock_client_instance.is_authenticated.return_value = True
-        mock_client.return_value = mock_client_instance
         mock_client_instance.authenticate.return_value = True
+        mock_client_instance.client._login_handler.return_value = {"status_code": 201}
+        mock_client.return_value = mock_client_instance
 
-        # Create server with mock client
         server = FalconMCPServer()
-
-        # Call falcon_check_connectivity
         result = server.falcon_check_connectivity()
 
-        # Verify client method was called
-        mock_client_instance.is_authenticated.assert_called_once()
+        mock_client_instance.client._login_handler.assert_called_once_with(stateful=False)
+        self.assertEqual(result, {"connected": True})
 
-        # Verify result
-        expected_result = {"connected": True}
-        self.assertEqual(result, expected_result)
+    @patch("falcon_mcp.server.FalconClient")
+    def test_falcon_check_connectivity_non_201(self, mock_client):
+        """Non-201 status from OAuth2 probe returns connected=False."""
+        mock_client_instance = MagicMock()
+        mock_client_instance.authenticate.return_value = True
+        mock_client_instance.client._login_handler.return_value = {"status_code": 401}
+        mock_client.return_value = mock_client_instance
+
+        server = FalconMCPServer()
+        result = server.falcon_check_connectivity()
+
+        self.assertEqual(result, {"connected": False})
+
+    @patch("falcon_mcp.server.FalconClient")
+    def test_falcon_check_connectivity_probe_raises(self, mock_client):
+        """Exception during probe returns connected=False, does not propagate."""
+        mock_client_instance = MagicMock()
+        mock_client_instance.authenticate.return_value = True
+        mock_client_instance.client._login_handler.side_effect = ConnectionError("boom")
+        mock_client.return_value = mock_client_instance
+
+        server = FalconMCPServer()
+        with self.assertLogs("falcon_mcp.server", level="WARNING") as cm:
+            result = server.falcon_check_connectivity()
+
+        self.assertEqual(result, {"connected": False})
+        self.assertTrue(any("Connectivity probe failed" in msg for msg in cm.output))
+
+    @patch("falcon_mcp.server.FalconClient")
+    def test_falcon_check_connectivity_does_not_mutate_token_state(self, mock_client):
+        """Probe must not trigger stateful authenticate()."""
+        mock_client_instance = MagicMock()
+        mock_client_instance.authenticate.return_value = True
+        mock_client_instance.client._login_handler.return_value = {"status_code": 201}
+        mock_client.return_value = mock_client_instance
+
+        server = FalconMCPServer()
+        # Reset count after __init__ (which legitimately calls authenticate once).
+        mock_client_instance.authenticate.reset_mock()
+
+        server.falcon_check_connectivity()
+
+        mock_client_instance.authenticate.assert_not_called()
 
     @patch("falcon_mcp.server.FalconClient")
     def test_list_enabled_modules(self, mock_client):
@@ -159,53 +237,6 @@ class TestFalconMCPServer(unittest.TestCase):
         # Verify each module name is a string
         for module_name in result["modules"]:
             self.assertIsInstance(module_name, str)
-
-    @patch("falcon_mcp.server.FalconClient")
-    def test_list_modules(self, mock_client):
-        """Test listing all available modules."""
-        # Setup mock
-        mock_client_instance = MagicMock()
-        mock_client_instance.authenticate.return_value = True
-        mock_client.return_value = mock_client_instance
-
-        # Create server with limited modules
-        server = FalconMCPServer(enabled_modules={"detections", "cloud"})
-
-        # Call list_modules
-        result = server.list_modules()
-
-        # Should return ALL modules from registry regardless of what's enabled
-        expected_modules = registry.get_module_names()
-        self.assertEqual(set(result["modules"]), set(expected_modules))
-
-        # Verify return type is correct
-        self.assertIsInstance(result["modules"], list)
-
-        # Verify each module name is a string
-        for module_name in result["modules"]:
-            self.assertIsInstance(module_name, str)
-
-    @patch("falcon_mcp.server.FalconClient")
-    def test_list_modules_consistency(self, mock_client):
-        """Test that list_modules always returns the same result."""
-        # Setup mock
-        mock_client_instance = MagicMock()
-        mock_client_instance.authenticate.return_value = True
-        mock_client.return_value = mock_client_instance
-
-        # Create two servers with different enabled modules
-        server1 = FalconMCPServer(enabled_modules={"detections"})
-        server2 = FalconMCPServer(enabled_modules={"cloud", "intel"})
-
-        # Both should return the same available modules
-        result1 = server1.list_modules()
-        result2 = server2.list_modules()
-
-        self.assertEqual(set(result1["modules"]), set(result2["modules"]))
-
-        # And both should match the registry
-        expected_modules = registry.get_module_names()
-        self.assertEqual(set(result1["modules"]), set(expected_modules))
 
     @patch("falcon_mcp.server.FalconClient")
     @patch("falcon_mcp.server.FastMCP")
@@ -316,7 +347,6 @@ class TestFalconMCPServer(unittest.TestCase):
         self.assertEqual(call_args["client_id"], "direct-client-id")
         self.assertEqual(call_args["client_secret"], "direct-client-secret")
 
-
     @patch("falcon_mcp.server.FalconClient")
     @patch("falcon_mcp.server.FastMCP")
     def test_server_passes_non_localhost_host_to_fastmcp(self, mock_fastmcp, mock_client):
@@ -412,7 +442,10 @@ class TestFalconMCPServer(unittest.TestCase):
         """Test startup check includes the recommended session-start contract data."""
         mock_client_instance = MagicMock()
         mock_client_instance.authenticate.return_value = True
-        mock_client_instance.is_authenticated.return_value = True
+        # Cached token state can be stale after the server has been idle. Startup
+        # validation must use the same non-mutating active probe as connectivity.
+        mock_client_instance.is_authenticated.return_value = False
+        mock_client_instance.client._login_handler.return_value = {"status_code": 201}
         mock_client_instance.base_url = "https://api.us-2.crowdstrike.com"
         mock_client_instance.get_region.return_value = "us-2"
         mock_client.return_value = mock_client_instance
@@ -427,6 +460,22 @@ class TestFalconMCPServer(unittest.TestCase):
         self.assertIn("detections", result["enabled_modules"])
         self.assertIn("falcon_startup_check", result["declared_tools"])
         self.assertIn("falcon_list_modules", result["declared_tools"])
+        mock_client_instance.client._login_handler.assert_called_once_with(stateful=False)
+
+    @patch("falcon_mcp.server.FalconClient")
+    def test_startup_check_reports_failed_active_probe(self, mock_client):
+        """Startup connectivity is false when the active OAuth2 probe fails."""
+        mock_client_instance = MagicMock()
+        mock_client_instance.authenticate.return_value = True
+        mock_client_instance.is_authenticated.return_value = True
+        mock_client_instance.client._login_handler.return_value = {"status_code": 401}
+        mock_client_instance.base_url = "https://api.us-2.crowdstrike.com"
+        mock_client_instance.get_region.return_value = "us-2"
+        mock_client.return_value = mock_client_instance
+
+        server = FalconMCPServer(enabled_modules={"detections"})
+
+        self.assertFalse(server.falcon_startup_check()["connected"])
 
     @patch("falcon_mcp.server.FalconClient")
     def test_support_bundle_proxies_client_bundle_and_server_context(self, mock_client):
@@ -450,11 +499,11 @@ class TestFalconMCPServer(unittest.TestCase):
         self.assertIn("detections", result["enabled_modules"])
         self.assertIn("falcon_generate_support_bundle", result["declared_tools"])
 
-
     @patch("falcon_mcp.server.FalconClient")
     @patch("falcon_mcp.server.FastMCP")
-    def test_all_tools_have_annotations(self, mock_fastmcp, mock_client):
-        """Test that every registered tool has non-None annotations."""
+    def test_server_initialization_with_member_cid(self, mock_fastmcp, mock_client):
+        """Test server initialization with member_cid parameter."""
+        # Setup mocks
         mock_client_instance = MagicMock()
         mock_client_instance.authenticate.return_value = True
         mock_client.return_value = mock_client_instance
@@ -462,18 +511,104 @@ class TestFalconMCPServer(unittest.TestCase):
         mock_server_instance = MagicMock()
         mock_fastmcp.return_value = mock_server_instance
 
-        # Create server with ALL modules to register every tool
-        FalconMCPServer()
+        # Create server with member_cid
+        _server = FalconMCPServer(member_cid="abc123-child-cid-xyz")
 
-        for call in mock_server_instance.add_tool.call_args_list:
-            name = call.kwargs.get("name", "<unknown>")
-            annotations = call.kwargs.get("annotations")
-            self.assertIsNotNone(
-                annotations,
-                f"Tool '{name}' was registered without annotations. "
-                f"Use _add_tool() for automatic READ_ONLY_ANNOTATIONS, "
-                f"or pass explicit annotations for mutating tools.",
-            )
+        # Verify FalconClient was initialized with member_cid
+        mock_client.assert_called_once()
+        call_args = mock_client.call_args[1]
+        self.assertEqual(call_args["member_cid"], "abc123-child-cid-xyz")
+
+    @patch("falcon_mcp.server.FalconClient")
+    @patch("falcon_mcp.server.FastMCP")
+    def test_server_initialization_without_member_cid(self, mock_fastmcp, mock_client):
+        """Test server initialization without member_cid (parent CID mode)."""
+        # Setup mocks
+        mock_client_instance = MagicMock()
+        mock_client_instance.authenticate.return_value = True
+        mock_client.return_value = mock_client_instance
+
+        mock_server_instance = MagicMock()
+        mock_fastmcp.return_value = mock_server_instance
+
+        # Create server without member_cid
+        _server = FalconMCPServer()
+
+        # Verify FalconClient was initialized without member_cid
+        mock_client.assert_called_once()
+        call_args = mock_client.call_args[1]
+        # Should be None (the default)
+        self.assertIsNone(call_args["member_cid"])
+
+    @patch("falcon_mcp.server.FalconClient")
+    @patch("falcon_mcp.server.FastMCP")
+    def test_server_initialization_with_proxy(self, mock_fastmcp, mock_client):
+        """Test server initialization with proxy parameter is forwarded to FalconClient."""
+        mock_client_instance = MagicMock()
+        mock_client_instance.authenticate.return_value = True
+        mock_client.return_value = mock_client_instance
+        mock_fastmcp.return_value = MagicMock()
+
+        _server = FalconMCPServer(proxy="http://proxy.corp.example.com:8080")
+
+        mock_client.assert_called_once()
+        call_args = mock_client.call_args[1]
+        self.assertEqual(call_args["proxy"], "http://proxy.corp.example.com:8080")
+
+    @patch("falcon_mcp.server.FalconClient")
+    @patch("falcon_mcp.server.FastMCP")
+    def test_server_initialization_without_proxy(self, mock_fastmcp, mock_client):
+        """Test server initialization without proxy passes None to FalconClient."""
+        mock_client_instance = MagicMock()
+        mock_client_instance.authenticate.return_value = True
+        mock_client.return_value = mock_client_instance
+        mock_fastmcp.return_value = MagicMock()
+
+        _server = FalconMCPServer()
+
+        mock_client.assert_called_once()
+        call_args = mock_client.call_args[1]
+        self.assertIsNone(call_args["proxy"])
+
+    @patch("falcon_mcp.server.get_version", return_value="1.2.3")
+    def test_version_flag(self, _mock_version):
+        """Test --version flag prints version and exits."""
+        with patch.object(sys, "argv", ["falcon-mcp", "--version"]):
+            with self.assertRaises(SystemExit) as cm:
+                from falcon_mcp.server import parse_args
+
+                parse_args()
+            self.assertEqual(cm.exception.code, 0)
+
+    @patch("falcon_mcp.server.FalconClient")
+    @patch("falcon_mcp.server.FastMCP")
+    def test_mcp_server_version_is_set(self, mock_fastmcp, mock_client):
+        """Test that MCP server metadata version is set to falcon-mcp version."""
+        mock_client_instance = MagicMock()
+        mock_client_instance.authenticate.return_value = True
+        mock_client.return_value = mock_client_instance
+
+        mock_server_instance = MagicMock()
+        mock_fastmcp.return_value = mock_server_instance
+
+        FalconMCPServer(enabled_modules=set())
+
+        # Verify version was set on the underlying MCP server
+        self.assertIsNotNone(mock_server_instance._mcp_server.version)
+
+    @patch("falcon_mcp.server.get_version", return_value="0.9.0")
+    @patch("falcon_mcp.server.FalconClient")
+    def test_startup_log_includes_version(self, mock_client, _mock_version):
+        """Test that startup log message includes the server version."""
+        mock_client_instance = MagicMock()
+        mock_client_instance.authenticate.return_value = True
+        mock_client.return_value = mock_client_instance
+
+        with self.assertLogs("falcon_mcp.server", level="INFO") as cm:
+            FalconMCPServer(enabled_modules=set())
+
+        version_logs = [msg for msg in cm.output if "Falcon MCP v0.9.0" in msg]
+        self.assertEqual(len(version_logs), 1, "Expected exactly one startup log with version")
 
 
 if __name__ == "__main__":

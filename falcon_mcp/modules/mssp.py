@@ -117,8 +117,8 @@ class MSSPModule(BaseModule):
             ),
         )
 
-    def _make_params_read_tool(self, operation: str) -> Callable[..., list[dict[str, Any]]]:
-        def tool(parameters: dict[str, Any] | None = Field(default=None, description="Full query parameters payload.")) -> list[dict[str, Any]]:
+    def _make_params_read_tool(self, operation: str) -> Callable[..., Any]:
+        def tool(parameters: dict[str, Any] | None = Field(default=None, description="Full query parameters payload.")) -> Any:
             result = self._base_query_api_call(
                 operation=operation,
                 query_params=parameters or {},
@@ -132,8 +132,8 @@ class MSSPModule(BaseModule):
         tool.__name__ = f"{operation}_tool"
         return tool
 
-    def _make_body_read_tool(self, operation: str) -> Callable[..., list[dict[str, Any]]]:
-        def tool(body: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+    def _make_body_read_tool(self, operation: str) -> Callable[..., Any]:
+        def tool(body: dict[str, Any] | None = None) -> Any:
             if body is None:
                 return [_format_error_response("Provide `body` to execute this Flight Control operation.", operation=operation)]
             result = self._base_query_api_call(
@@ -149,8 +149,8 @@ class MSSPModule(BaseModule):
         tool.__name__ = f"{operation}_tool"
         return tool
 
-    def _make_body_write_tool(self, operation: str) -> Callable[..., list[dict[str, Any]]]:
-        def tool(confirm_execution: bool = Field(default=False), body: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+    def _make_body_write_tool(self, operation: str) -> Callable[..., Any]:
+        def tool(confirm_execution: bool = Field(default=False), body: dict[str, Any] | None = None) -> Any:
             if not confirm_execution:
                 return [_format_error_response("This operation requires `confirm_execution=true`.", operation=operation)]
             if body is None:
@@ -168,8 +168,8 @@ class MSSPModule(BaseModule):
         tool.__name__ = f"{operation}_tool"
         return tool
 
-    def _make_params_write_tool(self, operation: str) -> Callable[..., list[dict[str, Any]]]:
-        def tool(confirm_execution: bool = Field(default=False), parameters: dict[str, Any] | None = Field(default=None, description="Full query parameters payload.")) -> list[dict[str, Any]]:
+    def _make_params_write_tool(self, operation: str) -> Callable[..., Any]:
+        def tool(confirm_execution: bool = Field(default=False), parameters: dict[str, Any] | None = Field(default=None, description="Full query parameters payload.")) -> Any:
             if not confirm_execution:
                 return [_format_error_response("This operation requires `confirm_execution=true`.", operation=operation)]
             if parameters is None:

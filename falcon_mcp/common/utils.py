@@ -15,6 +15,11 @@ from .logging import get_logger
 logger = get_logger(__name__)
 
 
+def unwrap_field_default(value: Any) -> Any:
+    """Resolve a Pydantic FieldInfo object to its actual default value."""
+    return value.default if hasattr(value, "default") else value
+
+
 def filter_none_values(data: dict[str, Any]) -> dict[str, Any]:
     """Remove None values from a dictionary.
 
@@ -44,11 +49,6 @@ def prepare_api_parameters(params: dict[str, Any]) -> dict[str, Any]:
 
     # Remove None values
     filtered = filter_none_values(normalized)
-
-    # Handle special parameter formatting if needed
-    if "filter" in filtered and isinstance(filtered["filter"], dict):
-        # Convert filter dict to FQL string if needed
-        pass
 
     return filtered
 

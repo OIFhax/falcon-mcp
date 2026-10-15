@@ -7,10 +7,10 @@
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/falcon-mcp)](https://pypi.org/project/falcon-mcp/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**falcon-mcp** is a Model Context Protocol (MCP) server that connects AI agents with the CrowdStrike Falcon platform, powering intelligent security analysis in your agentic workflows. It delivers programmatic access to essential security capabilities—including detections, incidents, and behaviors—establishing the foundation for advanced security operations and automation.
+**falcon-mcp** is a Model Context Protocol (MCP) server that connects AI agents with the CrowdStrike Falcon platform, powering intelligent security analysis in your agentic workflows. It delivers programmatic access to essential security capabilities—including detections, threat intelligence, and host management—establishing the foundation for advanced security operations and automation.
 
 > [!IMPORTANT]
-> **🚧 Public Preview**: This project is currently in public preview and under active development. Features and functionality may change before the stable 1.0 release. While we encourage exploration and testing, please avoid production deployments. We welcome your feedback through [GitHub Issues](https://github.com/crowdstrike/falcon-mcp/issues) to help shape the final release.
+> **Pre-1.0 release**: falcon-mcp is under active development ahead of 1.0. Tool names, parameters, and response shapes can still change between minor releases, so pin a version and check the [changelog](CHANGELOG.md) before upgrading. The project is actively maintained by CrowdStrike and supported through [GitHub Issues](https://github.com/crowdstrike/falcon-mcp/issues); CrowdStrike customers can also raise questions through their usual Technical Support channels. See [SUPPORT.md](SUPPORT.md) for details.
 
 ## Table of Contents
 
@@ -40,10 +40,10 @@
   - [Hosts Module](#hosts-module)
   - [Identity Protection Module](#identity-protection-module)
   - [User Management Module](#user-management-module)
-  - [Incidents Module](#incidents-module)
   - [Installation Tokens Module](#installation-tokens-module)
   - [Prevention Policies Module](#prevention-policies-module)
   - [Response Policies Module](#response-policies-module)
+  - [Data Protection Configuration Module](#data-protection-configuration-module)
   - [Device Control Policies Module](#device-control-policies-module)
   - [Firewall Policies Module](#firewall-policies-module)
   - [Sensor Update Policies Module](#sensor-update-policies-module)
@@ -142,10 +142,10 @@ The Falcon MCP Server supports different modules, each requiring specific API sc
 | **Hosts** | `Hosts:read`<br>`Host Groups:read`<br>`Host Groups:write`<br>`Host Migration:read`<br>`Host Migration:write` | Search hosts, manage host groups, and orchestrate migration workflows |
 | **Identity Protection** | `Identity Protection Entities:read`<br>`Identity Protection Timeline:read`<br>`Identity Protection Detections:read`<br>`Identity Protection Assessment:read`<br>`Identity Protection GraphQL:write` | Comprehensive entity investigation and identity protection analysis |
 | **User Management** | `User Management:read`<br>`User Management:write` | Full User Management coverage for aggregation, user/role discovery, grants, and controlled user/role actions |
-| **Incidents** | `Incidents:read`<br>`Incidents:write` | Full incidents coverage for crowd score, incident/behavior query+details, and controlled incident action workflows |
 | **Installation Tokens** | `Installation Tokens:read`<br>`Installation Tokens:write`<br>`Installation Tokens Settings:write` | Search and manage installation tokens, inspect audit events, and control tenant token settings |
 | **Prevention Policies** | `Prevention Policies:read`<br>`Prevention Policies:write` | Search and manage prevention policies, policy members, policy actions, and precedence ordering |
 | **Response Policies** | `Response Policies:read`<br>`Response Policies:write` | Search and manage response policies, policy members, policy actions, and precedence ordering |
+| **Data Protection Configuration** | `Data Protection Config:read`<br>`Data Protection Config:write` | Search and manage DLP policies, classifications, content patterns, cloud/local applications, enterprise accounts, file types, sensitivity labels, web locations, and policy precedence |
 | **Device Control Policies** | `Device Control Policies:read`<br>`Device Control Policies:write` | Search and manage device control policies, defaults, classes, precedence, actions, and policy member relationships |
 | **Firewall Policies** | `Firewall Policies:read`<br>`Firewall Policies:write` | Search and manage firewall policies, policy actions, precedence, and policy member relationships |
 | **Sensor Update Policies** | `Sensor Update Policies:read`<br>`Sensor Update Policies:write` | Search and manage sensor update policies, builds, kernels, precedence, actions, and uninstall token reveal workflows |
@@ -503,7 +503,7 @@ Provides read-only Device Content tools:
 Provides full Discover read coverage:
 
 - `falcon_search_applications`, `falcon_query_application_ids`, `falcon_get_application_details`
-- `falcon_search_hosts_combined`, `falcon_query_host_ids`, `falcon_get_host_details`, `falcon_search_hosts`
+- `falcon_search_hosts_combined`, `falcon_query_host_ids`, `falcon_get_discover_host_details`, `falcon_search_discover_hosts`
 - `falcon_search_unmanaged_assets` (enforces `entity_type:'unmanaged'`)
 - `falcon_query_account_ids`, `falcon_get_account_details`, `falcon_search_accounts`
 - `falcon_query_login_ids`, `falcon_get_login_details`, `falcon_search_logins`
@@ -621,12 +621,12 @@ Provides tools for hosts, host groups, and host migration workflows:
 
 - `falcon_search_hosts`: Search for hosts in your CrowdStrike environment
 - `falcon_get_host_details`: Retrieve detailed information for specific host device IDs
-- `falcon_search_host_groups`: Search host groups and return full group details
-- `falcon_search_host_group_members`: Search host group members and return full host records
+- `falcon_search_scoped_host_groups`: Search host groups, optionally in a Flight Control member CID
+- `falcon_search_scoped_host_group_members`: Search host group members, optionally in a Flight Control member CID
 - `falcon_add_host_group`: Create a host group
-- `falcon_update_host_group`: Update an existing host group
+- `falcon_update_scoped_host_group`: Update an existing host group, optionally in a Flight Control member CID
 - `falcon_remove_host_groups`: Delete host groups by ID
-- `falcon_perform_host_group_action`: Add/remove hosts in host groups using filters or action parameters
+- `falcon_perform_scoped_host_group_action`: Add/remove hosts in host groups, optionally in a Flight Control member CID
 - `falcon_search_migrations`: Search migration jobs and return full migration details
 - `falcon_search_host_migrations`: Search host migration entities within a migration job
 - `falcon_create_migration`: Create a host migration job
@@ -683,33 +683,6 @@ Provides full User Management service collection coverage:
 - `falcon://user-management/safety-guide`: Safety and operational guidance for IAM write actions
 
 **Use Cases**: IAM automation with guardrails, user access review, role assignment governance, least-privilege enforcement
-
-### Incidents Module
-
-**API Scopes Required**:
-
-- `Incidents:read`
-- `Incidents:write`
-
-Provides full Incidents service collection coverage:
-
-- `falcon_show_crowd_score`: View calculated CrowdScore records with environment-level score summaries
-- `falcon_search_incidents`: Search incidents and return full incident details (two-step query + detail retrieval)
-- `falcon_query_incident_ids`: Query incident IDs directly from FQL criteria
-- `falcon_get_incident_details`: Retrieve full incident records by ID
-- `falcon_search_behaviors`: Search incident behaviors and return full behavior details
-- `falcon_query_behavior_ids`: Query behavior IDs directly from FQL criteria
-- `falcon_get_behavior_details`: Retrieve full behavior records by ID
-- `falcon_perform_incident_action`: Apply incident update actions (`confirm_execution=true` required)
-
-**Resources**:
-
-- `falcon://incidents/crowd-score/fql-guide`: Comprehensive FQL documentation for CrowdScore queries
-- `falcon://incidents/search/fql-guide`: Comprehensive FQL documentation and examples for incident searches
-- `falcon://incidents/behaviors/fql-guide`: Comprehensive FQL documentation and examples for behavior searches
-- `falcon://incidents/actions/guide`: Incident action safety and parameter guidance
-
-**Use Cases**: Incident management, threat assessment, attack pattern analysis, analyst assignment/status updates, SOC triage workflow automation
 
 ### Installation Tokens Module
 
@@ -794,6 +767,45 @@ Provides full Response Policies service collection coverage:
 - `falcon://response-policies/safety-guide`: Operational guardrails for response policy write operations
 
 **Use Cases**: Response policy inventory, policy-member assignment analysis, controlled policy lifecycle actions, and precedence governance
+
+### Data Protection Configuration Module
+
+**API Scopes Required**:
+
+- `Data Protection Config:read`
+- `Data Protection Config:write`
+
+Provides full Data Protection Configuration service collection coverage:
+
+- Generic resource helpers:
+  - `falcon_query_data_protection_resources`
+  - `falcon_get_data_protection_resources`
+  - `falcon_create_data_protection_resource` (`confirm_execution=true` required)
+  - `falcon_update_data_protection_resource` (`confirm_execution=true` required)
+  - `falcon_delete_data_protection_resources` (`confirm_execution=true` required)
+- Data Protection policies:
+  - `falcon_query_data_protection_policy_ids`
+  - `falcon_get_data_protection_policies`
+  - `falcon_create_data_protection_policy` (`confirm_execution=true` required)
+  - `falcon_update_data_protection_policy` (`confirm_execution=true` required)
+  - `falcon_delete_data_protection_policies` (`confirm_execution=true` required)
+  - `falcon_set_data_protection_policy_precedence` (`confirm_execution=true` required)
+- Classifications, content patterns, cloud applications, enterprise accounts, sensitivity labels, local application groups, local applications, and web locations:
+  - `falcon_query_data_protection_*_ids`
+  - `falcon_get_data_protection_*`
+  - `falcon_create_data_protection_*` where supported (`confirm_execution=true` required)
+  - `falcon_update_data_protection_*` where supported (`confirm_execution=true` required)
+  - `falcon_delete_data_protection_*` where supported (`confirm_execution=true` required)
+- File types:
+  - `falcon_query_data_protection_file_type_ids`
+  - `falcon_get_data_protection_file_types`
+
+**Resources**:
+
+- `falcon://data-protection-configuration/guide`: Tool coverage and parameter guidance for Data Protection resources
+- `falcon://data-protection-configuration/safety-guide`: Operational guardrails for Data Protection write operations
+
+**Use Cases**: DLP policy governance, classification and content-pattern lifecycle management, sensitivity label inventory, cloud/local application controls, web location controls, file type lookup, and policy precedence orchestration
 
 ### Device Control Policies Module
 
@@ -1031,7 +1043,7 @@ Provides full FalconPy Intel service collection coverage:
 - MITRE:
   - `falcon_query_mitre_attacks`, `falcon_query_mitre_attacks_for_malware`, `falcon_get_mitre_attack_details`, `falcon_get_mitre_report`
 - Vulnerabilities:
-  - `falcon_query_vulnerability_ids`, `falcon_get_vulnerability_details`
+  - `falcon_query_intel_vulnerability_ids`, `falcon_get_intel_vulnerability_details`
 
 **Resources**:
 
@@ -1546,7 +1558,7 @@ FALCON_CLIENT_SECRET=your-client-secret
 FALCON_BASE_URL=https://api.crowdstrike.com
 
 # Optional Configuration (uncomment and modify as needed)
-#FALCON_MCP_MODULES=detections,incidents,intel
+#FALCON_MCP_MODULES=detections,hosts,intel
 #FALCON_MCP_TRANSPORT=stdio
 #FALCON_MCP_DEBUG=false
 #FALCON_MCP_HOST=127.0.0.1
@@ -1570,7 +1582,7 @@ export FALCON_CLIENT_SECRET="your-client-secret"
 export FALCON_BASE_URL="https://api.crowdstrike.com"
 
 # Optional Configuration
-export FALCON_MCP_MODULES="detections,incidents,intel"  # Comma-separated list (default: all modules)
+export FALCON_MCP_MODULES="detections,hosts,intel"  # Comma-separated list (default: all modules)
 export FALCON_MCP_TRANSPORT="stdio"                     # Transport method: stdio, sse, streamable-http
 export FALCON_MCP_DEBUG="false"                         # Enable debug logging: true, false
 export FALCON_MCP_HOST="127.0.0.1"                      # Host for HTTP transports
@@ -1662,7 +1674,7 @@ Specify modules using comma-separated lists:
 
 ```bash
 # Enable specific modules
-falcon-mcp --modules detections,incidents,intel,spotlight,idp
+falcon-mcp --modules detections,hosts,intel,spotlight,idp
 
 # Enable only one module
 falcon-mcp --modules detections
@@ -1674,11 +1686,11 @@ Set the `FALCON_MCP_MODULES` environment variable:
 
 ```bash
 # Export environment variable
-export FALCON_MCP_MODULES=detections,incidents,intel,spotlight,idp
+export FALCON_MCP_MODULES=detections,hosts,intel,spotlight,idp
 falcon-mcp
 
 # Or set inline
-FALCON_MCP_MODULES=detections,incidents,intel,spotlight,idp falcon-mcp
+FALCON_MCP_MODULES=detections,hosts,intel,spotlight,idp falcon-mcp
 ```
 
 #### 3. Default Behavior (all modules)
@@ -1708,7 +1720,7 @@ from falcon_mcp.server import FalconMCPServer
 server = FalconMCPServer(
     base_url="https://api.us-2.crowdstrike.com",  # Optional, defaults to env var
     debug=True,  # Optional, enable debug logging
-    enabled_modules=["detections", "incidents", "spotlight", "idp"],  # Optional, defaults to all modules
+    enabled_modules=["detections", "hosts", "spotlight", "idp"],  # Optional, defaults to all modules
     api_key="your-api-key"  # Optional: API key for HTTP transport auth
 )
 
@@ -1742,7 +1754,7 @@ server = FalconMCPServer(
     client_id="your-client-id",           # Or retrieved from vault/secrets manager
     client_secret="your-client-secret",   # Or retrieved from vault/secrets manager
     base_url="https://api.us-2.crowdstrike.com",  # Optional
-    enabled_modules=["detections", "incidents"]   # Optional
+    enabled_modules=["detections", "hosts"]   # Optional
 )
 
 server.run()
@@ -1790,7 +1802,7 @@ docker run --rm -p 8080:8080 --env-file /path/to/.env \
 
 # Run with .env file and specific modules (stdio transport - requires -i flag)
 docker run -i --rm --env-file /path/to/.env \
-  quay.io/crowdstrike/falcon-mcp:latest --modules detections,incidents,spotlight,idp
+  quay.io/crowdstrike/falcon-mcp:latest --modules detections,hosts,spotlight,idp
 
 # Use a specific version instead of latest (stdio transport - requires -i flag)
 docker run -i --rm --env-file /path/to/.env \
@@ -1849,7 +1861,7 @@ You can integrate the Falcon MCP server with your editor or AI assistant. Here a
         "/path/to/.env",
         "falcon-mcp",
         "--modules",
-        "detections,incidents,intel"
+        "detections,hosts,intel"
       ]
     }
   }
@@ -1980,12 +1992,20 @@ Integration tests make real API calls to validate FalconPy operation names, HTTP
 - [End-to-End Testing Guide](docs/development/e2e_testing.md): Guide for running and understanding E2E tests
 - [Integration Testing Guide](docs/development/integration_testing.md): Guide for running integration tests with real API calls
 
+## Registries
+
+falcon-mcp is published to public MCP catalogs for discovery and one-click setup in compatible clients:
+
+- [MCP Registry](https://registry.modelcontextprotocol.io/?q=io.github.CrowdStrike%2Ffalcon-mcp&all=1)
+- [GitHub MCP Registry](https://github.com/mcp/CrowdStrike/falcon-mcp)
+- [Gemini CLI Extensions](https://geminicli.com/extensions/?name=CrowdStrikefalcon-mcp)
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Support
 
-This is a community-driven, open source project. While it is not an official CrowdStroke product, it is actively maintained by CrowdStrike and supported in collaboration with the open source developer community.
+This is a community-driven, open source project. While it is not an official CrowdStrike product, it is actively maintained by CrowdStrike and supported in collaboration with the open source developer community.
 
 For more information, please see our [SUPPORT](SUPPORT.md) file.

@@ -286,7 +286,7 @@ class MalQueryModule(BaseModule):
         patterns: list[dict[str, Any]] | None = None,
         yara_rule: str | None = None,
     ) -> dict[str, Any] | None:
-        payload = {}
+        payload: dict[str, Any] = {}
         filtered_options = {key: value for key, value in options.items() if value is not None}
         if filtered_options:
             payload["options"] = filtered_options

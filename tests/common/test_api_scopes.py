@@ -71,8 +71,6 @@ class TestApiScopes(unittest.TestCase):
         self.assertEqual(get_required_scopes("PatchEntitiesAlertsV1"), ["Alerts:write"])
         self.assertEqual(get_required_scopes("PatchEntitiesAlertsV2"), ["Alerts:write"])
         self.assertEqual(get_required_scopes("PatchEntitiesAlertsV3"), ["Alerts:write"])
-        self.assertEqual(get_required_scopes("QueryIncidents"), ["Incidents:read"])
-        self.assertEqual(get_required_scopes("PerformIncidentAction"), ["Incidents:write"])
         self.assertEqual(get_required_scopes("combined_applications"), ["Assets:read"])
         self.assertEqual(get_required_scopes("query_accounts"), ["Assets:read"])
         self.assertEqual(get_required_scopes("query_iot_hostsV2"), ["Assets:read"])
@@ -630,6 +628,28 @@ class TestApiScopes(unittest.TestCase):
             get_required_scopes("WorkflowExecute"),
             ["Workflow:write"],
         )
+        new_service_scope_examples = {
+            "ListAccessScopesExternal": "Access Scope:read",
+            "CreateAPIClient": "Api Client Mgmt:write",
+            "cloud_registration_cross_provider_get_account_aggregates": (
+                "Cloud Registration:write"
+            ),
+            "cloud_security_timeline_risks_enriched": "Cloud Security API Risks:read",
+            "UpdateThirdPartyPasskeyRegistry": "Falcon Id:write",
+            "PatchFederatedConnectionsConfig": "NGSIEM Data Connections API:write",
+            "EntitiesAgentTemplatesV1": "Charlotte AI Agent Definition:read",
+            "InvokePublishedAgentExternalV1": "Charlotte AI Agent Definition:write",
+            "EntitiesKnowledgeBaseFilesCreateV1": "Charlotte AI Agent Definition:write",
+            "CombinedKnowledgeBasesV1": "Charlotte AI Agent Definition:read",
+            "EntitiesModelsV1": "Charlotte AI Agent Definition:read",
+            "EntitiesSpansV1": "Charlotte AI Agent Definition:read",
+            "StreamInvocationResponseV1": "Charlotte AI Agent Definition:read",
+            "EntitiesToolsV1": "Charlotte AI Agent Definition:read",
+            "GetGroupUsersV1": "User Management:read",
+            "GroupUsersActionsV1Mixin0": "User Management:write",
+        }
+        for operation, scope in new_service_scope_examples.items():
+            self.assertEqual(get_required_scopes(operation), [scope])
         self.assertEqual(
             get_required_scopes("RTR_AggregateSessions"),
             ["Real Time Response:read"],
@@ -738,6 +758,36 @@ class TestApiScopes(unittest.TestCase):
         # Test with None (should handle gracefully)
         self.assertEqual(get_required_scopes(None), [])
 
+    def test_falconpy_1_6_6_published_scope_mappings(self):
+        expected = {
+            "DeleteAgentV1": ["Charlotte AI Agent Definition:write"],
+            "aggregateAgentSessionsV1": ["Aidr Events:read"],
+            "app_abuse_exclusions_report_v1": ["App Abuse Exclusions:read"],
+            "app_abuse_exclusions_create_v1": ["App Abuse Exclusions:write"],
+            "CreateQueryJob": ["Audit:read"],
+            "CombinedQueryAgents": ["Secure Access:read"],
+            "ClassifyDomains": ["Secure Access:write"],
+            "GetSCMRepositoryAggregates": ["Code Security Scm Inventory:read"],
+            "TriggerSCMSync": ["Code Security Scm Integration:write"],
+            "CreateContainmentAllowlistRules": ["Network Containment Allowlist:write"],
+            "query_detections": ["Network scanning:read"],
+            "EntitiesSkillsCreateV1": ["Charlotte AI Agent Definition:write"],
+            "PatchAgentInvocationV3": ["Charlotte AI Agent Definition:write"],
+            "aspm_combined_application_findings": ["Cloud Security API Assets:read"],
+            "cloud_registration_gcp_post_infra_manager_script": [
+                "Cloud Security Google Cloud Registration:write"
+            ],
+            "GetParserRollbackOptions": ["NGSIEM Parsers:read"],
+            "BulkCreatePersistedAggregations": ["Ngsiem Persisted Aggregations:write"],
+            "CreateAppJournalCommentV3": ["SaaS Security (Falcon Shield):write"],
+            "aggregateUsersV2": ["User management:write"],
+            "getUserInvitationsGETV1": ["User management:write"],
+        }
+
+        for operation, scopes in expected.items():
+            with self.subTest(operation=operation):
+                self.assertEqual(get_required_scopes(operation), scopes)
+
     def test_all_operations_have_scope_mappings(self):
         """Test that all operations used in modules have scope mappings defined."""
         # Extract all operations from module files
@@ -820,8 +870,6 @@ class TestApiScopes(unittest.TestCase):
             ("PatchEntitiesAlertsV1", ["Alerts:write"]),
             ("PatchEntitiesAlertsV2", ["Alerts:write"]),
             ("PatchEntitiesAlertsV3", ["Alerts:write"]),
-            ("QueryIncidents", ["Incidents:read"]),
-            ("PerformIncidentAction", ["Incidents:write"]),
             ("combined_applications", ["Assets:read"]),
             ("query_accounts", ["Assets:read"]),
             ("query_iot_hostsV2", ["Assets:read"]),
@@ -1098,8 +1146,9 @@ class TestApiScopes(unittest.TestCase):
                 scope_patterns[resource].add(permission)
 
         # Validate that most resources use consistent permission patterns
+        # "Hosts" is deliberately absent: UpdateDeviceTags needs Hosts:write.
         read_only_resources = [
-            "Hosts", "Vulnerabilities",
+            "Vulnerabilities",
             "Assets", "Sensor Usage", "Scheduled Reports",
             "Real Time Response", "Real Time Response Audit", "CAO Hunting",
             "Zero Trust Assessment", "Sensor Download", "event-streams",
@@ -1152,7 +1201,7 @@ class TestApiScopes(unittest.TestCase):
         """Test that we have reasonable coverage across expected modules."""
         # Count operations by likely module based on operation patterns
         module_patterns = {
-            "alerts": ["GetQueriesAlertsV2", "PostEntitiesAlertsV2"],
+            "alerts": ["GetQueriesAlertsV2", "PostEntitiesAlertsV2", "PatchEntitiesAlertsV3"],
             "hosts": ["QueryDevicesByFilter", "PostDeviceDetailsV2"],
             "host_groups": [
                 "queryHostGroups",
@@ -1217,7 +1266,6 @@ class TestApiScopes(unittest.TestCase):
                 "ITAutomationCancelTaskExecution",
                 "ITAutomationRerunTaskExecution",
             ],
-            "incidents": ["QueryIncidents", "GetIncidents", "QueryBehaviors", "GetBehaviors", "CrowdScore"],
             "intel": [
                 "QueryIntelActorIds",
                 "QueryIntelActorEntities",

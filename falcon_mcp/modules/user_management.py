@@ -211,7 +211,7 @@ class UserManagementModule(BaseModule):
         ),
     ) -> list[dict[str, Any]] | dict[str, Any]:
         """Search users and return full user details."""
-        user_ids = self._base_search_api_call(
+        user_ids, pagination = self._base_search_with_meta(
             operation="queryUserV1",
             search_params={
                 "filter": filter,
@@ -228,9 +228,7 @@ class UserManagementModule(BaseModule):
             )
 
         if not user_ids:
-            if filter:
-                return self._format_fql_error_response([], filter, SEARCH_USERS_FQL_DOCUMENTATION)
-            return []
+            return self._build_pagination_envelope([], pagination, filter)
 
         details = self._base_get_by_ids(
             operation="retrieveUsersGETV1",
@@ -242,7 +240,8 @@ class UserManagementModule(BaseModule):
         if self._is_error(details):
             return [details]
 
-        return details
+        details = self._reorder_by_ids(user_ids, details, id_field="uuid")
+        return self._build_pagination_envelope(details, pagination, filter)
 
     def get_user_details(
         self,
@@ -443,9 +442,7 @@ class UserManagementModule(BaseModule):
             return [result]
 
         if not result and filter:
-            return self._format_fql_error_response(
-                [], filter, USER_ROLE_GRANTS_FQL_DOCUMENTATION
-            )
+            return self._format_fql_error_response([], filter, USER_ROLE_GRANTS_FQL_DOCUMENTATION)
 
         return result
 

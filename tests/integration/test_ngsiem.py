@@ -56,8 +56,8 @@ class TestNGSIEMIntegration(BaseIntegrationTest):
 
         self.assert_no_error(result, context="search_ngsiem")
 
-        # Result should be a list (events)
-        assert isinstance(result, list), f"Expected list of events, got {type(result)}"
+        events = self._unwrap_results(result)
+        assert isinstance(events, list), f"Expected list of events, got {type(events)}"
 
     def test_operation_names_are_correct(self):
         """Validate that FalconPy operation names work against real API.
@@ -108,7 +108,7 @@ class TestNGSIEMIntegration(BaseIntegrationTest):
         )
 
         self.assert_no_error(result, context="search with no matches")
-        assert isinstance(result, list), f"Expected list, got {type(result)}"
+        assert self._unwrap_results(result) == [], "Expected no events for an absent aid"
 
     def test_search_ngsiem_with_repository_parameter(self):
         """Test search with explicit repository parameter."""
@@ -125,7 +125,7 @@ class TestNGSIEMIntegration(BaseIntegrationTest):
 
         # May return events or empty list depending on environment
         self.assert_no_error(result, context="search with investigate_view repository")
-        assert isinstance(result, list), f"Expected list, got {type(result)}"
+        assert isinstance(self._unwrap_results(result), list)
 
     def test_search_ngsiem_invalid_repository_returns_error(self):
         """Test that an invalid repository value returns an error."""
@@ -156,11 +156,12 @@ class TestNGSIEMIntegration(BaseIntegrationTest):
         )
 
         self.assert_no_error(result, context="search_ngsiem event structure")
-        assert isinstance(result, list), f"Expected list, got {type(result)}"
+        events = self._unwrap_results(result)
+        assert isinstance(events, list), f"Expected list, got {type(events)}"
 
         # Only validate structure if events exist
-        if len(result) > 0:
-            first_event = result[0]
+        if len(events) > 0:
+            first_event = events[0]
             assert isinstance(first_event, dict), f"Expected event dict, got {type(first_event)}"
             # Events should have at least a timestamp field
             assert "@timestamp" in first_event or "timestamp" in first_event, (
@@ -181,7 +182,7 @@ class TestNGSIEMIntegration(BaseIntegrationTest):
         )
 
         self.assert_no_error(result, context="search with special characters")
-        assert isinstance(result, list), f"Expected list, got {type(result)}"
+        assert isinstance(self._unwrap_results(result), list)
 
     def test_search_ngsiem_timeout_returns_error(self):
         """Test that a search exceeding the timeout returns a timeout error.

@@ -426,7 +426,7 @@ class ContentUpdatePoliciesModule(BaseModule):
                     )
                 ]
 
-            resource = {
+            resource: dict[str, Any] = {
                 "name": name,
                 "platform_name": platform_name,
             }
@@ -504,7 +504,7 @@ class ContentUpdatePoliciesModule(BaseModule):
                     )
                 ]
 
-            resource = {"id": id}
+            resource: dict[str, Any] = {"id": id}
             if description is not None:
                 resource["description"] = description
             if name is not None:

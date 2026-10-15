@@ -51,7 +51,9 @@ class IntelModule(BaseModule):
 
         self._add_tool(server=server, method=self.search_indicators, name="search_indicators")
         self._add_tool(server=server, method=self.query_indicator_ids, name="query_indicator_ids")
-        self._add_tool(server=server, method=self.get_indicator_details, name="get_indicator_details")
+        self._add_tool(
+            server=server, method=self.get_indicator_details, name="get_indicator_details"
+        )
 
         self._add_tool(server=server, method=self.search_reports, name="search_reports")
         self._add_tool(server=server, method=self.query_report_ids, name="query_report_ids")
@@ -82,18 +84,20 @@ class IntelModule(BaseModule):
             method=self.query_mitre_attacks_for_malware,
             name="query_mitre_attacks_for_malware",
         )
-        self._add_tool(server=server, method=self.get_mitre_attack_details, name="get_mitre_attack_details")
+        self._add_tool(
+            server=server, method=self.get_mitre_attack_details, name="get_mitre_attack_details"
+        )
         self._add_tool(server=server, method=self.get_mitre_report, name="get_mitre_report")
 
         self._add_tool(
             server=server,
             method=self.query_vulnerability_ids,
-            name="query_vulnerability_ids",
+            name="query_intel_vulnerability_ids",
         )
         self._add_tool(
             server=server,
             method=self.get_vulnerability_details,
-            name="get_vulnerability_details",
+            name="get_intel_vulnerability_details",
         )
 
     def register_resources(self, server: FastMCP) -> None:
@@ -214,10 +218,6 @@ class IntelModule(BaseModule):
             default=False,
             description="Include related indicators.",
         ),
-        fields: list[str] | None = Field(
-            default=None,
-            description="Specific fields to return (or collection alias such as `__full__`).",
-        ),
     ) -> list[dict[str, Any]]:
         """Query indicator entities (QueryIntelIndicatorEntities)."""
         return self._run_search(
@@ -230,7 +230,6 @@ class IntelModule(BaseModule):
                 "q": q,
                 "include_deleted": include_deleted,
                 "include_relations": include_relations,
-                "fields": fields,
             },
             error_message="Failed to search indicators",
         )
@@ -337,7 +336,9 @@ class IntelModule(BaseModule):
     def get_report_details(
         self,
         ids: list[str] | None = Field(default=None, description="Report IDs to retrieve."),
-        fields: list[str] | None = Field(default=None, description="Optional list of report fields."),
+        fields: list[str] | None = Field(
+            default=None, description="Optional list of report fields."
+        ),
     ) -> list[dict[str, Any]]:
         """Get report entities by ID (GetIntelReportEntities)."""
         return self._run_get_by_ids(
@@ -372,7 +373,9 @@ class IntelModule(BaseModule):
         offset: int = Field(default=0, ge=0, description="Result set offset."),
         sort: str | None = Field(default=None, description="Sort expression."),
         name: list[str] | None = Field(default=None, description="Rule title filter list."),
-        description: list[str] | None = Field(default=None, description="Description substring filters."),
+        description: list[str] | None = Field(
+            default=None, description="Description substring filters."
+        ),
         tags: list[str] | None = Field(default=None, description="Rule tag filters."),
         min_created_date: int | None = Field(
             default=None,
@@ -487,7 +490,9 @@ class IntelModule(BaseModule):
         offset: int | None = Field(default=None, description="Result set offset."),
         sort: str | None = Field(default=None, description="Sort expression."),
         q: str | None = Field(default=None, description="Free-text search."),
-        fields: list[str] | None = Field(default=None, description="Specific malware fields to return."),
+        fields: list[str] | None = Field(
+            default=None, description="Specific malware fields to return."
+        ),
     ) -> list[dict[str, Any]]:
         """Query malware entities (QueryMalwareEntities)."""
         return self._run_search(
@@ -608,7 +613,9 @@ class IntelModule(BaseModule):
         )
 
         if self._is_error(api_response):
-            return [api_response]
+            return self._format_fql_error_response(
+                [api_response], filter, QUERY_REPORT_ENTITIES_FQL_DOCUMENTATION
+            )
 
         return api_response
 
@@ -638,7 +645,11 @@ class IntelModule(BaseModule):
                 error_message="Failed to search for actor by name",
             )
 
-            if search_results and isinstance(search_results[0], dict) and "error" in search_results[0]:
+            if (
+                search_results
+                and isinstance(search_results[0], dict)
+                and "error" in search_results[0]
+            ):
                 return search_results
 
             if not search_results or not isinstance(search_results[0], dict):

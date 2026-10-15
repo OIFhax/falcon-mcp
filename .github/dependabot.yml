@@ -4,42 +4,54 @@ updates:
   - package-ecosystem: "uv"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "monthly"
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: "deps(python):"
     labels:
       - "dependencies"
       - "python"
-
-  # Backup configuration (pip ecosystem)
-  # - package-ecosystem: "pip"
-  #   directory: "/"
-  #   schedule:
-  #     interval: "daily"
-  #   commit-message:
-  #     prefix: "deps(python):"
-  #   labels:
-  #     - "dependencies"
-  #     - "python"
+    groups:
+      python-all:
+        applies-to: version-updates
+        patterns:
+          - "*"
+      python-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
 
   # GitHub Actions configuration
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: "deps(actions):"
     labels:
       - "dependencies"
       - "github-actions"
+    groups:
+      actions-all:
+        patterns:
+          - "*"
 
   # Docker configuration
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: "deps(docker):"
     labels:
       - "dependencies"
       - "docker"
+    groups:
+      docker-all:
+        patterns:
+          - "*"

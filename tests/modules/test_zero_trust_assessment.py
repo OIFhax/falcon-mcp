@@ -19,6 +19,7 @@ class TestZeroTrustAssessmentModule(TestModules):
     def test_register_tools(self):
         """Test registering tools with the server."""
         expected_tools = [
+            "falcon_search_zta_assessments",
             "falcon_search_zta_assessments_by_score",
             "falcon_search_zta_combined_assessments",
             "falcon_get_zta_assessment_details",

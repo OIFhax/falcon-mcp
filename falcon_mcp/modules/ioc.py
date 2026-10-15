@@ -82,7 +82,7 @@ class IOCModule(BaseModule):
         self,
         filter: str | None = Field(
             default=None,
-            description="FQL filter to limit IOC search results. IMPORTANT: use the `falcon://ioc/search/fql-guide` resource when building this filter parameter.",
+            description="FQL filter expression. See `falcon://ioc/search/fql-guide` for syntax.",
             examples={"type:'domain'+expired:false", "source:'mcp'"},
         ),
         limit: int = Field(
@@ -90,10 +90,6 @@ class IOCModule(BaseModule):
             ge=1,
             le=500,
             description="Maximum number of IOC IDs to return from search. (Max: 500)",
-        ),
-        offset: int | None = Field(
-            default=None,
-            description="Starting index of overall result set from which to return IDs.",
         ),
         sort: str | None = Field(
             default=None,
@@ -104,10 +100,12 @@ class IOCModule(BaseModule):
                 action, applied_globally, created_on, expiration, modified_on,
                 severity_number, source, type, value
 
-                Supported formats: 'field.asc', 'field.desc', 'field|asc', 'field|desc'
-                Examples: 'modified_on.desc', 'severity_number|desc'
+                Prefer the dot separator ('field.desc'), which is supported on
+                every Falcon sort endpoint. The pipe form ('field|desc') also
+                works here.
+                Examples: 'modified_on.desc', 'severity_number.desc'
             """).strip(),
-            examples={"modified_on.desc", "severity_number|desc"},
+            examples={"modified_on.desc", "severity_number.desc"},
         ),
         after: str | None = Field(
             default=None,
@@ -120,15 +118,16 @@ class IOCModule(BaseModule):
     ) -> list[dict[str, Any]] | dict[str, Any]:
         """Search custom IOCs and return full IOC details.
 
-        IMPORTANT: You must use the `falcon://ioc/search/fql-guide` resource
-        when you need to use the `filter` parameter.
+        Use this to find IOCs by type, value, action, severity, or expiration status.
+        Consult falcon://ioc/search/fql-guide before constructing filter expressions.
+        Returns full indicator records including metadata, platforms, and host groups.
+        Responses include `pagination.total` (the total number of records matching the filter, or null when the API does not report a count) — use it to answer "how many" questions. For cursor-based paging, use `pagination.next` as the `after` parameter on the next call.
         """
-        indicator_ids = self._base_search_api_call(
+        indicator_ids, pagination = self._base_search_with_meta(
             operation="indicator_search_v1",
             search_params={
                 "filter": filter,
                 "limit": limit,
-                "offset": offset,
                 "sort": sort,
                 "after": after,
                 "from_parent": from_parent,
@@ -142,7 +141,7 @@ class IOCModule(BaseModule):
             )
 
         if not indicator_ids:
-            return self._format_fql_error_response([], filter, SEARCH_IOCS_FQL_DOCUMENTATION)
+            return self._build_pagination_envelope([], pagination, filter)
 
         details = self._base_get_by_ids(
             operation="indicator_get_v1",
@@ -153,7 +152,9 @@ class IOCModule(BaseModule):
         if self._is_error(details):
             return [details]
 
-        return details
+        # Restore the query-step sort order if the details endpoint reorders results.
+        details = self._reorder_by_ids(indicator_ids, details, id_field="id")
+        return self._build_pagination_envelope(details, pagination, filter)
 
     def add_ioc(
         self,
@@ -230,7 +231,11 @@ class IOCModule(BaseModule):
             description="Whether to submit IOCs to retrodetect processing.",
         ),
     ) -> list[dict[str, Any]]:
-        """Create one or more custom IOCs."""
+        """Create one or more custom IOCs.
+
+        Provide type/value/action for a single IOC, or pass a bulk indicators array.
+        Returns the created indicator records on success.
+        """
         payload_or_error = self._build_add_ioc_payload(
             type=type,
             value=value,
@@ -287,8 +292,12 @@ class IOCModule(BaseModule):
             default=None,
             description="Limit action to IOCs originating from the MSSP parent.",
         ),
-    ) -> list[dict[str, Any]]:
-        """Remove custom IOCs by IDs or FQL filter."""
+    ) -> dict[str, Any] | list[dict[str, Any]]:
+        """Remove custom IOCs by IDs or FQL filter.
+
+        Provide either specific IDs or an FQL filter for bulk removal. If both are
+        given, filter takes precedence. Returns a success summary with deleted IOC IDs.
+        """
         if not ids and not filter:
             return [
                 _format_error_response(
@@ -312,7 +321,11 @@ class IOCModule(BaseModule):
         if self._is_error(result):
             return [result]
 
-        return result
+        return {
+            "status": "deleted",
+            "deleted_ids": result,
+            "count": len(result),
+        }
 
     def _build_add_ioc_payload(
         self,

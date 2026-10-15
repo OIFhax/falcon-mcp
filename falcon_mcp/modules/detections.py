@@ -1,7 +1,7 @@
 """Detections module for Falcon MCP Server."""
 
 from textwrap import dedent
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from mcp.server import FastMCP
 from mcp.server.fastmcp.resources import TextResource
@@ -29,6 +29,9 @@ WRITE_ANNOTATIONS = ToolAnnotations(
 
 logger = get_logger(__name__)
 
+DETECTION_DETAIL_BATCH_SIZE = 500
+MAX_UPDATE_COMPOSITE_IDS = 1000
+
 
 class DetectionsModule(BaseModule):
     """Module for accessing and managing CrowdStrike Falcon detections."""
@@ -41,9 +44,15 @@ class DetectionsModule(BaseModule):
             method=self.search_detections_combined,
             name="search_detections_combined",
         )
-        self._add_tool(server=server, method=self.query_detection_ids_v1, name="query_detection_ids_v1")
-        self._add_tool(server=server, method=self.query_detection_ids_v2, name="query_detection_ids_v2")
-        self._add_tool(server=server, method=self.get_detection_details, name="get_detection_details")
+        self._add_tool(
+            server=server, method=self.query_detection_ids_v1, name="query_detection_ids_v1"
+        )
+        self._add_tool(
+            server=server, method=self.query_detection_ids_v2, name="query_detection_ids_v2"
+        )
+        self._add_tool(
+            server=server, method=self.get_detection_details, name="get_detection_details"
+        )
         self._add_tool(
             server=server,
             method=self.get_detection_details_v1,
@@ -83,6 +92,24 @@ class DetectionsModule(BaseModule):
             annotations=WRITE_ANNOTATIONS,
         )
 
+        self._add_tool(
+            server=server,
+            method=self.aggregate_detections,
+            name="aggregate_detections",
+        )
+
+        self._add_tool(
+            server=server,
+            method=self.update_detections,
+            name="update_detections",
+            annotations=ToolAnnotations(
+                readOnlyHint=False,
+                destructiveHint=False,
+                idempotentHint=False,
+                openWorldHint=True,
+            ),
+        )
+
     def register_resources(self, server: FastMCP) -> None:
         """Register resources with the MCP server."""
         search_detections_fql_resource = TextResource(
@@ -112,7 +139,10 @@ class DetectionsModule(BaseModule):
         self,
         filter: str | None = Field(
             default=None,
-            description=EMBEDDED_FQL_SYNTAX,
+            description=(
+                "FQL filter expression. See `falcon://detections/search/fql-guide` for syntax.\n\n"
+                + EMBEDDED_FQL_SYNTAX
+            ),
             examples=["status:'new'+severity_name:'High'", "device.hostname:'DC*'"],
         ),
         limit: int = Field(
@@ -147,24 +177,43 @@ class DetectionsModule(BaseModule):
         ),
     ) -> list[dict[str, Any]] | dict[str, Any]:
         """Find detections by criteria and return their complete details."""
-        detection_ids = self.query_detection_ids_v2(
-            filter=filter,
-            limit=limit,
-            offset=offset,
-            q=q,
-            sort=sort,
-            include_hidden=include_hidden,
+        detection_ids, pagination = self._base_search_with_meta(
+            operation="GetQueriesAlertsV2",
+            search_params={
+                "filter": filter,
+                "limit": limit,
+                "offset": offset,
+                "q": q,
+                "sort": sort,
+                "include_hidden": include_hidden,
+            },
+            error_message="Failed to search detections",
         )
 
-        if isinstance(detection_ids, dict):
-            return detection_ids
+        if self._is_error(detection_ids):
+            return self._format_fql_error_response(
+                [detection_ids], filter, SEARCH_DETECTIONS_FQL_DOCUMENTATION
+            )
         if not detection_ids:
-            return []
+            return self._build_pagination_envelope([], pagination, filter)
 
-        return self.get_detection_details_v2(
-            composite_ids=detection_ids,
-            include_hidden=include_hidden,
+        ordered_detection_ids = cast(list[str], detection_ids)
+        details: list[dict[str, Any]] = []
+        for start in range(0, len(ordered_detection_ids), DETECTION_DETAIL_BATCH_SIZE):
+            detail_batch = self._base_get_by_ids(
+                operation="PostEntitiesAlertsV2",
+                ids=ordered_detection_ids[start : start + DETECTION_DETAIL_BATCH_SIZE],
+                id_key="composite_ids",
+                include_hidden=include_hidden,
+            )
+            if self._is_error(detail_batch):
+                return [detail_batch]
+            details.extend(detail_batch)
+
+        details = self._reorder_by_ids(
+            ordered_detection_ids, details, id_field="composite_id"
         )
+        return self._build_pagination_envelope(details, pagination, filter)
 
     def search_detections_combined(
         self,
@@ -402,12 +451,11 @@ class DetectionsModule(BaseModule):
                 )
             ]
 
-        details = self._base_query_api_call(
+        details = self._base_get_by_ids(
             operation="PostEntitiesAlertsV2",
-            query_params={"include_hidden": include_hidden},
-            body_params={"composite_ids": composite_ids},
-            error_message="Failed to retrieve detection details (v2)",
-            default_result=[],
+            ids=composite_ids,
+            id_key="composite_ids",
+            parameters={"include_hidden": include_hidden},
         )
 
         if self._is_error(details):
@@ -507,13 +555,17 @@ class DetectionsModule(BaseModule):
         ),
         append_comment: str | None = Field(default=None, description="Append a comment."),
         assign_to_name: str | None = Field(default=None, description="Assign to Falcon username."),
-        assign_to_user_id: str | None = Field(default=None, description="Assign to Falcon user ID."),
+        assign_to_user_id: str | None = Field(
+            default=None, description="Assign to Falcon user ID."
+        ),
         assign_to_uuid: str | None = Field(default=None, description="Assign to Falcon user UUID."),
         new_behavior_processed: str | None = Field(
             default=None,
             description="Associate newly processed behavior metadata.",
         ),
-        show_in_ui: bool | None = Field(default=None, description="Show or hide detections in Falcon UI."),
+        show_in_ui: bool | None = Field(
+            default=None, description="Show or hide detections in Falcon UI."
+        ),
         unassign: bool | None = Field(
             default=None,
             description="Set true to clear any current assignment.",
@@ -571,13 +623,17 @@ class DetectionsModule(BaseModule):
         ),
         append_comment: str | None = Field(default=None, description="Append a comment."),
         assign_to_name: str | None = Field(default=None, description="Assign to Falcon username."),
-        assign_to_user_id: str | None = Field(default=None, description="Assign to Falcon user ID."),
+        assign_to_user_id: str | None = Field(
+            default=None, description="Assign to Falcon user ID."
+        ),
         assign_to_uuid: str | None = Field(default=None, description="Assign to Falcon user UUID."),
         new_behavior_processed: str | None = Field(
             default=None,
             description="Associate newly processed behavior metadata.",
         ),
-        show_in_ui: bool | None = Field(default=None, description="Show or hide detections in Falcon UI."),
+        show_in_ui: bool | None = Field(
+            default=None, description="Show or hide detections in Falcon UI."
+        ),
         unassign: bool | None = Field(
             default=None,
             description="Set true to clear any current assignment.",
@@ -635,13 +691,17 @@ class DetectionsModule(BaseModule):
         ),
         append_comment: str | None = Field(default=None, description="Append a comment."),
         assign_to_name: str | None = Field(default=None, description="Assign to Falcon username."),
-        assign_to_user_id: str | None = Field(default=None, description="Assign to Falcon user ID."),
+        assign_to_user_id: str | None = Field(
+            default=None, description="Assign to Falcon user ID."
+        ),
         assign_to_uuid: str | None = Field(default=None, description="Assign to Falcon user UUID."),
         new_behavior_processed: str | None = Field(
             default=None,
             description="Associate newly processed behavior metadata.",
         ),
-        show_in_ui: bool | None = Field(default=None, description="Show or hide detections in Falcon UI."),
+        show_in_ui: bool | None = Field(
+            default=None, description="Show or hide detections in Falcon UI."
+        ),
         unassign: bool | None = Field(
             default=None,
             description="Set true to clear any current assignment.",
@@ -830,3 +890,360 @@ class DetectionsModule(BaseModule):
                 return None
             return value.default
         return value
+
+    def aggregate_detections(
+        self,
+        field: str = Field(
+            description=(
+                "Alert field to aggregate on, such as `severity_name`, `status`, "
+                "`tactic`, `technique`, `product`, `device.hostname`, or `timestamp`. "
+                "See `falcon://detections/search/fql-guide` for the aggregatable fields."
+            ),
+            examples=["severity_name", "status", "tactic", "device.hostname"],
+        ),
+        type: Literal[
+            "terms",
+            "date_histogram",
+            "date_range",
+            "range",
+            "cardinality",
+            "max",
+            "min",
+            "avg",
+            "sum",
+            "percentiles",
+        ] = Field(
+            default="terms",
+            description=(
+                "Aggregation to run. Use `terms` to count alerts per distinct value, "
+                "`date_histogram` for a time series, `date_range` or `range` for "
+                "explicit buckets, and `cardinality` for a distinct-value count."
+            ),
+        ),
+        filter: str | None = Field(
+            default=None,
+            description=(
+                "FQL filter expression narrowing which alerts are counted. See "
+                "`falcon://detections/search/fql-guide` for syntax."
+            ),
+            examples=["status:'new'", "severity_name:'Critical'+product:'epp'"],
+        ),
+        size: int | None = Field(
+            default=10,
+            ge=1,
+            le=1000,
+            description="Maximum number of buckets to return for `terms` aggregations.",
+        ),
+        sort: str | None = Field(
+            default=None,
+            description=(
+                "Bucket ordering, using the pipe form only: `_count|desc` (most "
+                "alerts first), `_count|asc`, `_key|asc`, or `_key|desc`. The dot "
+                "form accepted by search sorts is rejected here."
+            ),
+            examples=["_count|desc", "_key|asc"],
+        ),
+        interval: Literal["hour", "day", "week", "month", "quarter", "year"] | None = Field(
+            default=None,
+            description=(
+                "Bucket width for `date_histogram` aggregations. Required whenever "
+                "`type` is `date_histogram`."
+            ),
+        ),
+        date_ranges: list[dict[str, str]] | None = Field(
+            default=None,
+            description=(
+                "Explicit time buckets for `date_range` aggregations, for example "
+                "`[{'from': 'now-7d', 'to': 'now'}]`. Required whenever `type` is "
+                "`date_range`."
+            ),
+            examples=[[{"from": "now-7d", "to": "now"}]],
+        ),
+        ranges: list[dict[str, Any]] | None = Field(
+            default=None,
+            description=(
+                "Numeric buckets for `range` aggregations, for example "
+                "`[{'From': 0, 'To': 50}]`. Required whenever `type` is `range`."
+            ),
+            examples=[[{"From": 0, "To": 50}, {"From": 50, "To": 100}]],
+        ),
+        percents: list[float] | None = Field(
+            default=None,
+            description="Percentiles to compute for `percentiles` aggregations.",
+            examples=[[50.0, 95.0]],
+        ),
+        missing: str | None = Field(
+            default=None,
+            description=(
+                "Label used for alerts that have no value for `field`, so they are "
+                "counted instead of dropped."
+            ),
+            examples=["Unassigned"],
+        ),
+        include: str | None = Field(
+            default=None,
+            description=(
+                "Keep only buckets whose key matches this regular expression, e.g. "
+                "`High|Critical`."
+            ),
+            examples=["High|Critical"],
+        ),
+        name: str = Field(
+            default="alert_aggregation",
+            description="Label echoed back on the returned aggregation.",
+        ),
+        time_zone: str | None = Field(
+            default=None,
+            description="UTC offset applied to date buckets, e.g. `+00:00`.",
+            examples=["+00:00"],
+        ),
+        sub_aggregates: list[dict[str, Any]] | None = Field(
+            default=None,
+            description=(
+                "Nested aggregations applied within each bucket, each shaped like a "
+                "top-level spec, e.g. `[{'type': 'terms', 'field': 'status'}]`."
+            ),
+            examples=[[{"type": "terms", "field": "status", "size": 3}]],
+        ),
+        include_hidden: bool = Field(
+            default=True,
+            description=(
+                "Whether to count hidden alerts (default: True). Set False to match "
+                "the alert totals shown in the Falcon console."
+            ),
+        ),
+    ) -> list[dict[str, Any]] | dict[str, Any]:
+        """Count and summarize detections (also called alerts) without retrieving each record.
+
+        Use this for "how many" and "top N" questions — alerts per severity, status,
+        tactic, or host, distinct host counts, and alert volume over time — instead of
+        paging through falcon_search_detections. Consult
+        falcon://detections/search/fql-guide before constructing filter expressions.
+        Returns one aggregation per request holding `buckets`, which key on `label`
+        with a `count`; single-value aggregations (`cardinality`, `max`, `min`, `avg`,
+        `sum`) report their answer as `value` instead.
+        """
+        return self._base_aggregate(
+            operation="PostAggregatesAlertsV2",
+            agg_type=type,
+            field=field,
+            filter=filter,
+            name=name,
+            size=size,
+            sort=sort,
+            interval=interval,
+            date_ranges=date_ranges,
+            ranges=ranges,
+            percents=percents,
+            missing=missing,
+            include=include,
+            time_zone=time_zone,
+            sub_aggregates=sub_aggregates,
+            parameters={"include_hidden": include_hidden},
+            error_message="Failed to aggregate detections",
+        )
+
+
+    def update_detections(
+        self,
+        ids: list[str] = Field(
+            description="Composite ID(s) of the detection(s) to update.",
+        ),
+        status: str | None = Field(
+            default=None,
+            description=(
+                "New status for the detection(s). Allowed values: new, in_progress, "
+                "reopened, closed."
+            ),
+        ),
+        assign_to_uuid: str | None = Field(
+            default=None,
+            description=(
+                "UUID of the user to assign the detection(s) to. "
+                "Example: '00000000-0000-0000-0000-000000000000'."
+            ),
+        ),
+        assign_to_user_id: str | None = Field(
+            default=None,
+            description=(
+                "Email address of the user to assign the detection(s) to. "
+                "Example: 'analyst@example.com'."
+            ),
+        ),
+        assign_to_name: str | None = Field(
+            default=None,
+            description=(
+                "Full name of the user to assign the detection(s) to. Example: 'Jane Smith'."
+            ),
+        ),
+        unassign: bool | None = Field(
+            default=None,
+            description=(
+                "Pass True to remove the current assignee. False is a no-op; "
+                "only True has any effect."
+            ),
+        ),
+        append_comment: str | None = Field(
+            default=None,
+            description=(
+                "Comment to append to the detection(s). Comments are visible in the Falcon "
+                "console. Must be a non-empty, non-whitespace string."
+            ),
+        ),
+        show_in_ui: bool | None = Field(
+            default=None,
+            description="Whether to show the detection(s) in the Falcon UI. Set to False to hide.",
+        ),
+        add_tags: list[str] | None = Field(
+            default=None,
+            description=(
+                "Tags to add to the detection(s). Tags are free-form strings; any value is "
+                "accepted. "
+                "true_positive, false_positive, and ignored are the conventional resolution "
+                "tags the "
+                "Falcon console surfaces in its Resolution column — use them when recording "
+                "a resolution, "
+                "but they are guidance, not an enforced set."
+            ),
+        ),
+        remove_tags: list[str] | None = Field(
+            default=None,
+            description=(
+                "Tags to remove from the detection(s). Each value must match an existing "
+                "tag exactly."
+            ),
+        ),
+        remove_tags_by_prefix: str | None = Field(
+            default=None,
+            description=(
+                "Remove all tags on the detection(s) that start with this prefix (e.g. 'fc/')."
+            ),
+        ),
+    ) -> list[dict[str, Any]] | dict[str, Any]:
+        """Update the status, assignment, visibility, comments, and tags of one or more detections.
+
+        Use to change status (new, in_progress, reopened, closed), assign to a user by UUID,
+        email address, or full name, unassign, append a comment, hide/show detections in the UI,
+        or add/remove tags. Resolution is tag-based: applying the conventional tags true_positive,
+        false_positive, or ignored is what populates the console's Resolution view. At least one
+        update parameter must be provided. Requests covering more than 1000 detection IDs are
+        chunked automatically so none are silently dropped. Returns `[]` (empty list) on success, or
+        `{"result": [], "hint": "..."}` when closing without adding a resolution tag in this call;
+        returns an error dict on failure. If a later chunk fails after earlier chunks already
+        applied, the error dict carries a `partial_success` block listing the already-updated ids so
+        the caller can retry only the remainder rather than re-applying non-idempotent actions.
+        """
+        # Validate mutually exclusive assignment parameters
+        assignment_params = [assign_to_uuid, assign_to_user_id, assign_to_name]
+        if sum(p is not None for p in assignment_params) > 1:
+            return {
+                "error": (
+                    "Provide at most one of assign_to_uuid, assign_to_user_id, assign_to_name."
+                )
+            }
+
+        if unassign is True and any(p is not None for p in assignment_params):
+            return {"error": "Cannot combine unassign with an assignment parameter."}
+
+        if append_comment is not None and append_comment.strip() == "":
+            return {"error": "append_comment must not be empty."}
+
+        for tag in add_tags or []:
+            if tag.strip() == "":
+                return {"error": "add_tags must not contain empty or whitespace-only strings."}
+
+        for tag in remove_tags or []:
+            if tag.strip() == "":
+                return {"error": "remove_tags must not contain empty or whitespace-only strings."}
+
+        if remove_tags_by_prefix is not None and remove_tags_by_prefix.strip() == "":
+            return {"error": "remove_tags_by_prefix must not be empty or whitespace-only."}
+
+        _valid_statuses = {"new", "in_progress", "reopened", "closed"}
+        if status is not None and status not in _valid_statuses:
+            return {"error": f"status must be one of: {', '.join(sorted(_valid_statuses))}."}
+
+        if not ids:
+            return {"error": "At least one detection ID must be provided."}
+
+        action_parameters: list[dict[str, Any]] = []
+
+        str_params = {
+            "update_status": status,
+            "assign_to_uuid": assign_to_uuid,
+            "assign_to_user_id": assign_to_user_id,
+            "assign_to_name": assign_to_name,
+            "append_comment": append_comment,
+        }
+        for name, value in str_params.items():
+            if value is not None:
+                action_parameters.append({"name": name, "value": value})
+
+        # show_in_ui and unassign must be sent as strings — the API rejects JSON booleans
+        if show_in_ui is not None:
+            action_parameters.append({"name": "show_in_ui", "value": str(show_in_ui).lower()})
+        if unassign is True:
+            action_parameters.append({"name": "unassign", "value": "true"})
+
+        for tag in add_tags or []:
+            action_parameters.append({"name": "add_tag", "value": tag})
+        for tag in remove_tags or []:
+            action_parameters.append({"name": "remove_tag", "value": tag})
+        if remove_tags_by_prefix is not None:
+            action_parameters.append(
+                {"name": "remove_tags_by_prefix", "value": remove_tags_by_prefix}
+            )
+
+        if not action_parameters:
+            return {"error": "At least one update parameter must be provided."}
+
+        body_base = {"action_parameters": action_parameters}
+
+        # PatchEntitiesAlertsV3 rejects more than MAX_UPDATE_COMPOSITE_IDS ids per
+        # request with HTTP 413, so chunk larger requests and fail loudly if any
+        # batch errors rather than reporting success on a truncated update.
+        result: list[dict[str, Any]] | dict[str, Any] = []
+        for i in range(0, len(ids), MAX_UPDATE_COMPOSITE_IDS):
+            batch = ids[i : i + MAX_UPDATE_COMPOSITE_IDS]
+            batch_result = self._base_query_api_call(
+                operation="PatchEntitiesAlertsV3",
+                body_params={**body_base, "composite_ids": batch},
+                error_message="Failed to update detections",
+                default_result=[],
+            )
+
+            if self._is_error(batch_result):
+                # The API applies each batch independently and cannot roll back, so
+                # ids before this batch are already updated. Report how many so the
+                # caller can retry only the remainder instead of re-applying
+                # non-idempotent actions (e.g. append_comment) to earlier ids.
+                if i > 0:
+                    batch_result["partial_success"] = {
+                        "updated_ids": ids[:i],
+                        "updated_count": i,
+                        "failed_and_remaining_ids": ids[i:],
+                    }
+                return batch_result
+
+            if isinstance(batch_result, list):
+                result.extend(batch_result)
+
+        # Soft hint: closing without adding a resolution tag in this call may leave the
+        # detection out of the console's Resolution view. Non-fatal — only wraps the success
+        # case. We only know this call's add_tags, not any resolution tag set previously.
+        _resolution_tags = {"true_positive", "false_positive", "ignored"}
+        if (
+            not self._is_error(result)
+            and status == "closed"
+            and not _resolution_tags.intersection(add_tags or [])
+        ):
+            return {
+                "result": result,
+                "hint": (
+                    "No resolution tag was added in this update call. The console convention is to "
+                    "add true_positive, false_positive, or ignored when closing a detection so it "
+                    "appears in the Resolution view (skip if a resolution tag was already set)."
+                ),
+            }
+
+        return result

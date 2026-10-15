@@ -5,22 +5,30 @@ This module provides the Falcon API client and authentication utilities for the 
 """
 
 import contextvars
+import functools
 import os
 import platform
+import re
 import sys
+import threading
 from collections import deque
+from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from importlib.metadata import PackageNotFoundError, version
 from time import sleep
-from typing import Any
+from typing import Any, cast
 from urllib.parse import urlparse
+
+import anyio
+import requests
 
 # Import the APIHarnessV2 from FalconPy
 from falconpy import APIHarnessV2  # type: ignore[import-untyped]
 from requests.exceptions import Timeout as RequestsTimeout
 
 from falcon_mcp.common.logging import get_logger
+from falcon_mcp.common.utils import prepare_api_parameters
 
 logger = get_logger(__name__)
 
@@ -87,7 +95,7 @@ def _get_float_env(name: str, default: float) -> float:
 def _get_timeout_env(name: str, default: float | None) -> float | None:
     """Read a positive timeout value from the environment."""
     value = os.environ.get(name)
-    if value in (None, ""):
+    if value is None or value == "":
         return default
 
     try:
@@ -128,6 +136,8 @@ class FalconClient:
         user_agent_comment: str | None = None,
         client_id: str | None = None,
         client_secret: str | None = None,
+        member_cid: str | None = None,
+        proxy: str | None = None,
     ):
         """Initialize the Falcon client.
 
@@ -137,6 +147,8 @@ class FalconClient:
             user_agent_comment: Additional information to include in the User-Agent comment section
             client_id: Falcon API Client ID (defaults to FALCON_CLIENT_ID env var)
             client_secret: Falcon API Client Secret (defaults to FALCON_CLIENT_SECRET env var)
+            member_cid: Child CID for Flight Control (MSSP) support (defaults to FALCON_MEMBER_CID env var)
+            proxy: HTTP/HTTPS proxy URL for outbound Falcon API connections (defaults to FALCON_PROXY_URL env var)
         """
         # Get credentials from parameters or environment variables (parameters take precedence)
         self.client_id = client_id or os.environ.get("FALCON_CLIENT_ID")
@@ -148,6 +160,8 @@ class FalconClient:
         self.user_agent_comment = user_agent_comment or os.environ.get(
             "FALCON_MCP_USER_AGENT_COMMENT"
         )
+        self.member_cid = member_cid or os.environ.get("FALCON_MEMBER_CID")
+        self.proxy = proxy or os.environ.get("FALCON_PROXY_URL")
         self.http_timeout = _get_timeout_env("FALCON_MCP_HTTP_TIMEOUT_SECONDS", default=None)
         self.rtr_http_timeout = _get_timeout_env(
             "FALCON_MCP_RTR_HTTP_TIMEOUT_SECONDS",
@@ -169,7 +183,59 @@ class FalconClient:
         self.client = self._build_api_client(timeout=self.http_timeout)
         self._rtr_client: APIHarnessV2 | None = None
 
+        # Serializes the stale-token refresh path. Concurrent tool calls run their
+        # blocking FalconPy work on separate threads (see command_async); without this
+        # lock, several threads could observe a stale token at once and each fire its
+        # own POST /oauth2/token. The lock guards only the refresh, never the API call.
+        self._token_lock = threading.Lock()
+
         logger.debug("Initialized Falcon client with base URL: %s", self.base_url)
+        if self.member_cid:
+            logger.debug("Flight Control member_cid: %s", self.member_cid)
+
+    @property
+    def token_status(self) -> int | None:
+        """HTTP status code from the last authentication attempt."""
+        result: int | None = self.client.token_status
+        return result
+
+    @property
+    def token_fail_reason(self) -> str | None:
+        """Error message from the API when authentication failed."""
+        result: str | None = self.client.token_fail_reason
+        return result
+
+    def auth_failure_message(self) -> str:
+        """Build a diagnostic message after a failed authentication attempt."""
+        parts = ["Failed to authenticate with the Falcon API"]
+        if self.token_status:
+            parts[0] += f" (HTTP {self.token_status})"
+        if self.token_fail_reason:
+            parts.append(self.token_fail_reason)
+
+        if self.token_status == 401:
+            parts.append(
+                "Hint: Verify FALCON_CLIENT_ID and FALCON_CLIENT_SECRET are correct"
+                " and the API key has not been revoked."
+            )
+        elif self.token_status == 403 and self.member_cid:
+            parts.append(
+                f"Hint: A member_cid is configured ({self.member_cid})."
+                " Verify this is a valid child CID managed by your parent tenant,"
+                " not the parent CID itself."
+            )
+        elif self.token_status == 403:
+            parts.append(
+                "Hint: Verify the API client has the required scopes"
+                " and has not been disabled."
+            )
+        else:
+            parts.append(
+                f"Hint: Check network connectivity to {self.base_url}"
+                " and verify FALCON_BASE_URL is correct for your CrowdStrike region."
+            )
+
+        return ". ".join(parts)
 
     def authenticate(self) -> bool:
         """Authenticate with the Falcon API.
@@ -189,12 +255,24 @@ class FalconClient:
         result: bool = self.client.token_valid
         return result
 
+    def _ensure_token_fresh(self, api_client: APIHarnessV2 | None = None) -> None:
+        """Collapse concurrent stale-token refreshes into a single login."""
+        client = api_client or self.client
+        if not getattr(client, "token_stale", False) or not getattr(
+            client, "refreshable", False
+        ):
+            return
+
+        with self._token_lock:
+            if getattr(client, "token_stale", False):
+                client.login()
+
     @contextmanager
     def tool_context(
         self,
         tool_name: str,
         tool_parameters: dict[str, Any] | None = None,
-    ):
+    ) -> Iterator[None]:
         """Attach MCP tool context to downstream Falcon API calls."""
         token = _TOOL_CONTEXT.set(
             {
@@ -219,6 +297,7 @@ class FalconClient:
         """
         retry_attempts = self.max_retries if operation in RETRYABLE_OPERATIONS else 0
         api_client = self._get_operation_client(operation)
+        self._ensure_token_fresh(api_client)
 
         for attempt in range(retry_attempts + 1):
             timestamp = _utc_timestamp()
@@ -269,6 +348,119 @@ class FalconClient:
 
         raise RuntimeError(f"Unexpected retry flow termination for operation {operation}")
 
+    def raw_get_allowed(
+        self,
+        operation: str,
+        path: str,
+        *,
+        parameters: dict[str, Any] | None = None,
+        allowed_path_patterns: tuple[str, ...],
+    ) -> dict[str, Any]:
+        """Execute a narrowly allowlisted authenticated Falcon GET request.
+
+        This is intentionally not exposed as a generic MCP tool. It exists for
+        small Falcon API gaps where FalconPy has not published endpoint metadata
+        yet, and callers must provide explicit path regexes for every supported
+        route.
+        """
+        self._validate_raw_get_path(path=path, allowed_path_patterns=allowed_path_patterns)
+
+        if not self.is_authenticated() and not self.authenticate():
+            response = {
+                "status_code": self.token_status or 401,
+                "body": {
+                    "errors": [
+                        {
+                            "message": self.auth_failure_message(),
+                        }
+                    ]
+                },
+            }
+            self._record_tool_io(
+                operation=operation,
+                parameters={"path": path, "parameters": parameters or {}},
+                timestamp=_utc_timestamp(),
+                raw_response=response,
+                error_object=self._extract_error_object(response),
+                attempt=1,
+            )
+            return response
+
+        headers = dict(self.get_headers())
+        headers.setdefault(
+            "Accept",
+            "application/json, application/x-yaml, text/yaml, text/plain, */*",
+        )
+        headers.setdefault("User-Agent", self.get_user_agent())
+
+        request_kwargs: dict[str, Any] = {
+            "headers": headers,
+            "params": prepare_api_parameters(parameters or {}),
+            "timeout": self.http_timeout,
+        }
+        if self.proxy:
+            request_kwargs["proxies"] = {"https": self.proxy}
+
+        timestamp = _utc_timestamp()
+        url = f"{self.base_url.rstrip('/')}{path}"
+        try:
+            raw_response = requests.get(url, **request_kwargs)
+            response = self._normalize_raw_response(raw_response)
+        except RequestsTimeout as exc:
+            response = self._build_timeout_response(
+                operation=operation,
+                timeout_seconds=self.http_timeout,
+                exc=exc,
+            )
+        except Exception as exc:
+            self._record_tool_io(
+                operation=operation,
+                parameters={"path": path, "parameters": parameters or {}},
+                timestamp=timestamp,
+                raw_response=None,
+                error_object={
+                    "type": type(exc).__name__,
+                    "message": str(exc),
+                },
+                attempt=1,
+            )
+            raise
+
+        self._record_tool_io(
+            operation=operation,
+            parameters={"path": path, "parameters": parameters or {}},
+            timestamp=timestamp,
+            raw_response=response,
+            error_object=self._extract_error_object(response),
+            attempt=1,
+        )
+        return response
+
+    async def command_async(self, operation: str, **kwargs: Any) -> dict[str, Any]:
+        """Execute a Falcon API command off the event loop.
+
+        Runs the blocking FalconPy call on a worker thread so the asyncio event
+        loop stays free to service other in-flight requests. Async handlers (e.g.
+        ngsiem) should await this instead of calling the sync `command` directly;
+        sync handlers are offloaded automatically by the tool wrapper in
+        `BaseModule._add_tool`. The thread-pool cap and cancellation semantics
+        described on `offload_to_thread` apply here too — both share the same
+        default anyio limiter.
+
+        Args:
+            operation: The API operation to execute
+            **kwargs: Additional arguments to pass to the API
+
+        Returns:
+            dict[str, Any]: The API response
+        """
+        return cast(
+            dict[str, Any],
+            await anyio.to_thread.run_sync(
+                functools.partial(self.command, operation, **kwargs)
+            ),
+        )
+
     def get_user_agent(self) -> str:
         """Get RFC-compliant user agent string for API requests.
 
@@ -301,15 +493,68 @@ class FalconClient:
 
         return f"falcon-mcp/{falcon_mcp_version} ({'; '.join(comment_parts)})"
 
+    def _validate_raw_get_path(
+        self,
+        *,
+        path: str,
+        allowed_path_patterns: tuple[str, ...],
+    ) -> None:
+        """Validate that a raw path is relative to Falcon and explicitly allowlisted."""
+        if not allowed_path_patterns:
+            raise ValueError("raw GET requests require at least one allowlisted path pattern")
+
+        parsed = urlparse(path)
+        if parsed.scheme or parsed.netloc or parsed.query or parsed.fragment or not path.startswith("/"):
+            raise ValueError("raw GET path must be an absolute Falcon API path without host/query/fragment")
+
+        if not any(re.fullmatch(pattern, path) for pattern in allowed_path_patterns):
+            raise ValueError(f"raw GET path is not allowlisted: {path}")
+
+    def _normalize_raw_response(self, response: requests.Response) -> dict[str, Any]:
+        """Convert a requests response into the FalconPy-like response shape."""
+        headers = dict(response.headers)
+        content_type = headers.get("Content-Type", headers.get("content-type", ""))
+        if "json" in content_type.lower():
+            try:
+                body: Any = response.json()
+            except ValueError:
+                body = {"raw": response.text}
+        else:
+            body = {"raw": response.text}
+
+        return {
+            "status_code": response.status_code,
+            "headers": headers,
+            "body": body,
+        }
+
     def _build_api_client(self, timeout: float | None) -> APIHarnessV2:
         """Create a FalconPy client with the configured transport timeout."""
-        return APIHarnessV2(
-            client_id=self.client_id,
-            client_secret=self.client_secret,
+        api_params: dict[str, Any] = {
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
+            "base_url": self.base_url,
+            "debug": self.debug,
+            "user_agent": self.get_user_agent(),
+            "timeout": timeout,
+        }
+        if self.member_cid:
+            api_params["member_cid"] = self.member_cid
+        if self.proxy:
+            api_params["proxy"] = {"https": self.proxy}
+
+        return APIHarnessV2(**api_params)
+
+    def clone_for_member_cid(self, member_cid: str | None) -> "FalconClient":
+        """Create a new Falcon client scoped to a Flight Control child CID."""
+        return FalconClient(
             base_url=self.base_url,
             debug=self.debug,
-            user_agent=self.get_user_agent(),
-            timeout=timeout,
+            user_agent_comment=self.user_agent_comment,
+            client_id=self.client_id,
+            client_secret=self.client_secret,
+            member_cid=member_cid,
+            proxy=self.proxy,
         )
 
     def _get_operation_client(self, operation: str) -> APIHarnessV2:

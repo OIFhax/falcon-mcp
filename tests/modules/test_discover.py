@@ -22,8 +22,8 @@ class TestDiscoverModule(TestModules):
             "falcon_get_application_details",
             "falcon_search_hosts_combined",
             "falcon_query_host_ids",
-            "falcon_get_host_details",
-            "falcon_search_hosts",
+            "falcon_get_discover_host_details",
+            "falcon_search_discover_hosts",
             "falcon_search_unmanaged_assets",
             "falcon_query_account_ids",
             "falcon_get_account_details",
@@ -35,6 +35,7 @@ class TestDiscoverModule(TestModules):
             "falcon_query_iot_host_ids_v2",
             "falcon_get_iot_host_details",
             "falcon_search_iot_hosts",
+            "falcon_search_managed_assets",
         ]
         self.assert_tools_registered(expected_tools)
 
@@ -43,6 +44,7 @@ class TestDiscoverModule(TestModules):
         expected_resources = [
             "falcon_search_applications_fql_guide",
             "falcon_search_unmanaged_assets_fql_guide",
+            "falcon_search_managed_assets_fql_guide",
         ]
         self.assert_resources_registered(expected_resources)
 

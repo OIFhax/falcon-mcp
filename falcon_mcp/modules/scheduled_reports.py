@@ -113,22 +113,33 @@ class ScheduledReportsModule(BaseModule):
         q: str | None = Field(default=None, description="Free-text query."),
     ) -> list[dict[str, Any]] | dict[str, Any]:
         """Search scheduled reports and return full details."""
-        report_ids = self.query_scheduled_report_ids(
-            filter=filter,
-            limit=limit,
-            offset=offset,
-            sort=sort,
-            q=q,
+        report_ids, pagination = self._base_search_with_meta(
+            operation="scheduled_reports_query",
+            search_params={
+                "filter": filter,
+                "limit": limit,
+                "offset": offset,
+                "sort": sort,
+                "q": q,
+            },
+            error_message="Failed to search for scheduled reports",
         )
 
         if self._is_error(report_ids):
             return [report_ids]
-        if isinstance(report_ids, dict):
-            return report_ids
         if not report_ids:
-            return []
+            return self._build_pagination_envelope([], pagination, filter)
 
-        return self.get_scheduled_report_details(ids=report_ids)
+        details = self._base_get_by_ids(
+            operation="scheduled_reports_get",
+            ids=report_ids,
+            use_params=True,
+        )
+        if self._is_error(details):
+            return [details]
+
+        details = self._reorder_by_ids(report_ids, details, id_field="id")
+        return self._build_pagination_envelope(details, pagination, filter)
 
     def query_scheduled_report_ids(
         self,
@@ -257,21 +268,32 @@ class ScheduledReportsModule(BaseModule):
         sort: str | None = Field(default=None, description="Sort expression."),
     ) -> list[dict[str, Any]] | dict[str, Any]:
         """Search report executions and return full details."""
-        execution_ids = self.query_report_execution_ids(
-            filter=filter,
-            limit=limit,
-            offset=offset,
-            sort=sort,
+        execution_ids, pagination = self._base_search_with_meta(
+            operation="report_executions_query",
+            search_params={
+                "filter": filter,
+                "limit": limit,
+                "offset": offset,
+                "sort": sort,
+            },
+            error_message="Failed to search for report executions",
         )
 
         if self._is_error(execution_ids):
             return [execution_ids]
-        if isinstance(execution_ids, dict):
-            return execution_ids
         if not execution_ids:
-            return []
+            return self._build_pagination_envelope([], pagination, filter)
 
-        return self.get_report_execution_details(ids=execution_ids)
+        details = self._base_get_by_ids(
+            operation="report_executions_get",
+            ids=execution_ids,
+            use_params=True,
+        )
+        if self._is_error(details):
+            return [details]
+
+        details = self._reorder_by_ids(execution_ids, details, id_field="id")
+        return self._build_pagination_envelope(details, pagination, filter)
 
     def query_report_execution_ids(
         self,
