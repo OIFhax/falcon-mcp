@@ -40,10 +40,23 @@ FALCONPY_1_6_5_SERVICE_COLLECTIONS: tuple[str, ...] = (
     "tools",
 )
 
+FALCONPY_1_6_6_SERVICE_COLLECTIONS: tuple[str, ...] = (
+    "agents",
+    "aidr",
+    "application_abuse_exclusions",
+    "audit",
+    "browser_security",
+    "code_security",
+    "network_containment",
+    "network_scan_detections",
+    "skills",
+)
+
 NEW_FALCONPY_SERVICE_COLLECTIONS: tuple[str, ...] = (
     *FALCONPY_1_6_3_SERVICE_COLLECTIONS,
     *FALCONPY_1_6_4_SERVICE_COLLECTIONS,
     *FALCONPY_1_6_5_SERVICE_COLLECTIONS,
+    *FALCONPY_1_6_6_SERVICE_COLLECTIONS,
 )
 
 GENERATED_SERVICE_COLLECTIONS: tuple[str, ...] = (

@@ -24,6 +24,7 @@ from scripts.generate_module_docs import (  # noqa: E402
     discover_module_classes,
     extract_registered_tool_names,
     extract_resource_info,
+    extract_module_scopes,
     extract_tool_annotations,
     extract_tool_scopes,
     generate_module_page,
@@ -485,6 +486,31 @@ class TestGenerateOverviewPage(unittest.TestCase):
             from scripts.generate_module_docs import MODULE_METADATA
             slug = MODULE_METADATA.get(key, {}).get("slug", key)
             self.assertIn(slug, self.page, f"Module {key!r} (slug={slug!r}) not found in overview")
+
+    def test_falconpy_1_6_6_modules_have_documented_scopes(self):
+        expected = {
+            "agents": "Charlotte AI Agent Definition:write",
+            "aidr": "Aidr Events:read",
+            "applicationabuseexclusions": "App Abuse Exclusions:write",
+            "audit": "Audit:read",
+            "browsersecurity": "Secure Access:write",
+            "codesecurity": "Code Security Scm Integration:write",
+            "networkcontainment": "Network Containment Allowlist:write",
+            "networkscandetections": "Network scanning:read",
+            "skills": "Charlotte AI Agent Definition:write",
+        }
+
+        for module_key, scope in expected.items():
+            with self.subTest(module=module_key):
+                info = self.modules[module_key]
+                page = generate_module_page(
+                    module_key,
+                    info["cls"],
+                    info["auto_title"],
+                    info["auto_description"],
+                )
+                self.assertIn(f"- `{scope}`", page)
+                self.assertIn(f"/falcon-mcp/modules/{module_key}/", self.page)
 
 
 # ---------------------------------------------------------------------------
@@ -992,6 +1018,18 @@ class TestGenerateModulePageCoverage(unittest.TestCase):
     def test_api_scopes_section_present_for_module_with_scopes(self):
         """Lines 912-916: modules with API scopes emit a ## API Scopes section."""
         self.assertIn("## API Scopes", self.det_page)
+
+    def test_tool_name_does_not_add_unrelated_api_scope(self):
+        self.assertEqual(extract_module_scopes(self.det_cls), ["Alerts:read", "Alerts:write"])
+        self.assertNotIn("Network scanning:read", self.det_page)
+
+    def test_tuple_operation_specs_keep_dynamic_module_scopes(self):
+        from falcon_mcp.modules.mssp import MSSPModule
+
+        self.assertEqual(
+            extract_module_scopes(MSSPModule),
+            ["flight-control:read", "flight-control:write"],
+        )
 
     def test_api_scopes_listed_as_code(self):
         """API scope entries are rendered as backtick-quoted list items."""

@@ -37,6 +37,14 @@ class TestFalconMCPServer(unittest.TestCase):
 
         self.assertEqual(parsed, ["cloudsecurityrisks"])
 
+    def test_new_raw_spotlight_module_is_not_legacy_alias(self):
+        self.assertIn("rawspotlightvulnerabilities", registry.get_module_names())
+        self.assertNotIn("rawspotlightvulnerabilities", LEGACY_MODULE_ALIASES)
+        self.assertEqual(
+            parse_modules_list("rawspotlightvulnerabilities,spotlight"),
+            ["rawspotlightvulnerabilities", "spotlight"],
+        )
+
     def test_register_tools_rejects_duplicate_names(self):
         server = FalconMCPServer.__new__(FalconMCPServer)
         server.server = MagicMock()

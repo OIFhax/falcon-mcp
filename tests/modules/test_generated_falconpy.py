@@ -20,6 +20,7 @@ from falcon_mcp.modules.falconpy_raw_gaps import (
     RawSensorUpdatePoliciesModule,
 )
 from falcon_mcp.modules.generated_falconpy import (
+    FALCONPY_1_6_6_SERVICE_COLLECTIONS,
     GENERATED_SERVICE_COLLECTIONS,
     NEW_FALCONPY_SERVICE_COLLECTIONS,
     AlertsModule,
@@ -40,15 +41,21 @@ class TestGeneratedFalconPyModules(TestModules):
         self.assertIn("sample_uploads", GENERATED_SERVICE_COLLECTIONS)
         self.assertIn("kubernetes_protection", GENERATED_SERVICE_COLLECTIONS)
 
-    def test_falconpy_1_6_3_through_1_6_5_service_collections_present(self):
+    def test_falconpy_1_6_3_through_1_6_6_service_collections_present(self):
         expected = {
             "access_scopes",
             "agent_invocation",
             "agent_templates",
             "agent_versions",
+            "agents",
+            "aidr",
             "api_clients",
+            "application_abuse_exclusions",
+            "audit",
+            "browser_security",
             "cloud_security_registration_combined",
             "cloud_security_risks",
+            "code_security",
             "falcon_id",
             "federated_connections",
             "foundry_lookup_files",
@@ -56,8 +63,11 @@ class TestGeneratedFalconPyModules(TestModules):
             "knowledge_base_files",
             "knowledge_bases",
             "models",
+            "network_containment",
+            "network_scan_detections",
             "profile_groups",
             "scanning_orchestrator",
+            "skills",
             "spans",
             "stream",
             "tools",
@@ -65,6 +75,20 @@ class TestGeneratedFalconPyModules(TestModules):
 
         self.assertEqual(set(NEW_FALCONPY_SERVICE_COLLECTIONS), expected)
         self.assertTrue(expected.issubset(GENERATED_SERVICE_COLLECTIONS))
+        self.assertEqual(
+            set(FALCONPY_1_6_6_SERVICE_COLLECTIONS),
+            {
+                "agents",
+                "aidr",
+                "application_abuse_exclusions",
+                "audit",
+                "browser_security",
+                "code_security",
+                "network_containment",
+                "network_scan_detections",
+                "skills",
+            },
+        )
 
         for module_key in expected:
             class_name = "".join(part.capitalize() for part in module_key.split("_")) + "Module"
@@ -90,6 +114,15 @@ class TestGeneratedFalconPyModules(TestModules):
             "AggregatesKnowledgeBasesV1",
             {spec["operation"] for spec in generated_falconpy.KnowledgeBasesModule.TOOL_SPECS},
         )
+        self.assertNotIn(
+            "GetConfigurationDetections",
+            {
+                spec["operation"]
+                for module_class in registry.get_available_modules().values()
+                for spec in getattr(module_class, "TOOL_SPECS", []) or []
+                if isinstance(spec, dict) and "operation" in spec
+            },
+        )
 
     def test_new_collections_have_scope_mappings_when_published(self):
         operations_without_published_oauth_scopes = {
@@ -112,6 +145,50 @@ class TestGeneratedFalconPyModules(TestModules):
                 operation = spec["operation"]
                 if operation not in operations_without_published_oauth_scopes:
                     self.assertTrue(get_required_scopes(operation), operation)
+
+    def test_falconpy_1_6_6_operations_in_existing_collections_have_scopes(self):
+        added_operations = {
+            "PatchAgentInvocationV3",
+            "aspm_combined_application_findings",
+            "cloud_registration_gcp_post_infra_manager_script",
+            "BulkCreatePersistedAggregations",
+            "BulkUpdatePersistedAggregations",
+            "CreatePersistedAggregation",
+            "DeletePersistedAggregation",
+            "GetParserRollbackOptions",
+            "GetPersistedAggregation",
+            "ListPersistedAggregations",
+            "RollbackParser",
+            "UpdatePersistedAggregation",
+            "ConnectCheckTagV3",
+            "CreateAppJournalCommentV3",
+            "CreateCheckJournalCommentV3",
+            "CreateUserJournalCommentV3",
+            "DisconnectCheckTagV3",
+            "GetAiAgentDetails",
+            "GetAiAgentsInventory",
+            "GetAppJournalV3",
+            "GetCheckJournalV3",
+            "GetCheckParamsV3",
+            "GetCheckTagsV3",
+            "GetUserJournalV3",
+            "RestoreAffectedEntityV3",
+            "RestoreSecurityCheckV3",
+            "SetCheckParamV3",
+            "CombinedUserRolesV3",
+            "aggregateUsersV2",
+            "getUserInvitationsGETV1",
+            "queryUserInvitationsV1",
+            "queryUserV2",
+            "retrieveUsersGETV2",
+            "userAllowedActionsV1",
+            "userRolesActionV2",
+        }
+
+        for operation in added_operations:
+            self.assertTrue(get_required_scopes(operation), operation)
+
+        self.assertEqual(get_required_scopes("combinedQueryInstalledPatches"), [])
 
     def test_all_falconpy_endpoint_operations_have_tool_specs(self):
         endpoint_operations = set()
@@ -218,6 +295,29 @@ class TestGeneratedFalconPyModules(TestModules):
             module.register_tools(server)
             annotations = server._tool_manager._tools[tool_name].annotations
             self.assertFalse(annotations.readOnlyHint, tool_name)
+
+    def test_falconpy_1_6_6_post_annotations_follow_published_scopes(self):
+        cases = (
+            (generated_falconpy.AuditModule, "CreateQueryJob", True),
+            (
+                generated_falconpy.ApplicationAbuseExclusionsModule,
+                "app_abuse_exclusions_report_v1",
+                True,
+            ),
+            (generated_falconpy.BrowserSecurityModule, "CombinedQueryAgents", True),
+            (generated_falconpy.BrowserSecurityModule, "ClassifyDomains", False),
+            (generated_falconpy.CodeSecurityModule, "TriggerSCMSync", False),
+            (generated_falconpy.SkillsModule, "EntitiesSkillsCreateV1", False),
+        )
+
+        for module_class, operation, expected_read_only in cases:
+            spec = next(spec for spec in module_class.TOOL_SPECS if spec["operation"] == operation)
+            module = module_class(self.mock_client)
+            server = FastMCP("annotation-test")
+            module.register_tools(server)
+            tool_name = f"falcon_{spec['tool_name']}"
+            annotations = server._tool_manager._tools[tool_name].annotations
+            self.assertEqual(annotations.readOnlyHint, expected_read_only, tool_name)
 
     def test_new_collection_tool_schemas_define_array_items(self):
         def assert_array_items(value, path="root"):

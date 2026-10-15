@@ -279,15 +279,15 @@ wheels = [
 
 [[package]]
 name = "crowdstrike-falconpy"
-version = "1.6.5"
+version = "1.6.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "requests" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a7/2c/4f538d1e9bf46c1c0a43c982d52fb60ec144cc64895e8df3cd3fba4fdb8d/crowdstrike_falconpy-1.6.5.tar.gz", hash = "sha256:d493c2fb9ff54421b335361e6d878cb4fcca34243d484ef458d978dc7c0ef38a", size = 9527054, upload-time = "2026-08-20T13:27:10.954Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4c/bf/c738015a568ead4e866fe9a44d23388ce363696cff5562d0eb3f54627a60/crowdstrike_falconpy-1.6.6.tar.gz", hash = "sha256:8f36ac6c3d4e536cdef319f109e7077f92c4c9a2cb316814a5402eca5aaaa9b6", size = 9580888, upload-time = "2026-09-28T17:54:05.141Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/56/a7/7ee08b556e2f532f858469fd6119afa0cddc9768a9a932920e8ad0454c3b/crowdstrike_falconpy-1.6.5-py3-none-any.whl", hash = "sha256:60010b5f79ab6628831edbdcf6bf855af00bc6fd46f34fa3c9b139e7495766d4", size = 1351908, upload-time = "2026-08-20T13:27:08.832Z" },
+    { url = "https://files.pythonhosted.org/packages/37/46/7602aa797f96c289d4bc01798e28525861f4d675b040127ddd51c3a8bf26/crowdstrike_falconpy-1.6.6-py3-none-any.whl", hash = "sha256:5dcdacf25b20bedc08210e6b75ee919caf670c482bbd4deb13f67070acba1caa", size = 1444622, upload-time = "2026-09-28T17:54:02.646Z" },
 ]
 
 [[package]]
@@ -370,7 +370,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "black", marker = "extra == 'dev'", specifier = ">=23.0.0" },
-    { name = "crowdstrike-falconpy", specifier = ">=1.6.5" },
+    { name = "crowdstrike-falconpy", specifier = ">=1.6.6" },
     { name = "mcp", specifier = ">=1.12.1,<2.0.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.0.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0.0" },

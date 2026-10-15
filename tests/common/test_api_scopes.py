@@ -758,6 +758,36 @@ class TestApiScopes(unittest.TestCase):
         # Test with None (should handle gracefully)
         self.assertEqual(get_required_scopes(None), [])
 
+    def test_falconpy_1_6_6_published_scope_mappings(self):
+        expected = {
+            "DeleteAgentV1": ["Charlotte AI Agent Definition:write"],
+            "aggregateAgentSessionsV1": ["Aidr Events:read"],
+            "app_abuse_exclusions_report_v1": ["App Abuse Exclusions:read"],
+            "app_abuse_exclusions_create_v1": ["App Abuse Exclusions:write"],
+            "CreateQueryJob": ["Audit:read"],
+            "CombinedQueryAgents": ["Secure Access:read"],
+            "ClassifyDomains": ["Secure Access:write"],
+            "GetSCMRepositoryAggregates": ["Code Security Scm Inventory:read"],
+            "TriggerSCMSync": ["Code Security Scm Integration:write"],
+            "CreateContainmentAllowlistRules": ["Network Containment Allowlist:write"],
+            "query_detections": ["Network scanning:read"],
+            "EntitiesSkillsCreateV1": ["Charlotte AI Agent Definition:write"],
+            "PatchAgentInvocationV3": ["Charlotte AI Agent Definition:write"],
+            "aspm_combined_application_findings": ["Cloud Security API Assets:read"],
+            "cloud_registration_gcp_post_infra_manager_script": [
+                "Cloud Security Google Cloud Registration:write"
+            ],
+            "GetParserRollbackOptions": ["NGSIEM Parsers:read"],
+            "BulkCreatePersistedAggregations": ["Ngsiem Persisted Aggregations:write"],
+            "CreateAppJournalCommentV3": ["SaaS Security (Falcon Shield):write"],
+            "aggregateUsersV2": ["User management:write"],
+            "getUserInvitationsGETV1": ["User management:write"],
+        }
+
+        for operation, scopes in expected.items():
+            with self.subTest(operation=operation):
+                self.assertEqual(get_required_scopes(operation), scopes)
+
     def test_all_operations_have_scope_mappings(self):
         """Test that all operations used in modules have scope mappings defined."""
         # Extract all operations from module files

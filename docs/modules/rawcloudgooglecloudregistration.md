@@ -5,3 +5,7 @@
 <!-- frontmatter:sidebar order:10 -->
 
 Generated raw wrappers for FalconPy operations not covered by hand modules. module for CrowdStrike Falcon.
+
+## API Scopes
+
+- `Cloud Security Google Cloud Registration:write`

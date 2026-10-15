@@ -8,5 +8,7 @@ Generated all-operation modules for FalconPy service collections not hand-wrappe
 
 ## API Scopes
 
+- `SaaS Security (Falcon Shield):read`
 - `SaaS Security:read`
+- `SaaS Security (Falcon Shield):write`
 - `SaaS Security:write`

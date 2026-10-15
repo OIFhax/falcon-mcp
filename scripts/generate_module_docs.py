@@ -32,8 +32,28 @@ SITE_BASE_PATH = "/falcon-mcp"
 # Titles and descriptions are auto-derived from module docstrings.
 # Add entries here when you need a custom title, slug, or description.
 MODULE_METADATA: dict[str, dict[str, Any]] = {
+    "agents": {
+        "title": "Agentic Studio Agents",
+        "description": "Creating, updating, querying, and deleting Agentic Studio agents.",
+    },
+    "aidr": {
+        "title": "AI Detection and Response",
+        "description": "Querying AI agent activity, sessions, detections, tools, and skills.",
+    },
+    "applicationabuseexclusions": {
+        "title": "Application Abuse Exclusions",
+        "description": "Querying and managing application abuse exclusions and reports.",
+    },
     "agentworks": {
         "title": "AgentWorks",
+    },
+    "audit": {
+        "title": "Audit Logs",
+        "description": "Querying and exporting Falcon audit logs.",
+    },
+    "browsersecurity": {
+        "title": "Browser Security",
+        "description": "Managing browser security agents, rules, and destination groups.",
     },
     "cases": {
         "title": "Case Management",
@@ -41,6 +61,10 @@ MODULE_METADATA: dict[str, dict[str, Any]] = {
     },
     "cloud": {
         "title": "Cloud Security",
+    },
+    "codesecurity": {
+        "title": "Code Security",
+        "description": "Managing source-control integrations, branch settings, and exclusion rules.",
     },
     "customioa": {
         "slug": "custom-ioa",
@@ -57,11 +81,23 @@ MODULE_METADATA: dict[str, dict[str, Any]] = {
     "idp": {
         "title": "Identity Protection",
     },
+    "networkcontainment": {
+        "title": "Network Containment",
+        "description": "Querying and managing network containment allowlist rules.",
+    },
+    "networkscandetections": {
+        "title": "Network Scan Detections",
+        "description": "Searching and reviewing network-scan detections.",
+    },
     "scheduledreports": {
         "slug": "scheduled-reports",
     },
     "sensorusage": {
         "slug": "sensor-usage",
+    },
+    "skills": {
+        "title": "Agentic Studio Skills",
+        "description": "Creating, updating, downloading, and searching Agentic Studio skills.",
     },
     "serverless": {
         "title": "Serverless",
@@ -1082,23 +1118,21 @@ def _operation_names_in(
 
 
 def extract_module_scopes(module_cls: type) -> list[str]:
-    """Derive API scopes by finding operation names in module source and looking them up in API_SCOPE_REQUIREMENTS."""
+    """Derive API scopes from registered tools and their operation specs."""
     scopes: set[str] = set()
     for spec in getattr(module_cls, "TOOL_SPECS", []) or []:
         if isinstance(spec, dict):
-            scopes.update(API_SCOPE_REQUIREMENTS.get(str(spec.get("operation", "")), []))
+            operation = spec.get("operation", "")
+        elif isinstance(spec, tuple) and len(spec) > 1:
+            operation = spec[1]
+        else:
+            continue
+        scopes.update(API_SCOPE_REQUIREMENTS.get(str(operation), []))
 
-    chunks: list[tuple[str, str]] = []
-    for klass in _own_classes(module_cls):
-        try:
-            chunks.append((inspect.getsource(klass), klass.__module__))
-        except (TypeError, OSError):
-            pass
-
-    all_strings = _operation_names_in(chunks, _class_literal_containers(module_cls))
-    for op_name, op_scopes in API_SCOPE_REQUIREMENTS.items():
-        if op_name in all_strings:
-            scopes.update(op_scopes)
+    for attr_name in extract_registered_tool_names(module_cls):
+        method = getattr(module_cls, attr_name, None)
+        if callable(method):
+            scopes.update(extract_tool_scopes(method, module_cls))
 
     # Sort: read scopes first, then write, alphabetically within each group
     return sorted(scopes, key=lambda s: (":write" in s, s))

@@ -864,6 +864,18 @@ class TestSearchRanking(unittest.TestCase):
                 self.assertEqual(names[0], read_only)
                 self.assertLess(names.index(read_only), names.index(destructive))
 
+    def test_generic_name_verb_does_not_outweigh_an_entity_name(self):
+        generic_tool = self.catalog.entries["falcon_code_security_list_exclusion_rules"]
+        intended_tool = self.catalog.entries["falcon_search_exclusions"]
+        tokens = ["list", "exclusions"]
+        query_key = "listexclusions"
+
+        self.assertEqual(generic_tool.score(tokens, query_key)[0], 1)
+        self.assertGreater(
+            intended_tool.score(tokens, query_key),
+            generic_tool.score(tokens, query_key),
+        )
+
     def test_a_tool_named_for_a_query_word_is_not_dropped_for_a_prose_match(self):
         """Selection must respect the name-over-prose weighting score() already uses.
 

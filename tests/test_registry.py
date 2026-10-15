@@ -60,7 +60,19 @@ class TestRegistry(unittest.TestCase):
     def test_actual_modules_discovery(self):
         registry.AVAILABLE_MODULES.clear()
         registry.discover_modules()
-        for expected in ["hosts", "intel"]:
+        for expected in [
+            "hosts",
+            "intel",
+            "agents",
+            "aidr",
+            "applicationabuseexclusions",
+            "audit",
+            "browsersecurity",
+            "codesecurity",
+            "networkcontainment",
+            "networkscandetections",
+            "skills",
+        ]:
             self.assertIn(expected, registry.AVAILABLE_MODULES)
         for cls in registry.AVAILABLE_MODULES.values():
             self.assertTrue(issubclass(cls, BaseModule))

@@ -63,6 +63,7 @@ _TIER_RESCUE_BELOW = 3
 _SCORE_EXACT_NAME = 1000
 _SCORE_NAME_WORD = 10
 _SCORE_NAME_SUBSTRING = 5
+_SCORE_GENERIC_NAME_WORD = 1
 _SCORE_MODULE_WORD = 3
 _SCORE_MODULE_SUBSTRING = 2
 _SCORE_DESCRIPTION = 1
@@ -136,7 +137,7 @@ class ToolEntry:
         the weighted sum within that coverage, scoring each token once at the strongest
         field it hits, so a tool named for the query outranks one that only mentions it
         in prose. A token matching nothing adds to neither, and a generic token
-        (``_STOPWORDS``) counts only where it hits this tool's own name.
+        (``_STOPWORDS``) can break a strength tie but does not add coverage.
         """
         if query_key and query_key in self.name_key:
             # Sorts above any real query: full coverage plus a strength no per-token
@@ -146,15 +147,14 @@ class ToolEntry:
         matched = 0
         strength = 0
         for token in tokens:
+            if token in _STOPWORDS:
+                if token in self.name_words:
+                    strength += _SCORE_GENERIC_NAME_WORD
+                continue
             if token in self.name_words:
                 strength += _SCORE_NAME_WORD
             elif token in self.unprefixed_name:
                 strength += _SCORE_NAME_SUBSTRING
-            elif token in _STOPWORDS:
-                # A generic word reaches most descriptions as prose, so crediting it
-                # outside a tool's own name measures docstring wording rather than
-                # relevance — enough to let a mutator outrank its read-only sibling.
-                continue
             elif token in self.module_words:
                 strength += _SCORE_MODULE_WORD
             elif token in self.module_key:

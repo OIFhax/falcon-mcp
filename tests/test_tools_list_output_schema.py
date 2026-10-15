@@ -10,6 +10,7 @@ from unittest.mock import MagicMock, patch
 
 from mcp.shared.memory import create_connected_server_and_client_session
 
+from falcon_mcp.modules.generated_falconpy import FALCONPY_1_6_6_SERVICE_COLLECTIONS
 from falcon_mcp.server import FalconMCPServer
 
 
@@ -64,6 +65,30 @@ class TestToolsListOutputSchema(unittest.IsolatedAsyncioTestCase):
             "Tools missing inputSchema (regression of issue #325 fix):\n"
             + "\n".join(f"  - {name}" for name in sorted(missing)),
         )
+
+    async def test_falconpy_1_6_6_tool_input_schemas_have_array_items(self):
+        async with create_connected_server_and_client_session(
+            self.mcp_server.server
+        ) as session:
+            tools = (await session.list_tools()).tools
+
+        prefixes = tuple(f"falcon_{key}_" for key in FALCONPY_1_6_6_SERVICE_COLLECTIONS)
+        for prefix in prefixes:
+            self.assertTrue(any(tool.name.startswith(prefix) for tool in tools), prefix)
+
+        def check_array_items(value, path):
+            if isinstance(value, dict):
+                if value.get("type") == "array":
+                    self.assertIn("items", value, path)
+                for key, nested in value.items():
+                    check_array_items(nested, f"{path}.{key}")
+            elif isinstance(value, list):
+                for index, nested in enumerate(value):
+                    check_array_items(nested, f"{path}[{index}]")
+
+        for tool in tools:
+            if tool.name.startswith(prefixes):
+                check_array_items(tool.inputSchema, tool.name)
 
 
 if __name__ == "__main__":

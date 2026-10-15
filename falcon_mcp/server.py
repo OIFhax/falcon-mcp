@@ -45,7 +45,6 @@ LEGACY_MODULE_ALIASES = {
     "rawknowledgebasefiles": "knowledgebasefiles",
     "rawknowledgebases": "knowledgebases",
     "rawprofilegroups": "profilegroups",
-    "rawspotlightvulnerabilities": "spotlight",
 }
 SERVER_INSTRUCTIONS = f"""
 This server provides access to CrowdStrike Falcon capabilities.
