@@ -1,0 +1,44 @@
+{
+  "mcpServers": {
+    "falcon": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--locked",
+        "--no-dev",
+        "--no-env-file",
+        "python",
+        "-m",
+        "falcon_mcp.codex_plugin"
+      ],
+      "cwd": ".",
+      "env_vars": [
+        "FALCON_MCP_CONFIG_FILE",
+        "FALCON_CLIENT_ID",
+        "FALCON_CLIENT_SECRET",
+        "FALCON_BASE_URL",
+        "FALCON_MEMBER_CID",
+        "FALCON_PROXY_URL",
+        "FALCON_MCP_MODULES",
+        "FALCON_MCP_DEBUG",
+        "FALCON_MCP_DYNAMIC",
+        "FALCON_MCP_READ_ONLY",
+        "FALCON_MCP_TOOLS",
+        "FALCON_MCP_EXCLUDE_TOOLS",
+        "FALCON_MCP_USER_AGENT_COMMENT",
+        "FALCON_MCP_HTTP_TIMEOUT_SECONDS",
+        "FALCON_MCP_RTR_HTTP_TIMEOUT_SECONDS",
+        "FALCON_MCP_RETRY_ATTEMPTS",
+        "FALCON_MCP_RETRY_BACKOFF_SECONDS",
+        "HTTPS_PROXY",
+        "HTTP_PROXY",
+        "ALL_PROXY",
+        "NO_PROXY",
+        "SSL_CERT_FILE",
+        "REQUESTS_CA_BUNDLE"
+      ],
+      "startup_timeout_sec": 180,
+      "tool_timeout_sec": 300
+    }
+  }
+}
