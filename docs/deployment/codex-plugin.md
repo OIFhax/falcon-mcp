@@ -80,6 +80,16 @@ codex plugin add falcon-mcp@falcon-mcp
 codex plugin list --marketplace falcon-mcp
 ```
 
+If an older CLI rejects a reasoning setting written by the desktop app, such as
+`unknown variant ultra`, update the CLI or use a per-command override. For example:
+
+```bash
+codex -c 'model_reasoning_effort="high"' plugin add falcon-mcp@falcon-mcp
+```
+
+Use the same override for the marketplace and list commands if needed. This does not change your
+saved model settings.
+
 Choose only one fork source: both use the marketplace name `falcon-mcp` and plugin name `falcon-mcp`.
 Restart the Codex desktop app, then open a new local chat. You can also find the plugin under the
 Falcon MCP marketplace in the plugin browser and install it there after adding the marketplace.
