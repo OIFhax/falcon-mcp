@@ -22,18 +22,18 @@ credential and is not used by this stdio plugin.
 
 ## Configure your Falcon connection
 
-Choose one fork as your installation source. Both publish the plugin on `codex/falcon-codex-plugin`.
+Choose one fork as your installation source. Both publish the plugin on `main`.
 For OIFhax:
 
 ```bash
-git clone --branch codex/falcon-codex-plugin https://github.com/OIFhax/falcon-mcp.git
+git clone --branch main https://github.com/OIFhax/falcon-mcp.git
 cd falcon-mcp
 ```
 
 For HTS-CyberSecurity, use this clone command instead:
 
 ```bash
-git clone --branch codex/falcon-codex-plugin https://github.com/hts-cybersecurity/falcon-mcp.git
+git clone --branch main https://github.com/hts-cybersecurity/falcon-mcp.git
 cd falcon-mcp
 ```
 
@@ -64,13 +64,13 @@ required credentials are absent.
 Add the same fork you cloned as a marketplace. For OIFhax:
 
 ```bash
-codex plugin marketplace add OIFhax/falcon-mcp --ref codex/falcon-codex-plugin
+codex plugin marketplace add OIFhax/falcon-mcp --ref main
 ```
 
 For HTS-CyberSecurity, use this command instead:
 
 ```bash
-codex plugin marketplace add hts-cybersecurity/falcon-mcp --ref codex/falcon-codex-plugin
+codex plugin marketplace add hts-cybersecurity/falcon-mcp --ref main
 ```
 
 Then install the plugin:
@@ -163,7 +163,7 @@ client and region through `--configure`, and preserve any module or tool restric
 
 ## Local development
 
-From a checkout of this branch, configure credentials with the setup helper, then build a local
+From a checkout of `main`, configure credentials with the setup helper, then build a local
 marketplace in a fresh output directory outside the checkout:
 
 ```bash
@@ -174,7 +174,7 @@ codex plugin add falcon-mcp@falcon-mcp
 
 The builder creates a self-contained `plugins/falcon-mcp` bundle and a local marketplace catalog
 that points to it. Use this generated marketplace to test checkout changes. The repository's own
-marketplace catalog installs the published Git branch from its respective fork.
+marketplace catalog installs `main` from its respective fork.
 
 The plugin's `.codex-plugin/plugin.json` declares `.mcp.json`, which launches the local Python server
 through uv. Codex installs a copy in its plugin cache, so editing the checkout does not directly edit

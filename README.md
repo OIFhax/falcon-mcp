@@ -1850,7 +1850,7 @@ Install this fork as a Codex plugin to run Falcon MCP locally through `uv`, with
 The plugin requires a Falcon API client ID and client secret. Its interactive setup helper saves
 credentials outside the repository and plugin cache so the Codex desktop app can use them.
 
-The `codex/falcon-codex-plugin` branch is available in both `OIFhax/falcon-mcp` and
+The Codex plugin is available on `main` in both `OIFhax/falcon-mcp` and
 `hts-cybersecurity/falcon-mcp`. Choose one source and follow the
 [Codex plugin installation guide](docs/deployment/codex-plugin.md) to configure credentials, install
 the plugin, verify connectivity, and migrate an existing Docker connection.

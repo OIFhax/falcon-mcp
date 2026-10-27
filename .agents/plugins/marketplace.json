@@ -9,7 +9,7 @@
       "source": {
         "source": "url",
         "url": "https://github.com/OIFhax/falcon-mcp.git",
-        "ref": "codex/falcon-codex-plugin"
+        "ref": "main"
       },
       "policy": {
         "installation": "AVAILABLE",
