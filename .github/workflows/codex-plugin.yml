@@ -1,0 +1,49 @@
+name: Codex Plugin
+
+on:
+  push:
+    branches: [main, codex/falcon-codex-plugin]
+    paths:
+      - '.codex-plugin/**'
+      - '.agents/plugins/**'
+      - '.mcp.json'
+      - 'falcon_mcp/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - 'tests/test_codex_plugin*.py'
+      - 'scripts/build_codex_plugin.py'
+      - '.github/workflows/codex-plugin.yml'
+  pull_request:
+    paths:
+      - '.codex-plugin/**'
+      - '.agents/plugins/**'
+      - '.mcp.json'
+      - 'falcon_mcp/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - 'tests/test_codex_plugin*.py'
+      - 'scripts/build_codex_plugin.py'
+      - '.github/workflows/codex-plugin.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  plugin:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
+        with:
+          python-version: '3.11'
+      - uses: astral-sh/setup-uv@39eb6c9dde236bbc368681611e63120a6eb4afac
+        with:
+          version: '0.9.16'
+      - name: Install locked dependencies
+        run: uv sync --locked --extra dev
+      - name: Test plugin credentials and stdio launch without Docker
+        run: uv run --locked --extra dev pytest tests/test_codex_plugin.py tests/test_codex_plugin_transport.py tests/test_codex_plugin_bundle.py

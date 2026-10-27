@@ -1,0 +1,21 @@
+{
+  "name": "falcon-mcp",
+  "version": "0.1.0",
+  "description": "Connect Codex to CrowdStrike Falcon with a local MCP server and required Falcon API credentials.",
+  "author": {
+    "name": "OIFhax and HTS-CyberSecurity"
+  },
+  "repository": "https://github.com/OIFhax/falcon-mcp",
+  "license": "MIT",
+  "keywords": ["crowdstrike", "falcon", "security", "mcp"],
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Falcon MCP",
+    "shortDescription": "Connect to CrowdStrike Falcon without Docker",
+    "longDescription": "Use Falcon investigation and administration tools from Codex. Runs locally with uv and authenticates using your Falcon API client ID and client secret.",
+    "developerName": "OIFhax and HTS-CyberSecurity",
+    "category": "Security",
+    "capabilities": ["Read", "Write"],
+    "defaultPrompt": ["Check the Falcon connection and list enabled modules."]
+  }
+}

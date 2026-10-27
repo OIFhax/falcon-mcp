@@ -211,6 +211,8 @@ CLAUDE.md
 .aider*
 .clinerules/
 .mcp.json
+# The root MCP definition is public Codex plugin configuration, without credentials.
+!/.mcp.json
 memory-bank/
 
 # Playwright MCP screenshots

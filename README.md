@@ -85,6 +85,7 @@
   - [Using Pre-built Image (Recommended)](#using-pre-built-image-recommended)
   - [Building Locally (Development)](#building-locally-development)
 - [Editor/Assistant Integration](#editorassistant-integration)
+  - [Codex Plugin (No Docker)](#codex-plugin-no-docker)
   - [Using `uvx` (recommended)](#using-uvx-recommended)
   - [With Module Selection](#with-module-selection)
   - [Using Individual Environment Variables](#using-individual-environment-variables)
@@ -1842,6 +1843,17 @@ docker run --rm -e FALCON_CLIENT_ID=your_client_id -e FALCON_CLIENT_SECRET=your_
 ## Editor/Assistant Integration
 
 You can integrate the Falcon MCP server with your editor or AI assistant. Here are configuration examples for popular MCP clients:
+
+### Codex Plugin (No Docker)
+
+Install this fork as a Codex plugin to run Falcon MCP locally through `uv`, with no Docker dependency.
+The plugin requires a Falcon API client ID and client secret. Its interactive setup helper saves
+credentials outside the repository and plugin cache so the Codex desktop app can use them.
+
+The Codex plugin is available on `main` in both `OIFhax/falcon-mcp` and
+`hts-cybersecurity/falcon-mcp`. Choose one source and follow the
+[Codex plugin installation guide](docs/deployment/codex-plugin.md) to configure credentials, install
+the plugin, verify connectivity, and migrate an existing Docker connection.
 
 ### Using `uvx` (recommended)
 

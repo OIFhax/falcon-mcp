@@ -657,7 +657,7 @@ def parse_tools_list(tools_string: str) -> list[str]:
     return [t.strip() for t in tools_string.split(",") if t.strip()]
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="Falcon MCP Server")
 
@@ -796,16 +796,17 @@ def parse_args() -> argparse.Namespace:
         "Unknown names abort startup (env: FALCON_MCP_EXCLUDE_TOOLS)",
     )
 
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
-def main() -> None:
+def main(argv: list[str] | None = None, *, load_env: bool = True) -> None:
     """Main entry point for the Falcon MCP server."""
     # Load environment variables
-    load_dotenv()
+    if load_env:
+        load_dotenv()
 
     # Parse command line arguments (includes environment variable defaults)
-    args = parse_args()
+    args = parse_args(argv)
 
     try:
         # Create and run the server

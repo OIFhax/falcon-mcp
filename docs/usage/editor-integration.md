@@ -8,6 +8,13 @@ The Falcon MCP Server works with any MCP-compatible editor or AI assistant. Belo
 > [!TIP]
 > Some clients can install falcon-mcp directly from a registry — see the [MCP Registry](https://registry.modelcontextprotocol.io/?q=io.github.CrowdStrike%2Ffalcon-mcp&all=1)<!-- link:external -->, [GitHub MCP Registry](https://github.com/mcp/CrowdStrike/falcon-mcp)<!-- link:external -->, and [Gemini CLI Extensions](https://geminicli.com/extensions/?name=CrowdStrikefalcon-mcp)<!-- link:external --> listings.
 
+## Codex
+
+Use the [Codex plugin](../deployment/codex-plugin.md) to run Falcon MCP locally through uv without
+Docker. The plugin requires a Falcon API client ID and client secret and includes a setup helper
+that stores them outside the plugin cache for use by the desktop app. The guide covers installation
+from either fork, connection checks, and migration from an existing Docker MCP entry.
+
 ## Claude Desktop
 
 Edit `claude_desktop_config.json`:
