@@ -61,6 +61,11 @@ The Falcon MCP Server provides the following modules. Each module requires speci
 | [Discover](/falcon-mcp/modules/discover/) | `Assets:read` | This module provides full read coverage for Falcon Discover applications, hosts, accounts, IoT hosts, and login entities |
 | [Downloads](/falcon-mcp/modules/downloads/) | `infrastructure-as-code:read` | Enumerating downloadable artifacts and requesting pre-signed download URLs |
 | [Drift Indicators](/falcon-mcp/modules/driftindicators/) | `drift-indicators:read` | Counting, querying, and retrieving drift indicator entities |
+| [Evaluation Cases](/falcon-mcp/modules/evalcases/) |  | Querying and retrieving Agentic Studio evaluation cases. |
+| [Evaluation Dataset Entries](/falcon-mcp/modules/evaldatasetentries/) |  | Querying, retrieving, creating, updating, and deleting evaluation dataset entries. |
+| [Evaluation Datasets](/falcon-mcp/modules/evaldatasets/) |  | Querying, downloading, and managing Agentic Studio evaluation datasets. |
+| [Evaluation Evaluators](/falcon-mcp/modules/evalevaluators/) |  | Querying, retrieving, creating, updating, and deleting evaluation evaluators. |
+| [Evaluation Runs](/falcon-mcp/modules/evalruns/) |  | Querying, retrieving, creating, deleting, starting, and stopping evaluation runs. |
 | [Event Streams](/falcon-mcp/modules/eventstreams/) | `event-streams:read` | Discovering available event streams and refreshing active stream sessions |
 | [Exclusions](/falcon-mcp/modules/exclusions/) | `IOA Exclusions:read`, `Machine Learning Exclusions:read`, `ml-exclusions:read`, `sensor-visibility-exclusions:read`, `IOA Exclusions:write`, `Machine Learning Exclusions:write`, `ml-exclusions:write`, `sensor-visibility-exclusions:write` | This module provides a unified set of tools for managing CrowdStrike exclusions across four types — IOA, Machine Learning, Sensor Visibility, and Certificate-Based — behind a single `exclusion_type` discriminator |
 | [Exposure Management](/falcon-mcp/modules/exposuremanagement/) | `Exposure Management:read`, `Exposure Management:write` | Searching external assets and performing controlled inventory / triage updates via Falcon Exposure Management APIs |
@@ -138,6 +143,7 @@ The Falcon MCP Server provides the following modules. Each module requires speci
 | [Generated raw wrappers for FalconPy operations not covered by hand modules.](/falcon-mcp/modules/rawintel/) |  | Generated raw wrappers for FalconPy operations not covered by hand modules. module for CrowdStrike Falcon. |
 | [Generated raw wrappers for FalconPy operations not covered by hand modules.](/falcon-mcp/modules/rawioaexclusions/) |  | Generated raw wrappers for FalconPy operations not covered by hand modules. module for CrowdStrike Falcon. |
 | [Generated raw wrappers for FalconPy operations not covered by hand modules.](/falcon-mcp/modules/rawioc/) |  | Generated raw wrappers for FalconPy operations not covered by hand modules. module for CrowdStrike Falcon. |
+| [IT Automation Deployment Operations](/falcon-mcp/modules/rawitautomation/) |  | Additional FalconPy patch-management and deployment operations. |
 | [Generated raw wrappers for FalconPy operations not covered by hand modules.](/falcon-mcp/modules/rawmlexclusions/) |  | Generated raw wrappers for FalconPy operations not covered by hand modules. module for CrowdStrike Falcon. |
 | [Generated raw wrappers for FalconPy operations not covered by hand modules.](/falcon-mcp/modules/rawngsiem/) | `NGSIEM Parsers:read`, `Ngsiem Persisted Aggregations:read`, `NGSIEM Parsers:write`, `Ngsiem Persisted Aggregations:write` | Generated raw wrappers for FalconPy operations not covered by hand modules. module for CrowdStrike Falcon. |
 | [Generated raw wrappers for FalconPy operations not covered by hand modules.](/falcon-mcp/modules/rawoauth2/) |  | Generated raw wrappers for FalconPy operations not covered by hand modules. module for CrowdStrike Falcon. |

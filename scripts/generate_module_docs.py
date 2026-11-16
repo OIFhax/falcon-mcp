@@ -72,6 +72,26 @@ MODULE_METADATA: dict[str, dict[str, Any]] = {
     "datasecurity": {
         "slug": "data-security",
     },
+    "evalcases": {
+        "title": "Evaluation Cases",
+        "description": "Querying and retrieving Agentic Studio evaluation cases.",
+    },
+    "evaldatasetentries": {
+        "title": "Evaluation Dataset Entries",
+        "description": "Querying, retrieving, creating, updating, and deleting evaluation dataset entries.",
+    },
+    "evaldatasets": {
+        "title": "Evaluation Datasets",
+        "description": "Querying, downloading, and managing Agentic Studio evaluation datasets.",
+    },
+    "evalevaluators": {
+        "title": "Evaluation Evaluators",
+        "description": "Querying, retrieving, creating, updating, and deleting evaluation evaluators.",
+    },
+    "evalruns": {
+        "title": "Evaluation Runs",
+        "description": "Querying, retrieving, creating, deleting, starting, and stopping evaluation runs.",
+    },
     "fusion": {
         "title": "Fusion SOAR",
     },
@@ -88,6 +108,10 @@ MODULE_METADATA: dict[str, dict[str, Any]] = {
     "networkscandetections": {
         "title": "Network Scan Detections",
         "description": "Searching and reviewing network-scan detections.",
+    },
+    "rawitautomation": {
+        "title": "IT Automation Deployment Operations",
+        "description": "Additional FalconPy patch-management and deployment operations.",
     },
     "scheduledreports": {
         "slug": "scheduled-reports",

@@ -375,6 +375,24 @@ class TestGenerateModulePage(unittest.TestCase):
     def test_returns_string(self):
         self.assertIsInstance(self.page, str)
 
+    def test_falconpy_1_6_7_eval_collection_pages(self):
+        from falcon_mcp.modules.generated_falconpy import FALCONPY_1_6_7_SERVICE_COLLECTIONS
+
+        modules = discover_module_classes()
+        overview = generate_overview_page(modules)
+        for module_key in FALCONPY_1_6_7_SERVICE_COLLECTIONS:
+            name = module_key.replace("_", "")
+            info = modules[name]
+            page = generate_module_page(
+                name,
+                info["cls"],
+                info["auto_title"],
+                info["auto_description"],
+            )
+            self.assertIn("<!-- meta:section modules -->", page)
+            self.assertIn("<!-- meta:title Evaluation", page)
+            self.assertIn(f"/modules/{name}/", overview)
+
     def test_contains_meta_comments(self):
         self.assertIn("<!-- meta:title", self.page)
         self.assertIn("<!-- meta:section modules -->", self.page)

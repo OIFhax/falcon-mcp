@@ -10,7 +10,10 @@ from unittest.mock import MagicMock, patch
 
 from mcp.shared.memory import create_connected_server_and_client_session
 
-from falcon_mcp.modules.generated_falconpy import FALCONPY_1_6_6_SERVICE_COLLECTIONS
+from falcon_mcp.modules.generated_falconpy import (
+    FALCONPY_1_6_6_SERVICE_COLLECTIONS,
+    FALCONPY_1_6_7_SERVICE_COLLECTIONS,
+)
 from falcon_mcp.server import FalconMCPServer
 
 
@@ -66,13 +69,16 @@ class TestToolsListOutputSchema(unittest.IsolatedAsyncioTestCase):
             + "\n".join(f"  - {name}" for name in sorted(missing)),
         )
 
-    async def test_falconpy_1_6_6_tool_input_schemas_have_array_items(self):
+    async def test_falconpy_1_6_6_and_1_6_7_tool_input_schemas_have_array_items(self):
         async with create_connected_server_and_client_session(
             self.mcp_server.server
         ) as session:
             tools = (await session.list_tools()).tools
 
-        prefixes = tuple(f"falcon_{key}_" for key in FALCONPY_1_6_6_SERVICE_COLLECTIONS)
+        prefixes = tuple(
+            f"falcon_{key}_"
+            for key in (*FALCONPY_1_6_6_SERVICE_COLLECTIONS, *FALCONPY_1_6_7_SERVICE_COLLECTIONS)
+        )
         for prefix in prefixes:
             self.assertTrue(any(tool.name.startswith(prefix) for tool in tools), prefix)
 

@@ -164,6 +164,8 @@ def is_write_operation(endpoint: list[Any]) -> bool:
         return True
     if method == "GET":
         return False
+    if method == "POST" and str(endpoint[2]).casefold().endswith("/get/v1"):
+        return False
 
     operation = str(endpoint[0])
     scopes = get_required_scopes(operation)

@@ -52,11 +52,20 @@ FALCONPY_1_6_6_SERVICE_COLLECTIONS: tuple[str, ...] = (
     "skills",
 )
 
+FALCONPY_1_6_7_SERVICE_COLLECTIONS: tuple[str, ...] = (
+    "eval_cases",
+    "eval_dataset_entries",
+    "eval_datasets",
+    "eval_evaluators",
+    "eval_runs",
+)
+
 NEW_FALCONPY_SERVICE_COLLECTIONS: tuple[str, ...] = (
     *FALCONPY_1_6_3_SERVICE_COLLECTIONS,
     *FALCONPY_1_6_4_SERVICE_COLLECTIONS,
     *FALCONPY_1_6_5_SERVICE_COLLECTIONS,
     *FALCONPY_1_6_6_SERVICE_COLLECTIONS,
+    *FALCONPY_1_6_7_SERVICE_COLLECTIONS,
 )
 
 GENERATED_SERVICE_COLLECTIONS: tuple[str, ...] = (

@@ -13,7 +13,7 @@ from falcon_mcp import registry
 from falcon_mcp.common.api_scopes import get_required_scopes
 from falcon_mcp.modules import generated_falconpy
 from falcon_mcp.modules.base import READ_ONLY_ANNOTATIONS
-from falcon_mcp.modules.falconpy_operations import WRITE_ANNOTATIONS
+from falcon_mcp.modules.falconpy_operations import WRITE_ANNOTATIONS, is_write_operation
 from falcon_mcp.modules.falconpy_raw_gaps import (
     RawHostsModule,
     RawOauth2Module,
@@ -21,6 +21,7 @@ from falcon_mcp.modules.falconpy_raw_gaps import (
 )
 from falcon_mcp.modules.generated_falconpy import (
     FALCONPY_1_6_6_SERVICE_COLLECTIONS,
+    FALCONPY_1_6_7_SERVICE_COLLECTIONS,
     GENERATED_SERVICE_COLLECTIONS,
     NEW_FALCONPY_SERVICE_COLLECTIONS,
     AlertsModule,
@@ -28,6 +29,82 @@ from falcon_mcp.modules.generated_falconpy import (
     SampleUploadsModule,
 )
 from tests.modules.utils.test_modules import TestModules
+
+FALCONPY_1_6_7_ADDED_OPERATIONS = {
+    "browser_security": {
+        "GetSensitiveDataProfiles",
+        "CreateSensitiveDataProfile",
+        "DeleteSensitiveDataProfile",
+        "UpdateSensitiveDataProfile",
+        "QuerySensitiveDataProfiles",
+    },
+    "case_management": {
+        "entities_alert_evidence_post_v2",
+        "entities_case_access_tags_post_v1",
+        "entities_case_access_tags_delete_v1",
+        "entities_custom_evidence_post_v1",
+        "entities_user_evidence_post_v1",
+    },
+    "eval_cases": {"EntitiesEvalCasesV1", "QueriesEvalCasesV1"},
+    "eval_dataset_entries": {
+        "EntitiesEvalDatasetEntriesV1",
+        "EntitiesEvalDatasetEntriesUpdateV1",
+        "EntitiesEvalDatasetEntriesCreateV1",
+        "EntitiesEvalDatasetEntriesDeleteV1",
+        "QueriesEvalDatasetEntriesV1",
+    },
+    "eval_datasets": {
+        "EntitiesEvalDatasetsDownloadV1",
+        "EntitiesEvalDatasetsV1",
+        "EntitiesEvalDatasetsUpdateV1",
+        "EntitiesEvalDatasetsCreateV1",
+        "EntitiesEvalDatasetsDeleteV1",
+        "QueriesEvalDatasetsV1",
+    },
+    "eval_evaluators": {
+        "EntitiesEvalEvaluatorsV1",
+        "EntitiesEvalEvaluatorsUpdateV1",
+        "EntitiesEvalEvaluatorsCreateV1",
+        "EntitiesEvalEvaluatorsDeleteV1",
+        "QueriesEvalEvaluatorsV1",
+    },
+    "eval_runs": {
+        "EntitiesEvalRunsV1",
+        "EntitiesEvalRunsCreateV1",
+        "EntitiesEvalRunsDeleteV1",
+        "EntitiesEvalRunsActionV1",
+        "QueriesEvalRunsV1",
+    },
+    "it_automation": {
+        "AggregateDeploymentConfigsV1",
+        "AggregateDeploymentExecutionsV1",
+        "AggregateHostDeploymentsV1",
+        "GetDeploymentConfigsByQueryV1",
+        "GetDeploymentExecutionsByQueryV1",
+        "GetHostDeploymentPatchesByQueryV1",
+        "GetHostDeploymentsByQueryV1",
+        "CombinedOSAssessmentScan",
+        "CombinedOSAssessments",
+        "CreateDeploymentConfig",
+        "DeleteDeploymentConfigs",
+        "UpdateDeploymentConfig",
+        "CancelDeploymentExecutionsV1",
+    },
+    "ngsiem": {
+        "GetScheduledReport",
+        "CreateScheduledReport",
+        "DeleteScheduledReport",
+        "UpdateScheduledReport",
+        "ListScheduledReports",
+    },
+    "saas_security": {"SetCheckImpactV3", "GetSecurityCheckChangeLogV3"},
+    "user_management": {
+        "entitiesPermissionGroupsGETV1",
+        "entitiesPermissionsGETV1",
+        "entitiesRolePermissionsV1",
+        "queriesPermissionsV1",
+    },
+}
 
 
 class TestGeneratedFalconPyModules(TestModules):
@@ -41,7 +118,7 @@ class TestGeneratedFalconPyModules(TestModules):
         self.assertIn("sample_uploads", GENERATED_SERVICE_COLLECTIONS)
         self.assertIn("kubernetes_protection", GENERATED_SERVICE_COLLECTIONS)
 
-    def test_falconpy_1_6_3_through_1_6_6_service_collections_present(self):
+    def test_falconpy_1_6_3_through_1_6_7_service_collections_present(self):
         expected = {
             "access_scopes",
             "agent_invocation",
@@ -56,6 +133,11 @@ class TestGeneratedFalconPyModules(TestModules):
             "cloud_security_registration_combined",
             "cloud_security_risks",
             "code_security",
+            "eval_cases",
+            "eval_dataset_entries",
+            "eval_datasets",
+            "eval_evaluators",
+            "eval_runs",
             "falcon_id",
             "federated_connections",
             "foundry_lookup_files",
@@ -88,6 +170,10 @@ class TestGeneratedFalconPyModules(TestModules):
                 "network_scan_detections",
                 "skills",
             },
+        )
+        self.assertEqual(
+            set(FALCONPY_1_6_7_SERVICE_COLLECTIONS),
+            {"eval_cases", "eval_dataset_entries", "eval_datasets", "eval_evaluators", "eval_runs"},
         )
 
         for module_key in expected:
@@ -137,6 +223,11 @@ class TestGeneratedFalconPyModules(TestModules):
             "get_service_types",
             "search_schedules",
         }
+        operations_without_published_oauth_scopes.update(
+            operation
+            for operations in FALCONPY_1_6_7_ADDED_OPERATIONS.values()
+            for operation in operations
+        )
 
         for module_key in NEW_FALCONPY_SERVICE_COLLECTIONS:
             class_name = "".join(part.capitalize() for part in module_key.split("_")) + "Module"
@@ -145,6 +236,40 @@ class TestGeneratedFalconPyModules(TestModules):
                 operation = spec["operation"]
                 if operation not in operations_without_published_oauth_scopes:
                     self.assertTrue(get_required_scopes(operation), operation)
+
+    def test_falconpy_1_6_7_operations_are_covered_without_deprecated_endpoints(self):
+        covered_operations = {
+            spec["operation"]
+            for module_class in registry.get_available_modules().values()
+            for spec in getattr(module_class, "TOOL_SPECS", []) or []
+            if isinstance(spec, dict) and "operation" in spec
+        }
+
+        for module_key, expected_operations in FALCONPY_1_6_7_ADDED_OPERATIONS.items():
+            endpoints = importlib.import_module(f"falconpy.{module_key}").Endpoints
+            for endpoint in endpoints:
+                if endpoint[0] in expected_operations:
+                    self.assertFalse(
+                        str(endpoint[3]).lstrip().casefold().startswith(
+                            ("deprecated:", "decommissioned:")
+                        ),
+                        endpoint[0],
+                    )
+            self.assertTrue(expected_operations.issubset(covered_operations), module_key)
+            if module_key in FALCONPY_1_6_7_SERVICE_COLLECTIONS:
+                module_class = getattr(
+                    generated_falconpy,
+                    "".join(part.capitalize() for part in module_key.split("_")) + "Module",
+                )
+                self.assertEqual(
+                    {spec["operation"] for spec in module_class.TOOL_SPECS},
+                    expected_operations,
+                )
+
+    def test_falconpy_1_6_7_scopes_are_not_guessed(self):
+        for operations in FALCONPY_1_6_7_ADDED_OPERATIONS.values():
+            for operation in operations:
+                self.assertEqual(get_required_scopes(operation), [], operation)
 
     def test_falconpy_1_6_6_operations_in_existing_collections_have_scopes(self):
         added_operations = {
@@ -318,6 +443,35 @@ class TestGeneratedFalconPyModules(TestModules):
             tool_name = f"falcon_{spec['tool_name']}"
             annotations = server._tool_manager._tools[tool_name].annotations
             self.assertEqual(annotations.readOnlyHint, expected_read_only, tool_name)
+
+    def test_falconpy_1_6_7_post_read_operations_are_classified_read_only(self):
+        for module_key, operation in (
+            ("browser_security", "QuerySensitiveDataProfiles"),
+            ("user_management", "entitiesPermissionGroupsGETV1"),
+            ("user_management", "entitiesPermissionsGETV1"),
+            ("it_automation", "AggregateDeploymentConfigsV1"),
+        ):
+            endpoint = next(
+                endpoint
+                for endpoint in importlib.import_module(f"falconpy.{module_key}").Endpoints
+                if endpoint[0] == operation
+            )
+            self.assertFalse(is_write_operation(endpoint), operation)
+
+    def test_falconpy_1_6_7_write_operations_are_classified_as_writes(self):
+        for module_key, operation in (
+            ("eval_dataset_entries", "EntitiesEvalDatasetEntriesCreateV1"),
+            ("eval_datasets", "EntitiesEvalDatasetsDeleteV1"),
+            ("eval_runs", "EntitiesEvalRunsActionV1"),
+            ("it_automation", "CancelDeploymentExecutionsV1"),
+            ("saas_security", "SetCheckImpactV3"),
+        ):
+            endpoint = next(
+                endpoint
+                for endpoint in importlib.import_module(f"falconpy.{module_key}").Endpoints
+                if endpoint[0] == operation
+            )
+            self.assertTrue(is_write_operation(endpoint), operation)
 
     def test_new_collection_tool_schemas_define_array_items(self):
         def assert_array_items(value, path="root"):
